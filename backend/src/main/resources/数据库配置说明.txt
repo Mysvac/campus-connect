@@ -1,0 +1,9 @@
+
+# application.properties 中默认设置
+spring.profiles.active=local
+
+这说明你需要新建一个 application-local.properties 文件
+文件的内容可以参考 application-docker.properties ，你需要填写本地的数据库配置。
+
+提交到服务器时，服务器配置了环境变量，会让配置自动选择成 application-docker.properties
+但是本地运行时，需要自行配置 application-local.properties，因为每个人的环境不同。
