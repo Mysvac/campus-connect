@@ -7,10 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tasks_handle {
-    private Long tid;
+public class ScoresRelease {
+    private Long sid;
     private Long uid;
-    private Integer status;
-    private String notes;
     private Long time;
 }

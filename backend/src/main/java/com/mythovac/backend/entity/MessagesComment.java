@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Messages_comment {
+public class MessagesComment {
     private Long cid;
     private Long mid;
     private Long uid;

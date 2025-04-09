@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Scores_comment {
-    private Long sid;
+public class MessagesRelease {
+    private Long mid;
     private Long uid;
-    private Integer score;
-    private String comment;
-    private Long time;
 }

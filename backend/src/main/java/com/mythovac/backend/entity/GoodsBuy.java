@@ -7,7 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Goods_release {
+public class GoodsBuy {
+    private Long oid;
     private Long gid;
     private Long uid;
+    private Long time;
+    private Integer sum;
+    private Integer number;
+    private Integer status;
+    private String notes;
 }

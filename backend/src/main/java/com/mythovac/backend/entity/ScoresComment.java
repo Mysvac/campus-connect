@@ -7,13 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Goods_buy {
-    private Long oid;
-    private Long gid;
+public class ScoresComment {
+    private Long sid;
     private Long uid;
+    private Integer score;
+    private String comment;
     private Long time;
-    private Integer sum;
-    private Integer number;
-    private Integer status;
-    private String notes;
 }

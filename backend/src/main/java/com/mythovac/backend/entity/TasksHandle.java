@@ -7,7 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Messages_release {
-    private Long mid;
+public class TasksHandle {
+    private Long tid;
     private Long uid;
+    private Integer status;
+    private String notes;
+    private Long time;
 }

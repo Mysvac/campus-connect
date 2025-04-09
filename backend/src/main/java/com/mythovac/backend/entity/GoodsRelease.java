@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tasks_release {
-    private Long tid;
+public class GoodsRelease {
+    private Long gid;
     private Long uid;
 }
