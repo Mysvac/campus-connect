@@ -16,7 +16,7 @@ public interface UserMapper {
     @Select("SELECT * FROM users WHERE phone = #{phone}")
     User getUserByPhone(String phone);
 
-    @Insert("INSERT INTO users(uid, permission, phone, password, wallet, nickname, gender, email, profile, image)" +
+    @Insert("INSERT INTO users(permission, phone, password, wallet, nickname, gender, email, profile, image)" +
             " VALUES(#{permission}, #{phone}, #{password}, #{wallet}, #{nickname}, #{gender}, #{email}, #{profile}, #{image})")
     @Options(useGeneratedKeys = true, keyProperty = "uid")
     void insertUser(User user);
@@ -28,5 +28,5 @@ public interface UserMapper {
     void updateUser(User user);
 
     @Delete("DELETE FROM users WHERE uid = #{uid}")
-    void deleteUser(Long uid);
+    void deleteUser(User user);
 }
