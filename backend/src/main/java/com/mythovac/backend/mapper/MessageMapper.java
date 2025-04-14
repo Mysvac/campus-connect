@@ -16,6 +16,9 @@ public interface MessageMapper {
     @Select("SELECT * FROM messages WHERE tag = #{tag}")
     List<Message> getMessagesByTag(String tag);
 
+    @Select("SELECT * FROM messages WHERE uid = #{uid}")
+    List<Message> getMessagesByUid(Long uid);
+
     @Insert("INSERT INTO messages(uid, content, title, praise, tag, time)" +
             " VALUES(#{uid}, #{content}, #{title}, #{praise}, #{tag}, #{time})")
     @Options(useGeneratedKeys = true, keyProperty = "mid")

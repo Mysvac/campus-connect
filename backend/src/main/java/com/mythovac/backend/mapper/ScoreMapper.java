@@ -11,7 +11,7 @@ public interface ScoreMapper {
     List<Score> getAllScores();
 
     @Select("SELECT * FROM scores WHERE sid = #{sid}")
-    List<Score> getScoresBySid(Long sid);
+    Score getScoreBySid(Long sid);
 
     @Select("SELECT * FROM scores WHERE tag = #{tag}")
     List<Score> getScoresByTag(String tag);

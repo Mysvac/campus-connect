@@ -4,7 +4,6 @@ import com.mythovac.backend.entity.Result;
 import com.mythovac.backend.entity.User;
 import com.mythovac.backend.service.UserService;
 import com.mythovac.backend.service.impl.UserServiceImpl;
-import jakarta.websocket.Session;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,14 +16,20 @@ public class UserController {
     private PasswordEncoder passwordEncoder;
 
     public UserController(UserServiceImpl userServiceImpl, PasswordEncoder passwordEncoder) {
-        userService = userServiceImpl;
+        this.userService = userServiceImpl;
         this.passwordEncoder = passwordEncoder;
     }
 
 
     @PostMapping("/register")
     public Result register(User user) {
-
+        String phone = user.getPhone();
+        if(phone == null || phone.length() != 11) {
+            return Result.error("手机号无效");
+        }
+        if(user.getPassword() == null || user.getPassword().length() < 6) {
+            return Result.error("密码无效");
+        }
         if(userService.getUserByPhone(user.getPhone()) == null){
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             user.setWallet(0L);
@@ -37,7 +42,6 @@ public class UserController {
         } else {
             return Result.error("用户已存在");
         }
-
     }
 
     @PostMapping("/login")

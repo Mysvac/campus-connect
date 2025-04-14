@@ -8,10 +8,10 @@ import java.util.List;
 @Mapper
 public interface ScoresCommentMapper {
     @Select("SELECT * FROM scores_comment")
-    List<ScoresComment> selectScoresComment();
+    List<ScoresComment> getScoresComment();
 
     @Select("SELECT * FROM scores_comment WHERE sid = #{sid}")
-    List<ScoresComment> selectScoresCommentBySid(Long sid);
+    List<ScoresComment> getScoresCommentBySid(Long sid);
 
     @Insert("INSERT INTO scores_comment (sid, uid, score, comment, time)" +
             " VALUES (#{sid}, #{uid}, ${score}, #{comment}, ${time})")

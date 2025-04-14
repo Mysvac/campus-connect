@@ -22,8 +22,8 @@ public class MessagesCommentServiceImpl implements MessagesCommentService {
         return messagesCommentMapper.getAllMessagesCommentByMid(mid);
     }
     @Override
-    public List<MessagesComment> getAllMessagesCommentByCid(Long cid){
-        return messagesCommentMapper.getAllMessagesCommentByCid(cid);
+    public MessagesComment getMessagesCommentByCid(Long cid){
+        return messagesCommentMapper.getMessagesCommentByCid(cid);
     }
     @Override
     public void insertMessagesComment(MessagesComment messagesComment){

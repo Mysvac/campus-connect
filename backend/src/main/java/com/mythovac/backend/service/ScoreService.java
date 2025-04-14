@@ -7,7 +7,7 @@ import java.util.List;
 public interface ScoreService {
 
     List<Score> getAllScores();
-    List<Score> getScoresBySid(Long sid);
+    Score getScoreBySid(Long sid);
     List<Score> getScoresByTag(String tag);
     void insertScore(Score t_score);
     void updateScore(Score t_score);

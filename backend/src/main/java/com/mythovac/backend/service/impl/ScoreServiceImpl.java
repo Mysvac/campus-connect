@@ -18,8 +18,8 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreMapper.getAllScores();
     }
     @Override
-    public List<Score> getScoresBySid(Long sid){
-        return scoreMapper.getScoresBySid(sid);
+    public Score getScoreBySid(Long sid){
+        return scoreMapper.getScoreBySid(sid);
     }
     @Override
     public List<Score> getScoresByTag(String tag){

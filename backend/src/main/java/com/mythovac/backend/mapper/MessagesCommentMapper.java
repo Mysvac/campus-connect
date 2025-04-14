@@ -14,7 +14,7 @@ public interface MessagesCommentMapper {
     List<MessagesComment> getAllMessagesCommentByMid(Long mid);
 
     @Select("SELECT * FROM messages_comment WHERE cid = #{cid}")
-    List<MessagesComment> getAllMessagesCommentByCid(Long cid);
+    MessagesComment getMessagesCommentByCid(Long cid);
 
     @Insert("INSERT INTO messages_comment (mid, uid, content, praise, time) " +
             "VALUES (#{mid}, #{uid}, #{content}, #{createTime})")

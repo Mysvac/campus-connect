@@ -20,6 +20,11 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public List<Message> getMessagesByUid(Long uid){
+        return messageMapper.getMessagesByUid(uid);
+    }
+
+    @Override
     public Message getMessageById(Long messageId) {
         return messageMapper.getMessageById(messageId);
     }
@@ -39,4 +44,6 @@ public class MessageServiceImpl implements MessageService {
     public void deleteMessage(Message message){
         messageMapper.deleteMessage(message);
     }
+
+
 }

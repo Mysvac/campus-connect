@@ -8,7 +8,7 @@ import java.util.List;
 public interface MessagesCommentService {
     List<MessagesComment> getAllMessagesComment();
     List<MessagesComment> getAllMessagesCommentByMid(Long mid);
-    List<MessagesComment> getAllMessagesCommentByCid(Long cid);
+    MessagesComment getMessagesCommentByCid(Long cid);
     void insertMessagesComment(MessagesComment messagesComment);
     void updateMessagesComment(MessagesComment messagesComment);
     void deleteMessagesComment(MessagesComment messagesComment);

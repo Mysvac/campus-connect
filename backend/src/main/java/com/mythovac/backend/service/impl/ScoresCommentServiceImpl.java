@@ -14,12 +14,12 @@ public class ScoresCommentServiceImpl implements ScoresCommentService {
     private ScoresCommentMapper scoresCommentMapper;
 
     @Override
-    public List<ScoresComment> selectScoresComment(){
-        return scoresCommentMapper.selectScoresComment();
+    public List<ScoresComment> getScoresComment(){
+        return scoresCommentMapper.getScoresComment();
     }
     @Override
-    public List<ScoresComment> selectScoresCommentBySid(Long sid){
-        return scoresCommentMapper.selectScoresCommentBySid(sid);
+    public List<ScoresComment> getScoresCommentBySid(Long sid){
+        return scoresCommentMapper.getScoresCommentBySid(sid);
     }
     @Override
     public void insertScoresComment(ScoresComment scoresComment){
