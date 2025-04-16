@@ -11,7 +11,7 @@ public interface MessagesReleaseMapper {
     List<MessagesRelease> getAllMessagesRelease();
 
     @Select("SELECT * FROM messages_release WHERE uid = #{uid}")
-    List<MessagesRelease> getAllMessagesReleaseByUid(Long uid);
+    List<MessagesRelease> getMessagesReleaseByUid(Long uid);
 
     @Insert("INSERT INTO messages_release (mid, uid) " +
             "VALUES (#{mid}, #{uid})")
@@ -21,5 +21,5 @@ public interface MessagesReleaseMapper {
     void deleteMessagesReleaseByMid(Long mid);
 
     @Delete("DELETE FROM messages_release WHERE mid = #{mid} AND uid = #{uid}")
-    void deleteMessagesRelease(MessagesRelease messagesRelease);
+    void deleteMessagesReleaseByMidAndUid(Long mid, Long uid);
 }

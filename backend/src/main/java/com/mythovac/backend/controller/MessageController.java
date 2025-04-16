@@ -9,10 +9,7 @@ import com.mythovac.backend.service.impl.MessageServiceImpl;
 import com.mythovac.backend.service.impl.MessagesCommentServiceImpl;
 import com.mythovac.backend.service.impl.MessagesReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -121,6 +118,20 @@ public class MessageController {
         }
         List<Message> res = messageService.getMessagesByTag(message.getTag());
         return Result.success(res);
+    }
+
+    @DeleteMapping("/delete-message")
+    public Result deleteMessage(Message message) {
+        if(message == null || message.getMid() == null) {
+            return Result.error("留言不存在");
+        }
+        if(messageService.getMessageById(message.getMid()) == null){
+            return Result.error("留言不存在");
+        }
+        messagesReleaseService.deleteMessagesReleaseByMid(message.getMid());
+        messagesCommentService.deleteMessagesCommentByMid(message.getMid());
+        messageService.deleteMessageByMid(message.getMid());
+        return Result.success();
     }
 
 }

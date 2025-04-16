@@ -12,9 +12,7 @@ import com.mythovac.backend.service.impl.ScoreServiceImpl;
 import com.mythovac.backend.service.impl.ScoresCommentServiceImpl;
 import com.mythovac.backend.service.impl.ScoresReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -53,6 +51,66 @@ public class ScoreController {
         return Result.success(res);
     }
 
+    @GetMapping("/get-score-by-tag")
+    public Result getScoreByTag(Score score) {
+        if(score == null || score.getTag() == null) {
+            return Result.error("评分不存在");
+        }
+        List<Score> res = scoreService.getScoresByTag(score.getTag());
+        if(res == null) return Result.error("评分不存在");
+        return Result.success(res);
+    }
 
+    @PostMapping("/add-score")
+    public Result addScore(Score score) {
+        if(score == null || score.getTag() == null || score.getGoal() == null) {
+            return Result.error("评分内容不符");
+        }
+        scoreService.insertScore(score);
+        return Result.success();
+    }
+
+
+    @PostMapping("/add-comment")
+    public Result addComment(ScoresComment scoresComment) {
+        if(scoresComment == null || scoresComment.getSid() == null) {
+            return Result.error("评分不存在");
+        }
+        if(scoresComment.getUid() == null) {
+            return Result.error("用户不存在");
+        }
+        if(userService.getUserById(scoresComment.getUid()) == null){
+            return Result.error("用户不存在");
+        }
+        if(scoreService.getScoreBySid(scoresComment.getSid()) == null){
+            return Result.error("评分不存在");
+        }
+        scoresCommentService.insertScoresComment(scoresComment);
+        return Result.success();
+    }
+
+    @PostMapping("/update-score")
+    public Result updateScore(Score score) {
+        if(score == null || score.getSid() == null) {
+            return Result.error("评分不存在");
+        }
+        if(scoreService.getScoreBySid(score.getSid()) == null){
+            return Result.error("评分不存在");
+        }
+        scoreService.updateScore(score);
+        return Result.success();
+    }
+
+    @DeleteMapping("/delete-score")
+    public Result deleteScore(Score score) {
+        if(score == null || score.getSid() == null) {
+            return Result.error("评分不存在");
+        }
+        if(scoreService.getScoreBySid(score.getSid()) == null){
+            return Result.error("评分不存在");
+        }
+        scoreService.deleteScoreBySid(score.getSid());
+        return Result.success();
+    }
 
 }

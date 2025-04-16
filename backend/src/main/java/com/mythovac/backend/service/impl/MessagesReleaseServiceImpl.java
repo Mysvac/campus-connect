@@ -18,8 +18,8 @@ public class MessagesReleaseServiceImpl implements MessagesReleaseService {
         return messagesReleaseMapper.getAllMessagesRelease();
     }
     @Override
-    public List<MessagesRelease> getAllMessagesReleaseByUid(Long uid){
-        return messagesReleaseMapper.getAllMessagesReleaseByUid(uid);
+    public List<MessagesRelease> getMessagesReleaseByUid(Long uid){
+        return messagesReleaseMapper.getMessagesReleaseByUid(uid);
     }
     @Override
     public void insertMessagesRelease(MessagesRelease messagesRelease){
@@ -30,7 +30,7 @@ public class MessagesReleaseServiceImpl implements MessagesReleaseService {
         messagesReleaseMapper.deleteMessagesReleaseByMid(mid);
     }
     @Override
-    public void deleteMessagesRelease(MessagesRelease messagesRelease){
-        messagesReleaseMapper.deleteMessagesRelease(messagesRelease);
+    public void deleteMessagesReleaseByMidAndUid(Long mid, Long uid){
+        messagesReleaseMapper.deleteMessagesReleaseByMidAndUid(mid, uid);
     }
 }

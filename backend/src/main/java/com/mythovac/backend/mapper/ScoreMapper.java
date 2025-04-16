@@ -27,6 +27,6 @@ public interface ScoreMapper {
     void updateScore(Score t_score);
 
     @Delete("DELETE FROM scores WHERE sid = #{sid}")
-    void deleteScore(Score t_score);
+    void deleteScoreBySid(Long sid);
 
 }

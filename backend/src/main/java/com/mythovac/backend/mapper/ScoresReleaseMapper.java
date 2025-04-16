@@ -17,12 +17,12 @@ public interface ScoresReleaseMapper {
     List<ScoresRelease> getScoresReleaseByUid(Long uid);
 
     @Select("SELECT * FROM scores_release WHERE sid = #{sid}")
-    List<ScoresRelease> getScoresReleaseBySid(Long sid);
+    ScoresRelease getScoresReleaseBySid(Long sid);
 
     @Insert("INSERT INTO scores_release (sid, uid, time) VALUES (#{sid}, #{uid}, #{time})")
     void insertScoresRelease(ScoresRelease scoresRelease);
 
     @Delete("DELETE FROM scores_release WHERE sid = #{sid}")
-    void deleteScoresRelease(ScoresRelease scoresRelease);
+    void deleteScoresReleaseBySid(Long sid);
 
 }

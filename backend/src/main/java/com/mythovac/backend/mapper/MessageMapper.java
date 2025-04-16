@@ -29,5 +29,5 @@ public interface MessageMapper {
     void updateMessage(Message message);
 
     @Delete("DELETE FROM messages WHERE mid = #{mid}")
-    void deleteMessage(Message message);
+    void deleteMessageByMid(Long mid);
 }

@@ -22,7 +22,7 @@ public class ScoresReleaseServiceImpl implements ScoresReleaseService {
         return scoresReleaseMapper.getScoresReleaseByUid(uid);
     }
     @Override
-    public List<ScoresRelease> getScoresReleaseBySid(Long sid){
+    public ScoresRelease getScoresReleaseBySid(Long sid){
         return scoresReleaseMapper.getScoresReleaseBySid(sid);
     }
     @Override
@@ -30,8 +30,8 @@ public class ScoresReleaseServiceImpl implements ScoresReleaseService {
         scoresReleaseMapper.insertScoresRelease(scoresRelease);
     }
     @Override
-    public void deleteScoresRelease(ScoresRelease scoresRelease){
-        scoresReleaseMapper.deleteScoresRelease(scoresRelease);
+    public void deleteScoresReleaseBySid(Long sid){
+        scoresReleaseMapper.deleteScoresReleaseBySid(sid);
     }
 
 }

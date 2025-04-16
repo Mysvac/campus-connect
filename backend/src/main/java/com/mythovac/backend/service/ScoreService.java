@@ -11,5 +11,5 @@ public interface ScoreService {
     List<Score> getScoresByTag(String tag);
     void insertScore(Score t_score);
     void updateScore(Score t_score);
-    void deleteScore(Score t_score);
+    void deleteScoreBySid(Long sid);
 }

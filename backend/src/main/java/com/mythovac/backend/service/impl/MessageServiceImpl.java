@@ -41,8 +41,8 @@ public class MessageServiceImpl implements MessageService {
         messageMapper.updateMessage(message);
     }
     @Override
-    public void deleteMessage(Message message){
-        messageMapper.deleteMessage(message);
+    public void deleteMessageByMid(Long mid){
+        messageMapper.deleteMessageByMid(mid);
     }
 
 

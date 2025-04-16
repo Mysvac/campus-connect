@@ -11,5 +11,6 @@ public interface MessagesCommentService {
     MessagesComment getMessagesCommentByCid(Long cid);
     void insertMessagesComment(MessagesComment messagesComment);
     void updateMessagesComment(MessagesComment messagesComment);
-    void deleteMessagesComment(MessagesComment messagesComment);
+    void deleteMessagesCommentByCid(Long cid);
+    void deleteMessagesCommentByMid(Long mid);
 }

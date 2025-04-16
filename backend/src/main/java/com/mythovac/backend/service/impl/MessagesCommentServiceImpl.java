@@ -34,7 +34,11 @@ public class MessagesCommentServiceImpl implements MessagesCommentService {
         messagesCommentMapper.updateMessagesComment(messagesComment);
     }
     @Override
-    public void deleteMessagesComment(MessagesComment messagesComment){
-        messagesCommentMapper.deleteMessagesComment(messagesComment);
+    public void deleteMessagesCommentByCid(Long cid){
+        messagesCommentMapper.deleteMessagesCommentByCid(cid);
+    }
+    @Override
+    public void deleteMessagesCommentByMid(Long mid){
+        messagesCommentMapper.deleteMessagesCommentByMid(mid);
     }
 }

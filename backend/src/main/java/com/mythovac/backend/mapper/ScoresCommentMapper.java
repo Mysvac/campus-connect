@@ -23,6 +23,6 @@ public interface ScoresCommentMapper {
     void updateScoresComment(ScoresComment scoresComment);
 
     @Delete("DELETE FROM scores_comment WHERE sid = #{sid} AND uid = #{uid}")
-    void deleteScoresComment(ScoresComment scoresComment);
+    void deleteScoresCommentBySidAndUid(Long sid, Long uid);
 
 }

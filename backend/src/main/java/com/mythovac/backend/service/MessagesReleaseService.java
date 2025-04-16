@@ -7,8 +7,8 @@ import java.util.List;
 public interface MessagesReleaseService {
 
     List<MessagesRelease> getAllMessagesRelease();
-    List<MessagesRelease> getAllMessagesReleaseByUid(Long uid);
+    List<MessagesRelease> getMessagesReleaseByUid(Long uid);
     void insertMessagesRelease(MessagesRelease messagesRelease);
     void deleteMessagesReleaseByMid(Long mid);
-    void deleteMessagesRelease(MessagesRelease messagesRelease);
+    void deleteMessagesReleaseByMidAndUid(Long mid, Long uid);
 }

@@ -34,7 +34,7 @@ public class ScoreServiceImpl implements ScoreService {
         scoreMapper.updateScore(t_score);
     }
     @Override
-    public void deleteScore(Score t_score){
-        scoreMapper.deleteScore(t_score);
+    public void deleteScoreBySid(Long sid){
+        scoreMapper.deleteScoreBySid(sid);
     }
 }

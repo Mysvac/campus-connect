@@ -25,5 +25,8 @@ public interface MessagesCommentMapper {
     void updateMessagesComment(MessagesComment messagesComment);
 
     @Delete("DELETE FROM messages_comment WHERE cid = #{cid}")
-    void deleteMessagesComment(MessagesComment messagesComment);
+    void deleteMessagesCommentByCid(Long cid);
+
+    @Delete("DELETE FROM messages_comment WHERE mid = #{mid}")
+    void deleteMessagesCommentByMid(Long mid);
 }

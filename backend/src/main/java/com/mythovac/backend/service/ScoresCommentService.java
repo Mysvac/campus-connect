@@ -9,5 +9,5 @@ public interface ScoresCommentService {
     List<ScoresComment> getScoresCommentBySid(Long sid);
     void insertScoresComment(ScoresComment scoresComment);
     void updateScoresComment(ScoresComment scoresComment);
-    void deleteScoresComment(ScoresComment scoresComment);
+    void deleteScoresCommentBySidAndUid(Long sid, Long uid);
 }

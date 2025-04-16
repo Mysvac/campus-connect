@@ -8,8 +8,8 @@ public interface ScoresReleaseService {
 
     List<ScoresRelease> getAllScoresRelease();
     List<ScoresRelease> getScoresReleaseByUid(Long uid);
-    List<ScoresRelease> getScoresReleaseBySid(Long sid);
+    ScoresRelease getScoresReleaseBySid(Long sid);
     void insertScoresRelease(ScoresRelease scoresRelease);
-    void deleteScoresRelease(ScoresRelease scoresRelease);
+    void deleteScoresReleaseBySid(Long sid);
 
 }
