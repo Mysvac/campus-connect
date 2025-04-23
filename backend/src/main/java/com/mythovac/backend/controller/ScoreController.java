@@ -31,38 +31,29 @@ public class ScoreController {
         this.scoresReleaseService = scoresReleaseService;
     }
 
-    @GetMapping("/get-score")
-    public Result getScore(Score score) {
-        if(score == null || score.getSid() == null) {
-            return Result.error("评分不存在");
-        }
-        Score res = scoreService.getScoreBySid(score.getSid());
+    @GetMapping("/get-score-by-sid/{sid}")
+    public Result getScore(@PathVariable Long sid) {
+        Score res = scoreService.getScoreBySid(sid);
         if(res == null) return Result.error("评分不存在");
         return Result.success(res);
     }
 
-    @GetMapping("/get-comments-by-sid")
-    public Result getCommentsBySid(Score score) {
-        if(score == null || score.getSid() == null) {
-            return Result.error("评分不存在");
-        }
-        List<ScoresComment> res = scoresCommentService.getScoresCommentBySid(score.getSid());
+    @GetMapping("/get-comments-by-sid/{sid}")
+    public Result getCommentsBySid(@PathVariable Long sid) {
+        List<ScoresComment> res = scoresCommentService.getScoresCommentBySid(sid);
         if(res == null) return Result.error("评分不存在");
         return Result.success(res);
     }
 
-    @GetMapping("/get-score-by-tag")
-    public Result getScoreByTag(Score score) {
-        if(score == null || score.getTag() == null) {
-            return Result.error("评分不存在");
-        }
-        List<Score> res = scoreService.getScoresByTag(score.getTag());
+    @GetMapping("/get-score-by-tag/{tag}")
+    public Result getScoreByTag(@PathVariable String tag) {
+        List<Score> res = scoreService.getScoresByTag(tag);
         if(res == null) return Result.error("评分不存在");
         return Result.success(res);
     }
 
     @PostMapping("/add-score")
-    public Result addScore(Score score) {
+    public Result addScore(@RequestBody Score score) {
         if(score == null || score.getTag() == null || score.getGoal() == null) {
             return Result.error("评分内容不符");
         }
@@ -72,7 +63,7 @@ public class ScoreController {
 
 
     @PostMapping("/add-comment")
-    public Result addComment(ScoresComment scoresComment) {
+    public Result addComment(@RequestBody ScoresComment scoresComment) {
         if(scoresComment == null || scoresComment.getSid() == null) {
             return Result.error("评分不存在");
         }
@@ -90,7 +81,7 @@ public class ScoreController {
     }
 
     @PostMapping("/update-score")
-    public Result updateScore(Score score) {
+    public Result updateScore(@RequestBody Score score) {
         if(score == null || score.getSid() == null) {
             return Result.error("评分不存在");
         }
@@ -101,16 +92,15 @@ public class ScoreController {
         return Result.success();
     }
 
-    @DeleteMapping("/delete-score")
-    public Result deleteScore(Score score) {
-        if(score == null || score.getSid() == null) {
+    @DeleteMapping("/delete-score-by-sid/{sid}")
+    public Result deleteScore(@PathVariable Long sid) {
+        if(scoreService.getScoreBySid(sid) == null){
             return Result.error("评分不存在");
         }
-        if(scoreService.getScoreBySid(score.getSid()) == null){
-            return Result.error("评分不存在");
-        }
-        scoreService.deleteScoreBySid(score.getSid());
+        scoresCommentService.deleteScoresCommentBySid(sid);
+        scoreService.deleteScoreBySid(sid);
         return Result.success();
     }
+
 
 }

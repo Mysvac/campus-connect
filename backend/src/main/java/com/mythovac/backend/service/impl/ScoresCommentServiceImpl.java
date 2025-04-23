@@ -30,6 +30,10 @@ public class ScoresCommentServiceImpl implements ScoresCommentService {
         scoresCommentMapper.updateScoresComment(scoresComment);
     }
     @Override
+    public void deleteScoresCommentBySid(Long sid){
+        scoresCommentMapper.deleteScoresCommentBySid(sid);
+    }
+    @Override
     public void deleteScoresCommentBySidAndUid(Long sid, Long uid){
         scoresCommentMapper.deleteScoresCommentBySidAndUid(sid, uid);
     }

@@ -28,40 +28,28 @@ public class MessageController {
         this.messagesCommentService = messagesCommentService;
     }
 
-    @GetMapping("/get-message")
-    public Result getMessage(Message message) {
-        if(message == null || message.getMid() == null) {
-            return Result.error("留言不存在");
-        }
-        Message res = messageService.getMessageById(message.getMid());
+    @GetMapping("/get-message-by-mid/{mid}")
+    public Result getMessage(@PathVariable Long mid) {
+        Message res = messageService.getMessageById(mid);
         if(res == null) return Result.error("留言不存在");
         return Result.success(res);
     }
 
-    @GetMapping("/get-comment")
-    public Result getComment(MessagesComment messagesComment) {
-        if(messagesComment == null || messagesComment.getCid() == null) {
-            return Result.error("留言不存在");
-        }
-        MessagesComment res = messagesCommentService.getMessagesCommentByCid(messagesComment.getCid());
+    @GetMapping("/get-comment-by-cid/{cid}")
+    public Result getComment(@PathVariable Long cid) {
+        MessagesComment res = messagesCommentService.getMessagesCommentByCid(cid);
         if(res == null) return Result.error("留言不存在");
         return Result.success(res);
     }
 
-    @GetMapping("/get-comments-by-mid")
-    public Result getCommentsByMid(Message message) {
-        if(message == null || message.getMid() == null) {
-            return Result.error("留言不存在");
-        }
-        if(messageService.getMessageById(message.getMid()) == null){
-            return Result.error("留言不存在");
-        }
-        List<MessagesComment> res = messagesCommentService.getAllMessagesCommentByMid(message.getMid());
+    @GetMapping("/get-comments-by-mid/{mid}")
+    public Result getCommentsByMid(@PathVariable Long mid) {
+        List<MessagesComment> res = messagesCommentService.getAllMessagesCommentByMid(mid);
         return Result.success(res);
     }
 
     @PostMapping("/add-message")
-    public Result addMessage(Message message) {
+    public Result addMessage(@RequestBody Message message) {
         if(message == null || message.getContent() == null || message.getContent().isEmpty()) {
             return Result.error("留言内容无效");
         }
@@ -73,16 +61,16 @@ public class MessageController {
         }
         messageService.insertMessage(message);
 
-        Message message1 = messageService.getMessageById(message.getMid());
-        MessagesRelease messagesRelease = new MessagesRelease();
-        messagesRelease.setMid(message1.getMid());
-        messagesRelease.setUid(message1.getUid());
-        messagesReleaseService.insertMessagesRelease(messagesRelease);
+//        Message message1 = messageService.getMessageById(message.getMid());
+//        MessagesRelease messagesRelease = new MessagesRelease();
+//        messagesRelease.setMid(message1.getMid());
+//        messagesRelease.setUid(message1.getUid());
+//        messagesReleaseService.insertMessagesRelease(messagesRelease);
         return Result.success();
     }
 
     @PostMapping("/add-comment")
-    public Result addComment(MessagesComment messagesComment) {
+    public Result addComment(@RequestBody MessagesComment messagesComment) {
         if(messagesComment == null || messagesComment.getContent() == null || messagesComment.getContent().isEmpty()) {
             return Result.error("留言内容无效");
         }
@@ -99,38 +87,26 @@ public class MessageController {
         return Result.success();
     }
 
-    @GetMapping("/get-messages-by-uid")
-    public Result getMessagesByUid(User user) {
-        if(user == null || user.getUid() == null) {
-            return Result.error("用户不存在");
-        }
-        if(userService.getUserById(user.getUid()) == null){
-            return Result.error("用户不存在");
-        }
-        List<Message> res = messageService.getMessagesByUid(user.getUid());
+    @GetMapping("/get-messages-by-uid/{uid}")
+    public Result getMessagesByUid(@PathVariable Long uid) {
+        List<Message> res = messageService.getMessagesByUid(uid);
         return Result.success(res);
     }
 
-    @GetMapping("/get-messages-by-tag")
-    public Result getMessagesByTag(Message message) {
-        if(message == null || message.getTag() == null) {
-            return Result.error("标签无效");
-        }
-        List<Message> res = messageService.getMessagesByTag(message.getTag());
+    @GetMapping("/get-messages-by-tag/{tag}")
+    public Result getMessagesByTag(@PathVariable String tag) {
+        List<Message> res = messageService.getMessagesByTag(tag);
         return Result.success(res);
     }
 
-    @DeleteMapping("/delete-message")
-    public Result deleteMessage(Message message) {
-        if(message == null || message.getMid() == null) {
+    @DeleteMapping("/delete-message-by-mid/{mid}")
+    public Result deleteMessage(@PathVariable Long mid) {
+        if(messageService.getMessageById(mid) == null){
             return Result.error("留言不存在");
         }
-        if(messageService.getMessageById(message.getMid()) == null){
-            return Result.error("留言不存在");
-        }
-        messagesReleaseService.deleteMessagesReleaseByMid(message.getMid());
-        messagesCommentService.deleteMessagesCommentByMid(message.getMid());
-        messageService.deleteMessageByMid(message.getMid());
+//        messagesReleaseService.deleteMessagesReleaseByMid(mid);
+        messagesCommentService.deleteMessagesCommentByMid(mid);
+        messageService.deleteMessageByMid(mid);
         return Result.success();
     }
 
