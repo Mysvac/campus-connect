@@ -137,6 +137,10 @@
 
     <!-- 任务列表 -->
     <div class="main-section task-section" v-else>
+      <!-- 搜索结果提示 -->
+      <div class="search-results-info" v-if="searchQuery">
+      </div>
+
       <transition-group name="task-fade" tag="div" class="task-grid">
         <div class="task-card" v-for="task in filteredTasks" :key="task.tid" @click="showTaskDetail(task)">
           <div class="task-header">
@@ -163,6 +167,11 @@
           </div>
         </div>
       </transition-group>
+
+      <!-- 没有搜索结果时显示 -->
+      <div class="no-results" v-if="searchQuery && filteredTasks.length === 0">
+        <p>没有找到匹配 "{{ searchQuery }}" 的任务</p>
+      </div>
     </div>
   </main>
 </template>
@@ -178,8 +187,18 @@ export default {
     currentTag: {
       type: String,
       default: null
+    },
+    selectedTaskId: {
+      type: Number,
+      default: null
+    },
+    searchQuery: { // 添加searchQuery prop
+      type: String,
+      default: ''
     }
   },
+
+
   data() {
     return {
       // 模拟当前登录用户ID
@@ -278,12 +297,24 @@ export default {
         return this.cachedFilteredTasks;
       }
 
-      const result = !this.currentTag ?
-          this.tasks :
-          this.tasks.filter(task => task.tag === this.currentTag);
+      let filtered = this.tasks;
 
-      this.cachedFilteredTasks = result;
-      return result;
+      // 按标签筛选
+      if (this.currentTag) {
+        filtered = filtered.filter(task => task.tag === this.currentTag);
+      }
+
+      // 按搜索关键词筛选
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(task =>
+            task.name.toLowerCase().includes(query) ||
+            task.details.toLowerCase().includes(query)
+        );
+      }
+
+      this.cachedFilteredTasks = filtered;
+      return filtered;
     }
   },
   watch: {
@@ -294,8 +325,32 @@ export default {
           this.isFiltering = false;
         }, 50); // 短暂延迟，避免闪烁
       });
+    },
+    // 监听selectedTaskId的变化
+    selectedTaskId(newId) {
+      if (newId) {
+        const task = this.tasks.find(t => t.tid === newId);
+        if (task) {
+          this.showTaskDetail(task);
+        }
+      }
+    },
+    // 监听搜索查询的变化
+    searchQuery() {
+      this.isFiltering = true;
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.isFiltering = false;
+        }, 50); // 短暂延迟，避免闪烁
+      });
     }
   },
+
+  mounted() {
+    // 初始化时发送任务数据
+    this.$emit('update-tasks', this.tasks);
+  },
+
   methods: {
     formatTime(timestamp) {
       const now = Date.now();
@@ -399,6 +454,9 @@ export default {
       setTimeout(() => {
         alert('任务发布成功！');
       }, 300);
+
+      // 发出任务更新事件
+      this.$emit('update-tasks', this.tasks);
     },
     showTaskDetail(task) {
       // 显示任务详情
@@ -417,6 +475,8 @@ export default {
 
       // 关闭任务详情
       this.selectedTask = null;
+
+      this.$emit('update-tasks', this.tasks);
     },
     acceptTask(task) {
       // 将任务状态改为进行中
@@ -429,6 +489,8 @@ export default {
       }
 
       alert('已接取任务！');
+
+      this.$emit('update-tasks', this.tasks);
     },
     completeTask(task) {
       // 将任务状态改为已完成
@@ -441,6 +503,7 @@ export default {
       }
 
       alert('任务已标记为完成！');
+      this.$emit('update-tasks', this.tasks);
     },
     terminateTask(task) {
       // 将任务状态改为已终止
@@ -453,6 +516,12 @@ export default {
       }
 
       alert('任务已标记为终止！');
+      this.$emit('update-tasks', this.tasks);
+    },
+    // 添加清除搜索的方法
+    clearSearch() {
+      // 清除搜索并通知父组件
+      this.$emit('clear-search');
     }
   }
 }
@@ -1019,6 +1088,16 @@ export default {
 .task-fade-enter-from, .task-fade-leave-to {
   opacity: 0;
   transform: translateY(20px);
+}
+
+.no-results{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.1rem;
+  color: #333;
+  font-style: italic;
 }
 
 /* 响应式调整 */

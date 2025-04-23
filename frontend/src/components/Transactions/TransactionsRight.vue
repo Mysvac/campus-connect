@@ -1,13 +1,15 @@
 <template>
   <aside class="right-aside">
     <div class="hot-topics">
-      <h3 class="section-title">热门</h3>
+      <h3 class="section-title">热门商品</h3>
 
       <div class="topic-list">
-        <div class="topic-item" v-for="topic in hotTopics" :key="topic.mid">
-          <span class="topic-rank" :class="{'top-three': topic.rank <= 3}">{{ topic.rank }}</span>
+        <div class="topic-item" v-for="(product, index) in hotProducts" :key="product.gid" @click="viewProduct(product.gid)">
+          <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
           <div class="topic-content">
-            <p class="topic-title">{{ topic.title }}</p>
+            <p class="topic-title">{{ product.name }}</p>
+            <p class="topic-price">￥{{ (product.price / 100).toFixed(2) }}</p>
+            <p class="topic-sales">已售 {{ product.sales }} 件</p>
           </div>
         </div>
       </div>
@@ -17,19 +19,23 @@
 
 <script>
 export default {
-  name: 'MessageBoardRightAside',
-  data() {
-    return {
-      hotTopics: [
-        { mid: 1, title: '1', rank: 1 },
-        { mid: 2, title: '2', rank: 2 },
-        { mid: 3, title: '3', rank: 3 },
-        { mid: 4, title: '4', rank: 4 },
-        { mid: 5, title: '5', rank: 5 },
-        { mid: 6, title: '6', rank: 6 },
-        { mid: 7, title: '7', rank: 7 },
-        { mid: 8, title: '8', rank: 8 }
-      ]
+  name: 'TransactionsRight',
+  props: {
+    products: {
+      type: Array,
+      required: true
+    }
+  },
+  computed: {
+    hotProducts() {
+      // 按销量排序，取前8个
+      return [...this.products].sort((a, b) => b.sales - a.sales).slice(0, 8);
+    }
+  },
+  methods: {
+    viewProduct(productId) {
+      // 发送事件到父组件以显示产品详情
+      this.$emit('view-product', productId);
     }
   }
 }

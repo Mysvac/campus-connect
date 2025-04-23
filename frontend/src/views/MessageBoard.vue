@@ -1,6 +1,6 @@
 <template>
   <div class="main-layout">
-    <Header />
+    <Header @search="handleSearch" />
     <div class="content-container">
       <MessageBoardLeft
           class="left-sidebar"
@@ -9,23 +9,28 @@
       <MessageBoardMain
           class="main-content"
           :current-tag="currentTag"
+          :search-query="searchQuery"
           :show-new-post-form="showNewPostForm"
-          @hide-new-post-form="showNewPostForm = false" />
-      <MessageBoardRight class="right-sidebar" />
+          :selected-message-id="selectedMessageId"
+          @hide-new-post-form="showNewPostForm = false"
+          @messages-updated="updateMessages"
+          @clear-search="clearSearch" />
+      <MessageBoardRight
+          class="right-sidebar"
+          :messages="allMessages"
+          @show-message-detail="showMessageFromHotTopics" />
     </div>
   </div>
 </template>
 
 <script>
-
-
 import Header from "@/components/Header.vue";
 import MessageBoardMain from "@/components/MessageBoard/MessageBoardMain.vue";
 import MessageBoardLeft from "@/components/MessageBoard/MessageBoardLeft.vue";
 import MessageBoardRight from "@/components/MessageBoard/MessageBoardRight.vue";
 
 export default {
-  name: 'MainLayout',
+  name: 'MessageBoard',
   components: {
     Header,
     MessageBoardLeft,
@@ -35,12 +40,37 @@ export default {
   data() {
     return {
       currentTag: null,
-      showNewPostForm: false
+      showNewPostForm: false,
+      searchQuery: '',
+      allMessages: [],
+      selectedMessageId: null
     }
   },
   methods: {
+
     filterByTag(tag) {
       this.currentTag = tag;
+      this.showNewPostForm = false;
+      this.searchQuery = ''; // 清除搜索条件
+      this.selectedMessageId = null; // 关闭任何打开的消息详情
+    },
+    handleSearch(query) {
+      this.searchQuery = query;
+      this.currentTag = null; // 清除标签筛选
+      this.showNewPostForm = false; // 隐藏发布表单
+      this.selectedMessageId = null; // 关闭任何打开的消息详情
+    },
+    clearSearch() {
+      this.searchQuery = '';
+    },
+    updateMessages(messages) {
+      this.allMessages = [...messages];
+    },
+    showMessageFromHotTopics(messageId) {
+      this.selectedMessageId = messageId;
+      // 清除其他筛选条件
+      this.searchQuery = '';
+      this.currentTag = null;
       this.showNewPostForm = false;
     }
   }

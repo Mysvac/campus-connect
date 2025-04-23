@@ -37,8 +37,14 @@
       </div>
       <div class="action-container">
         <div class="search-container">
-          <input type="text" placeholder="搜索..." class="search-input" />
-          <button class="search-button">搜索</button>
+          <input
+              type="text"
+              placeholder="搜索标题..."
+              class="search-input"
+              v-model="searchQuery"
+              @keyup.enter="performSearch"
+          />
+          <button class="search-button" @click="performSearch">搜索</button>
         </div>
         <div class="auth-container">
           <router-link to="/user-login" class="auth-button">登录/注册</router-link>
@@ -50,7 +56,41 @@
 
 <script>
 export default {
-  name: 'Header'
+  name: 'Header',
+  data() {
+    return {
+      searchQuery: ''
+    }
+  },
+  methods: {
+    performSearch() {
+      if (this.searchQuery.trim()) {
+        // 发射组件事件而不是全局事件
+        this.$emit('search', this.searchQuery.trim());
+        // 其余代码保持不变
+        const currentPath = this.$route.path;
+        if (currentPath === '/' || !this.isInSupportedPage()) {
+          this.$router.push('/message-board');
+        }
+      }
+    },
+
+    // 检查当前是否在四个主要模块之一
+    isInSupportedPage() {
+      const path = this.$route.path;
+      return path.includes('/message-board') ||
+          path.includes('/transactions') ||
+          path.includes('/tasks') ||
+          path.includes('/ratings');
+    }
+  },
+  // 监听来自根组件的路由变化，更新搜索提示
+  mounted() {
+    // 当路由变化时清空搜索框
+    this.$watch(() => this.$route.path, () => {
+      this.searchQuery = '';
+    });
+  }
 }
 </script>
 

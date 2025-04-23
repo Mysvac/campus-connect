@@ -1,13 +1,19 @@
 <template>
   <aside class="right-aside">
     <div class="hot-topics">
-      <h3 class="section-title">热门</h3>
+      <h3 class="section-title">热门评分</h3>
 
       <div class="topic-list">
-        <div class="topic-item" v-for="topic in hotTopics" :key="topic.mid">
-          <span class="topic-rank" :class="{'top-three': topic.rank <= 3}">{{ topic.rank }}</span>
+        <div
+            class="topic-item"
+            v-for="(topic, index) in hotTopics"
+            :key="topic.sid"
+            @click="$emit('view-rating', topic.sid)"
+        >
+          <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
           <div class="topic-content">
-            <p class="topic-title">{{ topic.title }}</p>
+            <p class="topic-title">{{ topic.goal }}</p>
+            <p class="topic-meta">{{ topic.num }}人参与 · {{ topic.score.toFixed(1) }}分</p>
           </div>
         </div>
       </div>
@@ -17,19 +23,19 @@
 
 <script>
 export default {
-  name: 'MessageBoardRightAside',
-  data() {
-    return {
-      hotTopics: [
-        { mid: 1, title: '1', rank: 1 },
-        { mid: 2, title: '2', rank: 2 },
-        { mid: 3, title: '3', rank: 3 },
-        { mid: 4, title: '4', rank: 4 },
-        { mid: 5, title: '5', rank: 5 },
-        { mid: 6, title: '6', rank: 6 },
-        { mid: 7, title: '7', rank: 7 },
-        { mid: 8, title: '8', rank: 8 }
-      ]
+  name: 'RatingRightAside',
+  props: {
+    ratings: {
+      type: Array,
+      default: () => []
+    }
+  },
+  computed: {
+    hotTopics() {
+      // 按参与人数排序
+      return [...this.ratings]
+          .sort((a, b) => b.num - a.num)
+          .slice(0, 8); // 只显示前8个
     }
   }
 }

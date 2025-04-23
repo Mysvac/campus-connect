@@ -4,10 +4,16 @@
       <h3 class="section-title">热门</h3>
 
       <div class="topic-list">
-        <div class="topic-item" v-for="topic in hotTopics" :key="topic.mid">
-          <span class="topic-rank" :class="{'top-three': topic.rank <= 3}">{{ topic.rank }}</span>
+        <div class="topic-item" v-for="(task, index) in sortedWaitingTasks"
+             :key="task.tid"
+             @click="showTaskDetail(task)">
+          <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
           <div class="topic-content">
-            <p class="topic-title">{{ topic.title }}</p>
+            <p class="topic-title">{{ task.name }}</p>
+            <div class="topic-meta">
+              <span>{{ formatTime(task.time) }}</span>
+              <span>{{ task.money }}元</span>
+            </div>
           </div>
         </div>
       </div>
@@ -17,19 +23,48 @@
 
 <script>
 export default {
-  name: 'MessageBoardRightAside',
-  data() {
-    return {
-      hotTopics: [
-        { mid: 1, title: '1', rank: 1 },
-        { mid: 2, title: '2', rank: 2 },
-        { mid: 3, title: '3', rank: 3 },
-        { mid: 4, title: '4', rank: 4 },
-        { mid: 5, title: '5', rank: 5 },
-        { mid: 6, title: '6', rank: 6 },
-        { mid: 7, title: '7', rank: 7 },
-        { mid: 8, title: '8', rank: 8 }
-      ]
+  name: 'TasksRight',
+  props: {
+    tasks: {
+      type: Array,
+      default: () => []
+    }
+  },
+  computed: {
+    sortedWaitingTasks() {
+      // 过滤出状态为待接取(status=0)的任务，并按金额从高到低排序
+      return this.tasks
+          .filter(task => task.status === 0)
+          .sort((a, b) => b.money - a.money)
+          .slice(0, 8); // 最多显示8个
+    }
+  },
+  methods: {
+    formatTime(timestamp) {
+      const now = Date.now();
+      const diff = now - timestamp;
+
+      // 一天内
+      if (diff < 86400000) {
+        return '今天';
+      }
+      // 两天内
+      else if (diff < 172800000) {
+        return '昨天';
+      }
+      // 一周内
+      else if (diff < 604800000) {
+        return Math.floor(diff / 86400000) + '天前';
+      }
+      // 其他情况显示具体日期
+      else {
+        const date = new Date(timestamp);
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+      }
+    },
+    showTaskDetail(task) {
+      // 发出事件，通知父组件显示该任务详情
+      this.$emit('show-task-detail', task);
     }
   }
 }

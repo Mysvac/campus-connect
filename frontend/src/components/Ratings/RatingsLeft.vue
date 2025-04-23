@@ -29,18 +29,19 @@
 
 <script>
 export default {
-  name: 'MessageBoardLeftAside',
+  name: 'RatingLeftAside',
   data() {
     return {
       tags: [
-        { id: 1, name: '1', active: true },
-        { id: 2, name: '2', active: false },
-        { id: 3, name: '3', active: false },
-        { id: 4, name: '4', active: false },
-        { id: 5, name: '5', active: false },
-        { id: 6, name: '6', active: false },
-        { id: 7, name: '7', active: false },
-        { id: 8, name: '8', active: false }
+        { id: 1, name: '全部', active: true },
+        { id: 2, name: '餐饮美食', active: false },
+        { id: 3, name: '学习场所', active: false },
+        { id: 4, name: '运动健身', active: false },
+        { id: 5, name: '校园服务', active: false },
+        { id: 6, name: '住宿条件', active: false },
+        { id: 7, name: '课程教学', active: false },
+        { id: 8, name: '校园活动', active: false },
+        { id: 9, name: '社团组织', active: false }
       ]
     }
   },

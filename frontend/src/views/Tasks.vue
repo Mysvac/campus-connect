@@ -1,6 +1,6 @@
 <template>
   <div class="main-layout">
-    <Header />
+    <Header @search="handleSearch" />
     <div class="content-container">
       <TasksLeft
           class="left-sidebar"
@@ -10,15 +10,19 @@
           class="main-content"
           :current-tag="currentTag"
           :show-new-task-form="showNewTaskForm"
-          @hide-new-task-form="showNewTaskForm = false" />
-      <TasksRight class="right-sidebar" />
+          :selected-task-id="selectedTaskId"
+          :search-query="searchQuery"
+          @hide-new-task-form="showNewTaskForm = false"
+          @update-tasks="updateTasks" />
+      <TasksRight
+          class="right-sidebar"
+          :tasks="tasks"
+          @show-task-detail="showTaskDetail" />
     </div>
   </div>
 </template>
 
 <script>
-
-
 import Header from "@/components/Header.vue";
 import TasksLeft from "@/components/Tasks/TasksLeft.vue";
 import TasksMain from "@/components/Tasks/TasksMain.vue";
@@ -35,13 +39,30 @@ export default {
   data() {
     return {
       currentTag: null,
-      showNewTaskForm: false
+      showNewTaskForm: false,
+      tasks: [],
+      selectedTaskId: null,
+      searchQuery: ''  // 添加搜索查询字段
     }
   },
   methods: {
     filterByTag(tag) {
       this.currentTag = tag;
       this.showNewTaskForm = false;
+      this.searchQuery = ''; // 清除搜索条件
+    },
+    updateTasks(tasks) {
+      this.tasks = tasks;
+    },
+    showTaskDetail(task) {
+      this.selectedTaskId = task.tid;
+      this.showNewTaskForm = false;
+    },
+    handleSearch(query) {
+      this.searchQuery = query;
+      this.currentTag = null;  // 清空标签过滤
+      this.showNewTaskForm = false;
+      this.selectedTaskId = null; // 清除选中的任务
     }
   }
 }

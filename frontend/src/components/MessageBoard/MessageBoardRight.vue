@@ -4,8 +4,13 @@
       <h3 class="section-title">热门</h3>
 
       <div class="topic-list">
-        <div class="topic-item" v-for="topic in hotTopics" :key="topic.mid">
-          <span class="topic-rank" :class="{'top-three': topic.rank <= 3}">{{ topic.rank }}</span>
+        <div
+            class="topic-item"
+            v-for="(topic, index) in hotTopics"
+            :key="topic.mid"
+            @click="showMessageDetail(topic.mid)"
+        >
+          <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
           <div class="topic-content">
             <p class="topic-title">{{ topic.title }}</p>
             <div class="topic-meta">
@@ -20,19 +25,29 @@
 
 <script>
 export default {
-  name: 'MessageBoardRightAside',
-  data() {
-    return {
-      hotTopics: [
-        { mid: 1, title: '校运会报名开始啦，有哪些项目推荐？', praise: 89, rank: 1 },
-        { mid: 2, title: '期中考试复习资料汇总', praise: 76, rank: 2 },
-        { mid: 3, title: '校园歌手大赛即将开始，谁会是今年的冠军？', praise: 63, rank: 3 },
-        { mid: 4, title: '宿舍熄灯时间太早了吧，如何看待？', praise: 58, rank: 4 },
-        { mid: 5, title: '食堂新菜品尝鲜报告', praise: 42, rank: 5 },
-        { mid: 6, title: '考研党们都在用什么APP？', praise: 38, rank: 6 },
-        { mid: 7, title: '周末去哪里玩？校园周边攻略', praise: 25, rank: 7 },
-        { mid: 8, title: '校园网络卡顿问题怎么解决？', praise: 19, rank: 8 }
-      ]
+  name: 'MessageBoardRight',
+  props: {
+    messages: {
+      type: Array,
+      required: true
+    }
+  },
+  computed: {
+    hotTopics() {
+      // 根据点赞数排序，取前8个
+      return [...this.messages]
+          .sort((a, b) => b.praise - a.praise)
+          .slice(0, 8)
+          .map(message => ({
+            mid: message.mid,
+            title: message.title,
+            praise: message.praise
+          }));
+    }
+  },
+  methods: {
+    showMessageDetail(mid) {
+      this.$emit('show-message-detail', mid);
     }
   }
 }

@@ -1,14 +1,53 @@
+<script>
+export default {
+  name: 'TransactionsLeft',
+  data() {
+    return {
+      tags: [
+        { id: 1, name: '图书教材', active: false },
+        { id: 2, name: '生活服务', active: false },
+        { id: 3, name: '电子产品', active: false },
+        { id: 4, name: '运动器材', active: false },
+        { id: 5, name: '服装鞋帽', active: false },
+        { id: 6, name: '日用百货', active: false },
+        { id: 7, name: '票券礼品', active: false },
+        { id: 8, name: '其他', active: false }
+      ]
+    }
+  },
+  methods: {
+    selectTag(tagId) {
+      this.tags.forEach(tag => tag.active = false);
+      const selectedTag = this.tags.find(tag => tag.id === tagId);
+      if (selectedTag) selectedTag.active = true;
+      this.$emit('filter-by-tag', selectedTag ? selectedTag.id : null);
+    }
+  }
+}
+</script>
+
 <template>
   <aside class="left-aside">
     <!-- 新建交易按钮 -->
     <button class="new-post-btn" @click="$emit('show-new-post-form')">
-      新建交易
+      新建商品
     </button>
 
     <!-- 标签分区 -->
     <div class="tags-section">
-      <h3 class="section-title">标签分区</h3>
+      <h3 class="section-title">商品分类</h3>
       <div class="tags-container">
+        <button
+            class="cta"
+            :class="{ active: !tags.some(tag => tag.active) }"
+            @click="selectTag(null)"
+        >
+          <span>全部商品</span>
+          <svg width="15px" height="10px" viewBox="0 0 13 10">
+            <path d="M1,5 L11,5"></path>
+            <polyline points="8 1 12 5 8 9"></polyline>
+          </svg>
+        </button>
         <button
             v-for="tag in tags"
             :key="tag.id"
@@ -26,35 +65,6 @@
     </div>
   </aside>
 </template>
-
-<script>
-export default {
-  name: 'MessageBoardLeftAside',
-  data() {
-    return {
-      tags: [
-        { id: 1, name: '1', active: true },
-        { id: 2, name: '2', active: false },
-        { id: 3, name: '3', active: false },
-        { id: 4, name: '4', active: false },
-        { id: 5, name: '5', active: false },
-        { id: 6, name: '6', active: false },
-        { id: 7, name: '7', active: false },
-        { id: 8, name: '8', active: false }
-      ]
-    }
-  },
-  methods: {
-    selectTag(tagId) {
-      this.tags.forEach(tag => tag.active = false);
-      const selectedTag = this.tags.find(tag => tag.id === tagId);
-      if (selectedTag) selectedTag.active = true;
-      const tagName = selectedTag ? selectedTag.name : '全部';
-      this.$emit('filter-by-tag', tagName === '全部' ? null : tagName);
-    }
-  }
-}
-</script>
 
 <style scoped>
 .left-aside {

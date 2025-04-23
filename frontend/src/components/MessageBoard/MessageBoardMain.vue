@@ -125,8 +125,12 @@
 
     <!-- 留言列表 -->
     <div class="main-section message-section" v-else>
+      <!-- 搜索结果提示 -->
+      <div class="search-results-info" v-if="searchQuery">
+      </div>
+
       <transition-group name="message-fade" tag="div" class="message-list">
-        <div class="message-card" v-for="message in filteredMessages" :key="message.mid" @click="showMessageDetail(message)">
+        <div class="message-card" v-for="message in displayedMessages" :key="message.mid" @click="showMessageDetail(message)">
           <div class="message-header">
             <div class="user-info">
               <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
@@ -155,6 +159,11 @@
           </div>
         </div>
       </transition-group>
+
+      <!-- 没有搜索结果时显示 -->
+      <div class="no-results" v-if="searchQuery && displayedMessages.length === 0">
+        <p>没有找到匹配 "{{ searchQuery }}" 的留言</p>
+      </div>
     </div>
   </main>
 </template>
@@ -169,6 +178,14 @@ export default {
     },
     currentTag: {
       type: String,
+      default: null
+    },
+    searchQuery: {
+      type: String,
+      default: ''
+    },
+    selectedMessageId: {
+      type: Number,
       default: null
     }
   },
@@ -338,11 +355,34 @@ export default {
     }
   },
   computed: {
-    filteredMessages() {
-      if (!this.currentTag) {
-        return this.messages;
+    displayedMessages() {
+      let filtered = this.messages;
+
+      // 先按标签筛选
+      if (this.currentTag) {
+        filtered = filtered.filter(message => message.tag === this.currentTag);
       }
-      return this.messages.filter(message => message.tag === this.currentTag);
+
+      // 再按搜索关键词筛选
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(message =>
+            message.title.toLowerCase().includes(query) ||
+            message.content.toLowerCase().includes(query) // 可选：也搜索内容
+        );
+      }
+
+      return filtered;
+    }
+  },
+  watch: {
+    selectedMessageId(newId) {
+      if (newId) {
+        const message = this.messages.find(m => m.mid === newId);
+        if (message) {
+          this.showMessageDetail(message);
+        }
+      }
     }
   },
   methods: {
@@ -413,6 +453,9 @@ export default {
       setTimeout(() => {
         alert('留言发布成功！');
       }, 300);
+
+      // 更新消息列表，通知父组件
+      this.$emit('messages-updated', this.messages);
     },
     toggleLike(message) {
       if (message.isLiked) {
@@ -424,6 +467,18 @@ export default {
         message.praise++;
         message.isLiked = true;
       }
+
+      // 更新原始消息（如果是在详情页）
+      if (this.selectedMessage && message.mid === this.selectedMessage.mid) {
+        const originalMessage = this.messages.find(m => m.mid === message.mid);
+        if (originalMessage) {
+          originalMessage.isLiked = message.isLiked;
+          originalMessage.praise = message.praise;
+        }
+      }
+
+      // 通知父组件消息已更新（用于热门列表更新）
+      this.$emit('messages-updated', this.messages);
     },
     toggleCommentLike(comment) {
       if (comment.isLiked) {
@@ -434,6 +489,18 @@ export default {
         // 未点赞，添加点赞
         comment.praise++;
         comment.isLiked = true;
+      }
+
+      // 更新原始消息中的评论
+      if (this.selectedMessage) {
+        const originalMessage = this.messages.find(m => m.mid === this.selectedMessage.mid);
+        if (originalMessage) {
+          const originalComment = originalMessage.comments.find(c => c.cid === comment.cid);
+          if (originalComment) {
+            originalComment.isLiked = comment.isLiked;
+            originalComment.praise = comment.praise;
+          }
+        }
       }
     },
     showMessageDetail(message) {
@@ -454,6 +521,9 @@ export default {
 
       // 关闭留言详情
       this.selectedMessage = null;
+
+      // 通知父组件消息已更新（用于热门列表更新）
+      this.$emit('messages-updated', this.messages);
     },
     submitComment() {
       // 验证评论
@@ -484,12 +554,34 @@ export default {
       if (originalMessage) {
         originalMessage.comments = [...this.selectedMessage.comments];
       }
+
+      // 通知父组件消息已更新
+      this.$emit('messages-updated', this.messages);
+    },
+    clearSearch() {
+      // 清除搜索并通知父组件
+      this.$emit('clear-search');
     }
+  },
+  created() {
+    // 初始时通知父组件消息列表
+    this.$emit('messages-updated', this.messages);
   }
 }
 </script>
 
 <style scoped>
+
+.no-results {
+  display: flex;
+  justify-content: center;
+  height: 800px;
+  font-size: 1.1rem;
+  color: #333;
+  font-style: italic;
+}
+
+
 .message-board-main {
   display: flex;
   flex-direction: column;
@@ -1115,4 +1207,7 @@ export default {
 .message-fade-move {
   transition: transform 0.3s;
 }
+
+
+
 </style>

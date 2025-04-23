@@ -1,32 +1,36 @@
 <template>
   <div class="main-layout">
-    <Header />
+    <Header @search="handleSearch" />
     <div class="content-container">
       <RatingsLeft
           class="left-sidebar"
           @filter-by-tag="filterByTag"
           @show-new-post-form="showNewPostForm = true" />
       <RatingsMain
+          ref="mainContent"
           class="main-content"
           :current-tag="currentTag"
+          :search-query="searchQuery"
           :show-new-post-form="showNewPostForm"
-          @hide-new-post-form="showNewPostForm = false" />
-      <RatingsRight class="right-sidebar" />
+          :selected-rating-id="selectedRatingId"
+          @hide-new-post-form="showNewPostForm = false"
+          @ratings-updated="updateRatings" />
+      <RatingsRight
+          class="right-sidebar"
+          :ratings="allRatings"
+          @view-rating="viewRatingFromHotTopics" />
     </div>
   </div>
 </template>
 
 <script>
-
-
 import Header from "@/components/Header.vue";
 import RatingsLeft from "@/components/Ratings/RatingsLeft.vue";
 import RatingsMain from "@/components/Ratings/RatingsMain.vue";
 import RatingsRight from "@/components/Ratings/RatingsRight.vue";
 
-
 export default {
-  name: 'MainLayout',
+  name: 'Ratings',
   components: {
     Header,
     RatingsLeft,
@@ -36,17 +40,46 @@ export default {
   data() {
     return {
       currentTag: null,
-      showNewPostForm: false
+      searchQuery: '',
+      showNewPostForm: false,
+      allRatings: [],
+      selectedRatingId: null
     }
   },
   methods: {
     filterByTag(tag) {
       this.currentTag = tag;
+      this.searchQuery = '';  // 清空搜索查询
       this.showNewPostForm = false;
+      this.selectedRatingId = null; // 清除选中的评分
+    },
+    handleSearch(query) {
+      this.searchQuery = query;
+      this.currentTag = null;  // 清空标签过滤
+      this.showNewPostForm = false;
+      this.selectedRatingId = null; // 清除选中的评分
+    },
+    updateRatings(ratings) {
+      this.allRatings = [...ratings];
+    },
+    viewRatingFromHotTopics(ratingId) {
+      this.selectedRatingId = ratingId;
+      // 清除其他筛选条件
+      this.searchQuery = '';
+      this.currentTag = null;
+      this.showNewPostForm = false;
+
+      // 通知主内容组件显示详情
+      this.$nextTick(() => {
+        if (this.$refs.mainContent) {
+          this.$refs.mainContent.viewRatingDetails(ratingId);
+        }
+      });
     }
   }
 }
 </script>
+
 
 <style scoped>
 .main-layout {

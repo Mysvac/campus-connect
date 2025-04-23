@@ -1,31 +1,35 @@
 <template>
   <div class="main-layout">
-    <Header />
+    <Header @search="handleSearch" />
     <div class="content-container">
       <TransactionsLeft
           class="left-sidebar"
           @filter-by-tag="filterByTag"
           @show-new-post-form="showNewPostForm = true" />
       <TransactionsMain
+          ref="mainComponent"
           class="main-content"
           :current-tag="currentTag"
           :show-new-post-form="showNewPostForm"
-          @hide-new-post-form="showNewPostForm = false" />
-      <TransactionsRight class="right-sidebar" />
+          :search-query="searchQuery"
+          @hide-new-post-form="showNewPostForm = false"
+          @products-updated="updateProducts" />
+      <TransactionsRight
+          class="right-sidebar"
+          :products="allProducts"
+          @view-product="viewProduct" />
     </div>
   </div>
 </template>
 
 <script>
-
-
 import Header from "@/components/Header.vue";
 import TransactionsLeft from "@/components/Transactions/TransactionsLeft.vue";
 import TransactionsMain from "@/components/Transactions/TransactionsMain.vue";
 import TransactionsRight from "@/components/Transactions/TransactionsRight.vue";
 
 export default {
-  name: 'MainLayout',
+  name: 'Transactions',
   components: {
     Header,
     TransactionsLeft,
@@ -35,13 +39,31 @@ export default {
   data() {
     return {
       currentTag: null,
-      showNewPostForm: false
+      showNewPostForm: false,
+      searchQuery: '',
+      allProducts: [] // 新增用于存储所有商品数据
     }
   },
   methods: {
     filterByTag(tag) {
       this.currentTag = tag;
       this.showNewPostForm = false;
+    },
+    handleSearch(query) {
+      this.searchQuery = query;
+      this.showNewPostForm = false;
+    },
+    viewProduct(productId) {
+      // 通过ref获取TransactionsMain组件实例
+      const mainComponent = this.$refs.mainComponent;
+      if (mainComponent) {
+        // 调用组件的方法来显示产品详情
+        mainComponent.showProductById(productId);
+      }
+    },
+    updateProducts(products) {
+      // 更新商品数据
+      this.allProducts = [...products];
     }
   }
 }

@@ -33,7 +33,8 @@ export default {
   data() {
     return {
       tags: [
-        { id: 1, name: '1', active: true },
+        { id: 0, name: '全部', active: true },
+        { id: 1, name: '1', active: false },
         { id: 2, name: '2', active: false },
         { id: 3, name: '3', active: false },
         { id: 4, name: '4', active: false },
