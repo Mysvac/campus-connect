@@ -11,6 +11,7 @@ import java.util.List;
 public interface TasksService {
     List<Task> getAllTasks();
     Task getTaskById(Long tid);
+    List<Task> getTasksByTag(String tag);
     void insertTask(Task task);
     void updateTask(Task task);
     void deleteTask(Long tid);

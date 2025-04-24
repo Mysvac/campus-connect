@@ -14,6 +14,9 @@ public class GoodsServiceImpl implements GoodsService {
     private GoodsService goodsService;
 
     @Override
+    public List<Good> getAllGoodsByTag(Integer tag){return goodsService.getAllGoodsByTag(tag);}
+
+    @Override
     public List<Good> getAllGoods()
     {
         return goodsService.getAllGoods();

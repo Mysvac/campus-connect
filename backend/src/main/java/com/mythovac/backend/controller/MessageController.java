@@ -61,11 +61,6 @@ public class MessageController {
         }
         messageService.insertMessage(message);
 
-//        Message message1 = messageService.getMessageById(message.getMid());
-//        MessagesRelease messagesRelease = new MessagesRelease();
-//        messagesRelease.setMid(message1.getMid());
-//        messagesRelease.setUid(message1.getUid());
-//        messagesReleaseService.insertMessagesRelease(messagesRelease);
         return Result.success();
     }
 
@@ -104,7 +99,7 @@ public class MessageController {
         if(messageService.getMessageById(mid) == null){
             return Result.error("留言不存在");
         }
-//        messagesReleaseService.deleteMessagesReleaseByMid(mid);
+
         messagesCommentService.deleteMessagesCommentByMid(mid);
         messageService.deleteMessageByMid(mid);
         return Result.success();

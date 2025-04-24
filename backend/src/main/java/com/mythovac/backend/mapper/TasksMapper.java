@@ -10,6 +10,9 @@ public interface TasksMapper {
     @Select("SELECT * FROM tasks")
     List<Task> getAllTasks();
 
+    @Select("SELECT * FROM tasks WHERE tag = #{tag}")
+    List<Task> getTasksByTag(String tag);
+
     @Select("SELECT * FROM tasks WHERE tid = #{tid}")
     Task getTaskById(Long tid);
 
