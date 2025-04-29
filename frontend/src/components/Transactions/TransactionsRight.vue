@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import { transactionsApi } from '@/api';
+
 export default {
   name: 'TransactionsRight',
   props: {
@@ -25,6 +27,12 @@ export default {
       type: Array,
       required: true
     }
+  },
+  data() {
+    return {
+      isLoading: false,
+      error: null
+    };
   },
   computed: {
     hotProducts() {

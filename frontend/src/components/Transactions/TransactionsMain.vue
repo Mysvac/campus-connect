@@ -164,6 +164,8 @@
 </template>
 
 <script>
+import { transactionsApi } from '@/api';
+
 export default {
   name: 'TransactionsMain',
   props: {
@@ -182,80 +184,9 @@ export default {
   },
   data() {
     return {
-      isLoading: false,
-      products: [
-        // 模拟数据
-        {
-          gid: 1,
-          uid: 101,
-          price: 2990, // 单位：分
-          name: '二手课本 《数据结构》',
-          image: '/api/placeholder/200/200',
-          tag: 1, // 对应标签ID
-          intro: '全新教材，只翻过几次，无笔记',
-          quantity: 1,
-          sales: 0,
-          time: Date.now() - 86400000 * 2 // 2天前
-        },
-        {
-          gid: 2,
-          uid: 102,
-          price: 14900,
-          name: '罗技无线鼠标',
-          image: '/api/placeholder/200/200',
-          tag: 3,
-          intro: '使用3个月，外观9成新，功能完好',
-          quantity: 1,
-          sales: 0,
-          time: Date.now() - 86400000 * 3
-        },
-        {
-          gid: 3,
-          uid: 103,
-          price: 3500,
-          name: '自习室月卡',
-          image: '/api/placeholder/200/200',
-          tag: 2,
-          intro: '购买后可使用图书馆旁自习室，环境安静，有空调',
-          quantity: 10,
-          sales: 5,
-          time: Date.now() - 86400000 * 1
-        },
-        {
-          gid: 4,
-          uid: 104,
-          price: 5990,
-          name: '全新篮球',
-          image: '/api/placeholder/200/200',
-          tag: 4,
-          intro: '斯伯丁篮球，手感好',
-          quantity: 2,
-          sales: 3,
-          time: Date.now() - 86400000 * 5
-        },
-        {
-          gid: 5,
-          uid: 101,
-          price: 1990,
-          name: '英语四级词汇书',
-          image: '/api/placeholder/200/200',
-          tag: 1,
-          intro: '含有大量例句和记忆方法，备考必备',
-          quantity: 1,
-          sales: 10,
-          time: Date.now() - 86400000 * 7
-        },
-      ],
-      tagOptions: [
-        { id: 1, name: '图书教材' },
-        { id: 2, name: '生活服务' },
-        { id: 3, name: '电子产品' },
-        { id: 4, name: '运动器材' },
-        { id: 5, name: '服装鞋帽' },
-        { id: 6, name: '日用百货' },
-        { id: 7, name: '票券礼品' },
-        { id: 8, name: '其他' },
-      ],
+      isLoading: true,
+      products: [],
+      tagOptions: [],
       newProduct: {
         name: '',
         price: '',
@@ -266,7 +197,8 @@ export default {
       },
       selectedProduct: null,
       purchaseQuantity: 1,
-      isMobile: window.innerWidth < 768
+      isMobile: window.innerWidth < 768,
+      error: null
     };
   },
   computed: {
@@ -293,40 +225,75 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.updateWindowSize);
+    this.fetchProductTags();
     this.fetchProducts();
-    // 添加以下行
-    this.$nextTick(() => {
-      this.emitProductsData();
-    });
-    // 监听窗口大小变化，更新isMobile状态
-    window.addEventListener('resize', this.updateWindowSize);
-    this.fetchProducts();
+    this.updateWindowSize();
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.updateWindowSize);
   },
   methods: {
-
-    // 在合适的位置发出事件，例如mounted和数据更新时
+    // 发出更新事件，通知父组件
     emitProductsData() {
       this.$emit('products-updated', this.products);
     },
 
-    // 添加一个按ID显示产品的方法
+    // 按ID显示产品
     showProductById(productId) {
-      const product = this.products.find(p => p.gid === productId);
-      if (product) {
-        this.openProductDetail(product);
-      }
+      this.isLoading = true;
+      transactionsApi.getProductDetail(productId)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.openProductDetail(response.data.data);
+          } else {
+            console.error('获取商品详情失败:', response.data.msg);
+            alert('获取商品详情失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('获取商品详情出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
+    // 获取商品列表
     fetchProducts() {
-      // 模拟API请求
       this.isLoading = true;
-      setTimeout(() => {
-        this.isLoading = false;
-        // 实际实现时，这里会是API请求
-      }, 500);
+      transactionsApi.getProducts()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.products = response.data.data || [];
+            this.emitProductsData();
+          } else {
+            console.error('获取商品列表失败:', response.data.msg);
+            this.error = response.data.msg || '获取商品列表失败';
+          }
+        })
+        .catch(error => {
+          console.error('获取商品列表出错:', error);
+          this.error = '网络错误，请稍后再试';
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
+    // 获取商品标签
+    fetchProductTags() {
+      transactionsApi.getProductTags()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.tagOptions = response.data.data || [];
+          } else {
+            console.error('获取商品标签失败:', response.data.msg);
+          }
+        })
+        .catch(error => {
+          console.error('获取商品标签出错:', error);
+        });
     },
 
     handleImageUpload(event) {
@@ -342,37 +309,50 @@ export default {
       // 将价格转换为分
       const priceInCents = Math.round(parseFloat(this.newProduct.price) * 100);
 
-      const product = {
-        gid: this.products.length + 1, // 模拟自增ID
-        uid: 101, // 假设当前用户ID
-        price: priceInCents,
+      const productData = {
         name: this.newProduct.name,
-        image: this.newProduct.image || null,
+        price: priceInCents,
         tag: parseInt(this.newProduct.tag),
+        image: this.newProduct.image || null,
         intro: this.newProduct.intro,
-        quantity: parseInt(this.newProduct.quantity),
-        sales: 0,
-        time: Date.now()
+        quantity: parseInt(this.newProduct.quantity)
       };
 
-      // 添加到商品列表
-      this.products.unshift(product);
-
-      // 重置表单
-      this.newProduct = {
-        name: '',
-        price: '',
-        tag: '',
-        image: '',
-        intro: '',
-        quantity: 1
-      };
-
-      // 隐藏表单
-      this.$emit('hide-new-post-form');
-
-      // 显示成功提示
-      alert('商品发布成功！');
+      this.isSubmitting = true;
+      
+      transactionsApi.createProduct(productData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 重置表单
+            this.newProduct = {
+              name: '',
+              price: '',
+              tag: '',
+              image: '',
+              intro: '',
+              quantity: 1
+            };
+            
+            // 重新获取商品列表
+            this.fetchProducts();
+            
+            // 隐藏表单
+            this.$emit('hide-new-post-form');
+            
+            // 显示成功提示
+            alert('商品发布成功！');
+          } else {
+            console.error('发布商品失败:', response.data.msg);
+            alert('发布商品失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('发布商品出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+        });
     },
 
     openProductDetail(product) {
@@ -402,30 +382,36 @@ export default {
     purchaseProduct() {
       if (!this.selectedProduct) return;
 
-      // 创建订单
-      const order = {
-        oid: Math.floor(Math.random() * 1000000), // 模拟订单号
-        uid: 101, // 假设当前用户ID
+      const purchaseData = {
         gid: this.selectedProduct.gid,
-        time: Date.now(),
-        sum: this.selectedProduct.price * this.purchaseQuantity,
-        number: this.purchaseQuantity,
-        status: 0, // 进行中
-        notes: ''
+        quantity: this.purchaseQuantity
       };
 
-      // 更新商品库存和销量
-      const productIndex = this.products.findIndex(p => p.gid === this.selectedProduct.gid);
-      if (productIndex !== -1) {
-        this.products[productIndex].quantity -= this.purchaseQuantity;
-        this.products[productIndex].sales += this.purchaseQuantity;
-      }
-
-      // 关闭商品详情
-      this.closeProductDetail();
-
-      // 显示成功提示
-      alert(`购买成功！订单号: ${order.oid}`);
+      this.isPurchasing = true;
+      
+      transactionsApi.purchaseProduct(this.selectedProduct.gid, purchaseData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 更新商品库存和销量
+            this.fetchProducts();
+            
+            // 关闭商品详情
+            this.closeProductDetail();
+            
+            // 显示成功提示
+            alert(`购买成功！订单号: ${response.data.data.oid || '未知'}`);
+          } else {
+            console.error('购买商品失败:', response.data.msg);
+            alert('购买商品失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('购买商品出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isPurchasing = false;
+        });
     },
 
     getTagName(tagId) {
@@ -450,12 +436,12 @@ export default {
       deep: true
     },
     currentTag() {
-      // 当标签变化时，可能需要重新获取数据
+      // 当标签变化时，可能需要重新筛选数据
       this.fetchProducts();
     },
     searchQuery() {
-      // 当搜索关键词变化时，可能需要重新获取数据
-      this.fetchProducts();
+      // 当搜索关键词变化时，可能需要重新筛选数据
+      // 这里暂不重新请求API，而是在前端进行筛选
     }
   }
 }

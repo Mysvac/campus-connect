@@ -13,7 +13,7 @@
           <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
           <div class="topic-content">
             <p class="topic-title">{{ topic.goal }}</p>
-            <p class="topic-meta">{{ topic.num }}人参与 · {{ topic.score.toFixed(1) }}分</p>
+            <p class="topic-meta">{{ topic.num }}人参与 · {{ topic.score ? topic.score.toFixed(1) : '0.0' }}分</p>
           </div>
         </div>
       </div>

@@ -33,8 +33,8 @@
 
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="$emit('hide-new-post-form')">取消</button>
-          <button type="submit" class="submit-btn">
-            <span>发布</span>
+          <button type="submit" class="submit-btn" :disabled="isSubmitting">
+            <span>{{ isSubmitting ? '发布中...' : '发布' }}</span>
             <svg width="15px" height="10px" viewBox="0 0 13 10">
               <path d="M1,5 L11,5"></path>
               <polyline points="8 1 12 5 8 9"></polyline>
@@ -51,7 +51,7 @@
         <button class="close-btn" @click="closeMessageDetail">×</button>
       </div>
 
-      <div class="detail-content">
+      <div class="detail-content" v-if="!isLoadingDetail">
         <!-- 留言内容 -->
         <div class="detail-message-card">
           <div class="message-header">
@@ -115,11 +115,19 @@
           </div>
         </div>
       </div>
+      
+      <!-- 加载状态 -->
+      <div class="loading-container" v-else>
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
+      </div>
 
       <!-- 添加评论表单 - 固定在底部 -->
       <div class="add-comment-form">
         <textarea v-model="newComment" placeholder="写下你的评论..." rows="3"></textarea>
-        <button class="submit-comment-btn" @click="submitComment">发布评论</button>
+        <button class="submit-comment-btn" @click="submitComment" :disabled="isSubmittingComment">
+          {{ isSubmittingComment ? '发布中...' : '发布评论' }}
+        </button>
       </div>
     </div>
 
@@ -129,7 +137,14 @@
       <div class="search-results-info" v-if="searchQuery">
       </div>
 
-      <transition-group name="message-fade" tag="div" class="message-list">
+      <!-- 加载状态 -->
+      <div class="loading-container" v-if="isLoading">
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
+      </div>
+      
+      <!-- 留言列表 -->
+      <transition-group name="message-fade" tag="div" class="message-list" v-else>
         <div class="message-card" v-for="message in displayedMessages" :key="message.mid" @click="showMessageDetail(message)">
           <div class="message-header">
             <div class="user-info">
@@ -161,14 +176,21 @@
       </transition-group>
 
       <!-- 没有搜索结果时显示 -->
-      <div class="no-results" v-if="searchQuery && displayedMessages.length === 0">
+      <div class="no-results" v-if="searchQuery && !isLoading && displayedMessages.length === 0">
         <p>没有找到匹配 "{{ searchQuery }}" 的留言</p>
+      </div>
+      
+      <!-- 没有任何留言时显示 -->
+      <div class="no-results" v-if="!isLoading && !searchQuery && messages.length === 0">
+        <p>暂无留言，快来发表第一条留言吧！</p>
       </div>
     </div>
   </main>
 </template>
 
 <script>
+import { messageboardApi } from '@/api';
+
 export default {
   name: 'MessageBoardMain',
   props: {
@@ -191,167 +213,19 @@ export default {
   },
   data() {
     return {
-      messages: [
-        {
-          mid: 1,
-          uid: 1001,
-          title: '高等数学资料求助',
-          content: '谁有高等数学第七版的电子书资料？明天就要交作业了，急需！',
-          tag: '学习',
-          praise: 12,
-          time: 1712659200000, // 时间戳形式
-          isLiked: false,
-          comments: [
-            {
-              cid: 1,
-              mid: 1,
-              uid: 1008,
-              content: '我有PDF版，加我微信发给你',
-              praise: 5,
-              time: 1712662800000,
-              isLiked: false
-            },
-            {
-              cid: 2,
-              mid: 1,
-              uid: 1012,
-              content: '可以去图书馆二楼找找，那里有很多高数资料',
-              praise: 3,
-              time: 1712666400000,
-              isLiked: false
-            }
-          ]
-        },
-        {
-          mid: 2,
-          uid: 1002,
-          title: '英语角活动通知',
-          content: '周六在图书馆三楼有英语角活动，欢迎大家参加，可以一起练习口语~',
-          tag: '活动',
-          praise: 24,
-          time: 1712572800000,
-          isLiked: false,
-          comments: [
-            {
-              cid: 3,
-              mid: 2,
-              uid: 1006,
-              content: '请问具体几点开始？需要提前报名吗？',
-              praise: 2,
-              time: 1712576400000,
-              isLiked: false
-            },
-            {
-              cid: 4,
-              mid: 2,
-              uid: 1002,
-              content: '下午两点开始，不需要报名，直接来就可以啦！',
-              praise: 4,
-              time: 1712580000000,
-              isLiked: false
-            }
-          ]
-        },
-        {
-          mid: 3,
-          uid: 1003,
-          title: '新奶茶店推荐',
-          content: '食堂二楼新开了一家奶茶店，今天有买一送一活动，味道还不错，推荐大家去尝尝！',
-          tag: '生活',
-          praise: 38,
-          time: 1712400000000,
-          isLiked: false,
-          comments: [
-            {
-              cid: 5,
-              mid: 3,
-              uid: 1009,
-              content: '刚去买了一杯，确实不错！推荐他家的芋泥波波奶茶',
-              praise: 7,
-              time: 1712403600000,
-              isLiked: false
-            },
-            {
-              cid: 6,
-              mid: 3,
-              uid: 1010,
-              content: '请问价格大概是多少？',
-              praise: 1,
-              time: 1712410800000,
-              isLiked: false
-            },
-            {
-              cid: 7,
-              mid: 3,
-              uid: 1003,
-              content: '中杯15，大杯18，加料额外收费',
-              praise: 3,
-              time: 1712414400000,
-              isLiked: false
-            }
-          ]
-        },
-        {
-          mid: 4,
-          uid: 1004,
-          title: '丢失学生卡',
-          content: '今天中午在一教丢失了学生卡，如有捡到请联系我，万分感谢！',
-          tag: '失物',
-          praise: 5,
-          time: 1712400000000,
-          isLiked: false,
-          comments: [
-            {
-              cid: 8,
-              mid: 4,
-              uid: 1013,
-              content: '同学你好，请问学生卡是什么颜色的？我好像在一教门口看到一张',
-              praise: 2,
-              time: 1712407200000,
-              isLiked: false
-            }
-          ]
-        },
-        {
-          mid: 5,
-          uid: 1005,
-          title: '二手自行车出售',
-          content: '有一辆二手自行车想出售，骑了不到半年，状态良好，有意者请私信。',
-          tag: '交易',
-          praise: 7,
-          time: 1712313600000,
-          isLiked: false,
-          comments: [
-            {
-              cid: 9,
-              mid: 5,
-              uid: 1011,
-              content: '请问什么型号的？价格多少？',
-              praise: 1,
-              time: 1712317200000,
-              isLiked: false
-            },
-            {
-              cid: 10,
-              mid: 5,
-              uid: 1005,
-              content: '永久牌的，原价500，现在350出，可小刀',
-              praise: 2,
-              time: 1712324400000,
-              isLiked: false
-            }
-          ]
-        }
-      ],
+      messages: [],
       newPost: {
         title: '',
         content: '',
         tag: ''
       },
-      nextMid: 6, // 下一个留言ID
-      nextCid: 11, // 下一个评论ID
       selectedMessage: null, // 当前选中的留言
       newComment: '', // 新评论内容
+      isLoading: true, // 加载留言列表状态
+      isLoadingDetail: false, // 加载留言详情状态
+      isSubmitting: false, // 提交新留言状态
+      isSubmittingComment: false, // 提交评论状态
+      error: null
     }
   },
   computed: {
@@ -378,10 +252,7 @@ export default {
   watch: {
     selectedMessageId(newId) {
       if (newId) {
-        const message = this.messages.find(m => m.mid === newId);
-        if (message) {
-          this.showMessageDetail(message);
-        }
+        this.fetchMessageDetail(newId);
       }
     }
   },
@@ -408,7 +279,46 @@ export default {
         return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
     },
-    submitNewPost() {
+    // 获取所有留言
+    async fetchMessages() {
+      this.isLoading = true;
+      try {
+        const response = await messageboardApi.getMessages();
+        if (response.data && response.data.code === 200) {
+          this.messages = response.data.data || [];
+          this.$emit('messages-updated', this.messages);
+        } else {
+          console.error('获取留言列表失败:', response.data.msg);
+          this.error = response.data.msg || '获取留言列表失败';
+        }
+      } catch (error) {
+        console.error('获取留言列表出错:', error);
+        this.error = '网络错误，请稍后再试';
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    // 获取留言详情
+    async fetchMessageDetail(id) {
+      this.isLoadingDetail = true;
+      try {
+        const response = await messageboardApi.getMessageDetail(id);
+        if (response.data && response.data.code === 200) {
+          this.selectedMessage = response.data.data;
+          this.newComment = ''; // 清空评论框
+        } else {
+          console.error('获取留言详情失败:', response.data.msg);
+          this.$emit('show-toast', { type: 'error', message: response.data.msg || '获取留言详情失败' });
+        }
+      } catch (error) {
+        console.error('获取留言详情出错:', error);
+        this.$emit('show-toast', { type: 'error', message: '网络错误，请稍后再试' });
+      } finally {
+        this.isLoadingDetail = false;
+      }
+    },
+    // 提交新留言
+    async submitNewPost() {
       // 表单验证
       if (!this.newPost.title.trim()) {
         alert('请输入标题');
@@ -423,149 +333,183 @@ export default {
         return;
       }
 
-      // 创建新留言
-      const newMessage = {
-        mid: this.nextMid++,
-        uid: 1000 + Math.floor(Math.random() * 100),
-        title: this.newPost.title,
-        content: this.newPost.content,
-        tag: this.newPost.tag,
-        praise: 0,
-        time: Date.now(),
-        isLiked: false,
-        comments: []
-      };
+      this.isSubmitting = true;
 
-      // 添加到留言列表头部
-      this.messages.unshift(newMessage);
+      try {
+        const response = await messageboardApi.createMessage({
+          title: this.newPost.title,
+          content: this.newPost.content,
+          tag: this.newPost.tag
+        });
 
-      // 重置表单
-      this.newPost = {
-        title: '',
-        content: '',
-        tag: ''
-      };
+        if (response.data && response.data.code === 200) {
+          // 重置表单
+          this.newPost = {
+            title: '',
+            content: '',
+            tag: ''
+          };
 
-      // 隐藏表单
-      this.$emit('hide-new-post-form');
+          // 隐藏表单
+          this.$emit('hide-new-post-form');
 
-      // 提示成功
-      setTimeout(() => {
-        alert('留言发布成功！');
-      }, 300);
+          // 重新获取留言列表
+          await this.fetchMessages();
 
-      // 更新消息列表，通知父组件
-      this.$emit('messages-updated', this.messages);
-    },
-    toggleLike(message) {
-      if (message.isLiked) {
-        // 已点赞，取消点赞
-        message.praise--;
-        message.isLiked = false;
-      } else {
-        // 未点赞，添加点赞
-        message.praise++;
-        message.isLiked = true;
-      }
-
-      // 更新原始消息（如果是在详情页）
-      if (this.selectedMessage && message.mid === this.selectedMessage.mid) {
-        const originalMessage = this.messages.find(m => m.mid === message.mid);
-        if (originalMessage) {
-          originalMessage.isLiked = message.isLiked;
-          originalMessage.praise = message.praise;
+          // 提示成功
+          setTimeout(() => {
+            alert('留言发布成功！');
+          }, 300);
+        } else {
+          console.error('发布留言失败:', response.data.msg);
+          alert(response.data.msg || '发布留言失败');
         }
+      } catch (error) {
+        console.error('发布留言出错:', error);
+        alert('网络错误，请稍后再试');
+      } finally {
+        this.isSubmitting = false;
       }
-
-      // 通知父组件消息已更新（用于热门列表更新）
-      this.$emit('messages-updated', this.messages);
     },
-    toggleCommentLike(comment) {
-      if (comment.isLiked) {
-        // 已点赞，取消点赞
-        comment.praise--;
-        comment.isLiked = false;
-      } else {
-        // 未点赞，添加点赞
-        comment.praise++;
-        comment.isLiked = true;
-      }
-
-      // 更新原始消息中的评论
-      if (this.selectedMessage) {
-        const originalMessage = this.messages.find(m => m.mid === this.selectedMessage.mid);
-        if (originalMessage) {
-          const originalComment = originalMessage.comments.find(c => c.cid === comment.cid);
-          if (originalComment) {
-            originalComment.isLiked = comment.isLiked;
-            originalComment.praise = comment.praise;
+    // 点赞/取消点赞留言
+    async toggleLike(message) {
+      try {
+        if (message.isLiked) {
+          // 已点赞，取消点赞
+          const response = await messageboardApi.unlikeMessage(message.mid);
+          if (response.data && response.data.code === 200) {
+            message.isLiked = false;
+            // 依赖后端返回的结果，不在前端手动减1
+          } else {
+            console.error('取消点赞失败:', response.data.msg);
+            this.$emit('show-toast', { type: 'error', message: response.data.msg || '取消点赞失败' });
+            return;
+          }
+        } else {
+          // 未点赞，添加点赞
+          const response = await messageboardApi.likeMessage(message.mid);
+          if (response.data && response.data.code === 200) {
+            message.isLiked = true;
+            // 依赖后端返回的结果，不在前端手动加1
+          } else {
+            console.error('点赞失败:', response.data.msg);
+            this.$emit('show-toast', { type: 'error', message: response.data.msg || '点赞失败' });
+            return;
           }
         }
-      }
-    },
-    showMessageDetail(message) {
-      // 显示留言详情
-      this.selectedMessage = JSON.parse(JSON.stringify(message)); // 创建深拷贝
-      this.newComment = ''; // 清空评论框
-    },
-    closeMessageDetail() {
-      // 找到原始消息并更新点赞状态
-      if (this.selectedMessage) {
-        const originalMessage = this.messages.find(m => m.mid === this.selectedMessage.mid);
-        if (originalMessage) {
-          originalMessage.isLiked = this.selectedMessage.isLiked;
-          originalMessage.praise = this.selectedMessage.praise;
-          originalMessage.comments = [...this.selectedMessage.comments]; // 更新评论
-        }
-      }
 
+        // 重新获取留言数据，确保点赞数正确
+        if (this.selectedMessage && message.mid === this.selectedMessage.mid) {
+          await this.fetchMessageDetail(message.mid);
+        } else {
+          // 如果是在列表页点赞，更新整个留言列表
+          await this.fetchMessages();
+        }
+
+        // 通知父组件消息已更新（用于热门列表更新）
+        this.$emit('messages-updated', this.messages);
+      } catch (error) {
+        console.error('点赞操作出错:', error);
+        this.$emit('show-toast', { type: 'error', message: '网络错误，请稍后再试' });
+      }
+    },
+    // 点赞/取消点赞评论
+    async toggleCommentLike(comment) {
+      try {
+        if (comment.isLiked) {
+          // 已点赞，取消点赞
+          const response = await messageboardApi.unlikeComment(comment.cid);
+          if (response.data && response.data.code === 200) {
+            comment.isLiked = false;
+            // 依赖后端返回的结果，不在前端手动减1
+          } else {
+            console.error('取消点赞评论失败:', response.data.msg);
+            this.$emit('show-toast', { type: 'error', message: response.data.msg || '取消点赞评论失败' });
+            return;
+          }
+        } else {
+          // 未点赞，添加点赞
+          const response = await messageboardApi.likeComment(comment.cid);
+          if (response.data && response.data.code === 200) {
+            comment.isLiked = true;
+            // 依赖后端返回的结果，不在前端手动加1
+          } else {
+            console.error('点赞评论失败:', response.data.msg);
+            this.$emit('show-toast', { type: 'error', message: response.data.msg || '点赞评论失败' });
+            return;
+          }
+        }
+
+        // 重新获取留言详情，确保评论点赞数正确
+        if (this.selectedMessage) {
+          await this.fetchMessageDetail(this.selectedMessage.mid);
+        }
+      } catch (error) {
+        console.error('评论点赞操作出错:', error);
+        this.$emit('show-toast', { type: 'error', message: '网络错误，请稍后再试' });
+      }
+    },
+    // 显示留言详情
+    showMessageDetail(message) {
+      this.fetchMessageDetail(message.mid);
+    },
+    // 关闭留言详情
+    closeMessageDetail() {
       // 关闭留言详情
       this.selectedMessage = null;
 
       // 通知父组件消息已更新（用于热门列表更新）
       this.$emit('messages-updated', this.messages);
     },
-    submitComment() {
+    // 提交评论
+    async submitComment() {
       // 验证评论
       if (!this.newComment.trim()) {
         alert('请输入评论内容');
         return;
       }
 
-      // 创建新评论
-      const comment = {
-        cid: this.nextCid++,
-        mid: this.selectedMessage.mid,
-        uid: 1000 + Math.floor(Math.random() * 100), // 随机用户ID
-        content: this.newComment,
-        praise: 0,
-        time: Date.now(),
-        isLiked: false
-      };
+      this.isSubmittingComment = true;
 
-      // 添加到评论列表
-      this.selectedMessage.comments.push(comment);
+      try {
+        const response = await messageboardApi.commentMessage(this.selectedMessage.mid, {
+          content: this.newComment
+        });
 
-      // 清空评论框
-      this.newComment = '';
+        if (response.data && response.data.code === 200) {
+          // 重新获取留言详情，更新评论列表
+          await this.fetchMessageDetail(this.selectedMessage.mid);
+          
+          // 清空评论框
+          this.newComment = '';
+          
+          // 更新留言列表中的评论数
+          const originalMessage = this.messages.find(m => m.mid === this.selectedMessage.mid);
+          if (originalMessage && this.selectedMessage.comments) {
+            originalMessage.comments = this.selectedMessage.comments;
+          }
 
-      // 更新原始消息的评论
-      const originalMessage = this.messages.find(m => m.mid === this.selectedMessage.mid);
-      if (originalMessage) {
-        originalMessage.comments = [...this.selectedMessage.comments];
+          // 通知父组件消息已更新
+          this.$emit('messages-updated', this.messages);
+        } else {
+          console.error('发表评论失败:', response.data.msg);
+          alert(response.data.msg || '发表评论失败');
+        }
+      } catch (error) {
+        console.error('发表评论出错:', error);
+        alert('网络错误，请稍后再试');
+      } finally {
+        this.isSubmittingComment = false;
       }
-
-      // 通知父组件消息已更新
-      this.$emit('messages-updated', this.messages);
     },
+    // 清除搜索
     clearSearch() {
-      // 清除搜索并通知父组件
       this.$emit('clear-search');
     }
   },
   created() {
-    // 初始时通知父组件消息列表
-    this.$emit('messages-updated', this.messages);
+    // 获取留言列表
+    this.fetchMessages();
   }
 }
 </script>
@@ -1208,6 +1152,40 @@ export default {
   transition: transform 0.3s;
 }
 
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #8B0000;
+}
 
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  border: 4px solid rgba(139, 0, 0, 0.1);
+  border-left-color: #8B0000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.action-btn.like.active, .comment-action-btn.like.active {
+  color: #FF4500;
+  font-weight: 500;
+}
+
+/* 禁用按钮样式 */
+.submit-btn:disabled, .submit-comment-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 
 </style>

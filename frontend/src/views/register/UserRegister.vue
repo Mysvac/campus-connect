@@ -106,7 +106,7 @@ const validateForm = () => {
 //         const { code, msg } = response.data;
 //         if (code === 1) {
 //           ElMessage.success('注册成功');
-//           router.push('/customer-login');
+//           router.push('/user-login');
 //         } else {
 //           ElMessage.error(msg || '注册失败，请重试');
 //         }

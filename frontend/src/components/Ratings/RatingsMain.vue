@@ -13,14 +13,7 @@
           <label for="rating-tag">分类标签</label>
           <select id="rating-tag" v-model="newRating.tag" required>
             <option value="" disabled>请选择分类</option>
-            <option value="餐饮美食">餐饮美食</option>
-            <option value="学习场所">学习场所</option>
-            <option value="运动健身">运动健身</option>
-            <option value="校园服务">校园服务</option>
-            <option value="住宿条件">住宿条件</option>
-            <option value="课程教学">课程教学</option>
-            <option value="校园活动">校园活动</option>
-            <option value="社团组织">社团组织</option>
+            <option v-for="tag in tagOptions" :key="tag" :value="tag">{{ tag }}</option>
           </select>
         </div>
 
@@ -88,10 +81,10 @@
         <div class="detail-title-section">
           <h2 class="detail-title">{{ currentRating.goal }}</h2>
           <div class="detail-score-container">
-            <div class="detail-score">{{ currentRating.score.toFixed(1) }}</div>
+            <div class="detail-score">{{ currentRating.score ? currentRating.score.toFixed(1) : '0.0' }}</div>
             <div class="detail-stars">
               <div class="stars-container detail-stars-bg">
-                <div class="stars-filled" :style="{width: (currentRating.score/5)*100 + '%'}"></div>
+                <div class="stars-filled" :style="{width: ((currentRating.score || 0)/5)*100 + '%'}"></div>
               </div>
               <div class="detail-participants">{{ currentRating.num }}人参与</div>
             </div>
@@ -205,9 +198,9 @@
             <h3 class="rating-title">{{ rating.goal }}</h3>
             <div class="rating-stats">
               <div class="rating-score">
-                <span class="score">{{ rating.score.toFixed(1) }}</span>
+                <span class="score">{{ rating.score ? rating.score.toFixed(1) : '0.0' }}</span>
                 <div class="stars-container">
-                  <div class="stars-filled" :style="{width: (rating.score/5)*100 + '%'}"></div>
+                  <div class="stars-filled" :style="{width: ((rating.score || 0)/5)*100 + '%'}"></div>
                 </div>
               </div>
               <div class="rating-participants">{{ rating.num }}人参与</div>
@@ -226,6 +219,8 @@
 </template>
 
 <script>
+import { ratingsApi } from '@/api';
+
 export default {
   name: 'RatingContent',
   props: {
@@ -256,6 +251,8 @@ export default {
       userComment: '',
       hasRated: false,
       showNewRatingForm: false,
+      isLoading: true,
+      error: null,
       newRating: {
         goal: '',
         tag: '',
@@ -264,94 +261,8 @@ export default {
         score: 0,
         comment: ''
       },
-      // 示例数据，实际应从API获取
-      ratings: [
-        {
-          sid: 1,
-          tag: '餐饮美食',
-          num: 128,
-          goal: '学生食堂',
-          intro: '校内主食堂，提供多种风味美食，价格实惠，环境整洁。',
-          image: '/images/canteen.jpg',
-          score: 4.2,
-          comments: [
-            {
-              uid: 101,
-              userName: '美食探险家',
-              userAvatar: '/avatars/user1.jpg',
-              score: 5,
-              comment: '食堂的饭菜种类很丰富，尤其是川菜窗口，麻辣香锅超级好吃！价格也很实惠。',
-              time: 1649837462000
-            },
-            {
-              uid: 102,
-              userName: '校园达人',
-              userAvatar: '/avatars/user2.jpg',
-              score: 4,
-              comment: '总体很好，就是高峰期排队时间有点长。建议错峰就餐。',
-              time: 1649751062000
-            }
-          ]
-        },
-        {
-          sid: 2,
-          tag: '学习场所',
-          num: 95,
-          goal: '图书馆',
-          intro: '校内最大的学习场所，环境安静，藏书丰富，设施完善。',
-          image: '/images/library.jpg',
-          score: 4.7,
-          comments: [
-            {
-              uid: 103,
-              userName: '学霸',
-              userAvatar: '/avatars/user3.jpg',
-              score: 5,
-              comment: '超级喜欢图书馆的学习氛围，安静舒适，空调温度刚好。',
-              time: 1649664662000
-            }
-          ]
-        },
-        {
-          sid: 3,
-          tag: '运动健身',
-          num: 76,
-          goal: '体育馆',
-          intro: '设施齐全的室内体育场馆，有篮球、羽毛球、乒乓球等多种运动场地。',
-          image: '/images/gym.jpg',
-          score: 3.8,
-          comments: [
-            {
-              uid: 104,
-              userName: '运动健将',
-              userAvatar: '/avatars/user4.jpg',
-              score: 4,
-              comment: '场地不错，就是预约有点难，希望能增加开放时间。',
-              time: 1649578262000
-            }
-          ]
-        },
-        {
-          sid: 4,
-          tag: '校园服务',
-          num: 62,
-          goal: '校医院',
-          intro: '提供基础医疗服务，环境整洁，医护人员态度良好。',
-          image: '/images/hospital.jpg',
-          score: 3.5,
-          comments: []
-        },
-        {
-          sid: 5,
-          tag: '住宿条件',
-          num: 110,
-          goal: '学生宿舍',
-          intro: '校内学生宿舍，设施基础完善，安全管理规范。',
-          image: '/images/dorm.jpg',
-          score: 3.9,
-          comments: []
-        }
-      ]
+      ratings: [],
+      tagOptions: []
     }
   },
   computed: {
@@ -376,8 +287,8 @@ export default {
       // 排序
       switch (this.sortBy) {
         case 'newest':
-          // 假设较大的sid表示较新的评分
-          result.sort((a, b) => b.sid - a.sid);
+          // 按时间排序，较新的评分在前
+          result.sort((a, b) => b.time - a.time);
           break;
         case 'hottest':
           // 按参与人数排序
@@ -427,8 +338,11 @@ export default {
     }
   },
   created() {
-    // 组件创建时发送初始ratings数据
-    this.$emit('ratings-updated', this.ratings);
+    // 获取评分标签
+    this.fetchRatingTags();
+    
+    // 获取评分列表
+    this.fetchRatings();
 
     // 如果初始selectedRatingId存在，则自动显示该评分详情
     if (this.selectedRatingId) {
@@ -436,71 +350,151 @@ export default {
     }
   },
   methods: {
+    // 获取评分标签
+    fetchRatingTags() {
+      ratingsApi.getRatingTags()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.tagOptions = response.data.data || [];
+          } else {
+            console.error('获取评分标签失败:', response.data.msg);
+          }
+        })
+        .catch(error => {
+          console.error('获取评分标签出错:', error);
+        });
+    },
+
+    // 获取评分列表
+    fetchRatings() {
+      this.isLoading = true;
+      ratingsApi.getRatings()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.ratings = response.data.data || [];
+            // 发送更新事件通知父组件
+            this.$emit('ratings-updated', this.ratings);
+          } else {
+            console.error('获取评分列表失败:', response.data.msg);
+            this.error = response.data.msg || '获取评分列表失败';
+          }
+        })
+        .catch(error => {
+          console.error('获取评分列表出错:', error);
+          this.error = '网络错误，请稍后再试';
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
+    // 获取评分详情
+    fetchRatingDetail(id) {
+      this.isLoading = true;
+      ratingsApi.getRatingDetail(id)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 查找评分是否已经存在于列表中
+            const index = this.ratings.findIndex(r => r.sid === id);
+            if (index !== -1) {
+              // 更新已有评分
+              this.ratings.splice(index, 1, response.data.data);
+            } else {
+              // 添加新评分到列表
+              this.ratings.push(response.data.data);
+            }
+            this.currentRatingId = id;
+            this.currentViewMode = 'detail';
+            
+            // 检查用户是否已经评分
+            this.checkUserRating();
+          } else {
+            console.error('获取评分详情失败:', response.data.msg);
+            alert('获取评分详情失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('获取评分详情出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
     setSortBy(sortType) {
       this.sortBy = sortType;
     },
+    
     viewRatingDetails(sid) {
-      this.currentRatingId = sid;
-      this.currentViewMode = 'detail';
       this.showNewRatingForm = false;
-      this.userRating = 0;
-      this.userComment = '';
-      this.hasRated = false;
-
-      // 在实际应用中，这里应该检查用户是否已经评价过
-      // this.checkUserRating(sid);
+      this.fetchRatingDetail(sid);
     },
+    
     backToList() {
       this.currentViewMode = 'list';
       this.currentRatingId = null;
     },
+    
     setUserRating(rating) {
       this.userRating = rating;
     },
+    
+    // 检查用户是否已经评分
+    checkUserRating() {
+      // 在实际应用中，应该从后端获取用户是否已经评分
+      // 这里简单模拟
+      this.hasRated = false;
+      this.userRating = 0;
+      this.userComment = '';
+    },
+    
     submitRating() {
       if (this.userRating === 0) {
         alert('请先给出您的评分');
         return;
       }
 
-      // 这里应该添加API调用来提交评分
-      console.log('提交评分:', {
+      const ratingData = {
         sid: this.currentRatingId,
         score: this.userRating,
-        comment: this.userComment
-      });
+        content: this.userComment
+      };
 
-      // 模拟成功提交后的状态
-      this.hasRated = true;
-
-      // 简单模拟添加评论
-      if (this.currentRating) {
-        const newComment = {
-          uid: 999, // 假设当前用户ID
-          userName: '当前用户',
-          userAvatar: '/avatars/current-user.jpg',
-          score: this.userRating,
-          comment: this.userComment,
-          time: Date.now()
-        };
-
-        this.currentRating.comments.unshift(newComment);
-        this.currentRating.num += 1;
-
-        // 重新计算平均分
-        const totalScore = this.currentRating.comments.reduce((sum, c) => sum + c.score, 0);
-        this.currentRating.score = totalScore / this.currentRating.comments.length;
-
-        // 数据变更后通知父组件
-        this.$emit('ratings-updated', this.ratings);
-      }
-
-      this.userComment = '';
+      this.isSubmitting = true;
+      
+      ratingsApi.commentRating(this.currentRatingId, ratingData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.hasRated = true;
+            
+            // 重新获取评分详情，更新评论和分数
+            this.fetchRatingDetail(this.currentRatingId);
+            
+            // 清空评论
+            this.userComment = '';
+            
+            // 通知用户
+            alert('评价提交成功！');
+          } else {
+            console.error('提交评分失败:', response.data.msg);
+            alert('提交评分失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('提交评分出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+        });
     },
+    
     formatTime(timestamp) {
       const date = new Date(timestamp);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
+    
     handleImageUpload(event) {
       const file = event.target.files[0];
       if (file) {
@@ -509,46 +503,60 @@ export default {
         this.newRating.image = URL.createObjectURL(file);
       }
     },
+    
     submitNewRating() {
-      // 创建新的评分对象
-      const newRatingObj = {
-        sid: this.ratings.length + 1, // 简单模拟ID生成
-        tag: this.newRating.tag,
-        goal: this.newRating.goal,
+      if (this.newRating.score === 0) {
+        alert('请先给出您的评分');
+        return;
+      }
+
+      const ratingData = {
+        targetType: this.newRating.tag,
+        targetId: Date.now().toString(), // 简单生成一个ID，实际应用中可能需要指定
+        targetName: this.newRating.goal,
+        rating: this.newRating.score,
+        review: this.newRating.comment,
         intro: this.newRating.intro,
-        image: this.newRating.image,
-        score: this.newRating.score,
-        num: 1, // 初始参与人数为1
-        comments: [
-          {
-            uid: 999, // 假设当前用户ID
-            userName: '当前用户',
-            userAvatar: '/avatars/current-user.jpg',
-            score: this.newRating.score,
-            comment: this.newRating.comment,
-            time: Date.now()
-          }
-        ]
+        image: this.newRating.image
       };
 
-      // 添加到评分列表
-      this.ratings.unshift(newRatingObj);
-
-      // 重置表单并返回列表
-      this.resetNewRatingForm();
-      this.showNewRatingForm = false;
-
-      // 发送更新事件通知父组件
-      this.$emit('ratings-updated', this.ratings);
-
-      // 可以添加成功提示
-      alert('评分创建成功！');
+      this.isSubmitting = true;
+      
+      ratingsApi.createRating(ratingData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 重置表单
+            this.resetNewRatingForm();
+            
+            // 重新获取评分列表
+            this.fetchRatings();
+            
+            // 隐藏表单
+            this.showNewRatingForm = false;
+            this.$emit('hide-new-post-form');
+            
+            // 通知用户
+            alert('评分创建成功！');
+          } else {
+            console.error('创建评分失败:', response.data.msg);
+            alert('创建评分失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('创建评分出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+        });
     },
+    
     cancelNewRating() {
       this.resetNewRatingForm();
       this.showNewRatingForm = false;
       this.$emit('hide-new-post-form');
     },
+    
     resetNewRatingForm() {
       this.newRating = {
         goal: '',

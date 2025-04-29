@@ -29,14 +29,7 @@
           <div class="custom-select">
             <select id="task-tag" v-model="newTask.tag" required>
               <option value="" disabled selected>请选择标签</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
+              <option v-for="option in tagOptions" :key="option.id" :value="option.id">{{ option.name }}</option>
             </select>
             <div class="select-arrow"></div>
           </div>
@@ -177,6 +170,8 @@
 </template>
 
 <script>
+import { tasksApi } from '@/api';
+
 export default {
   name: 'TaskBoardMain',
   props: {
@@ -203,80 +198,9 @@ export default {
     return {
       // 模拟当前登录用户ID
       currentUserId: 1001,
-      tasks: [
-        {
-          tid: 1,
-          uid: 1001,
-          name: '数据库作业',
-          details: '完成数据库第五章习题，需要提交PDF格式。',
-          tag: '1',
-          status: 0, // 0-待接取 1-进行中 2-终止 3-完成
-          money: 50,
-          contact: 'WeChat: db_helper',
-          notes: '',
-          time: 1712659200000
-        },
-        {
-          tid: 2,
-          uid: 1002,
-          name: '项目组会议记录',
-          details: '周四下午3点在图书馆二楼讨论小组项目进展，需要一名记录员。',
-          tag: '2',
-          status: 0,
-          money: 30,
-          contact: 'QQ: 123456789',
-          notes: '',
-          time: 1712572800000
-        },
-        {
-          tid: 3,
-          uid: 1003,
-          name: '英语翻译',
-          details: '翻译一篇英语论文摘要，约500字。',
-          tag: '3',
-          status: 1, // 进行中
-          money: 100,
-          contact: 'Phone: 135****6789',
-          notes: '已完成初稿，需要校对',
-          time: 1712400000000
-        },
-        {
-          tid: 4,
-          uid: 1001,
-          name: '宿舍送餐',
-          details: '帮忙从校门口取一份外卖送到6号宿舍楼',
-          tag: '4',
-          status: 3, // 已完成
-          money: 15,
-          contact: 'WeChat: food_lover',
-          notes: '任务已完成并支付',
-          time: 1712313600000
-        },
-        {
-          tid: 5,
-          uid: 1004,
-          name: '实验数据录入',
-          details: '将书面实验数据录入Excel表格，约200条记录。',
-          tag: '5',
-          status: 2, // 已终止
-          money: 80,
-          contact: 'Email: lab@example.com',
-          notes: '因截止日期调整，任务终止',
-          time: 1712227200000
-        },
-        {
-          tid: 6,
-          uid: 1005,
-          name: '海报设计',
-          details: '为社团活动设计宣传海报，需要有PS经验。',
-          tag: '6',
-          status: 0,
-          money: 150,
-          contact: 'WeChat: designer_club',
-          notes: '',
-          time: 1712140800000
-        }
-      ],
+      tasks: [],
+      isLoading: true,
+      error: null,
       newTask: {
         name: '',
         details: '',
@@ -284,11 +208,11 @@ export default {
         money: '',
         contact: ''
       },
-      nextTid: 7,
       selectedTask: null,
       newNote: '',
       cachedFilteredTasks: [], // 用于缓存过滤后的任务
-      isFiltering: false // 标记是否正在过滤
+      isFiltering: false, // 标记是否正在过滤
+      tagOptions: []
     }
   },
   computed: {
@@ -329,10 +253,7 @@ export default {
     // 监听selectedTaskId的变化
     selectedTaskId(newId) {
       if (newId) {
-        const task = this.tasks.find(t => t.tid === newId);
-        if (task) {
-          this.showTaskDetail(task);
-        }
+        this.fetchTaskDetail(newId);
       }
     },
     // 监听搜索查询的变化
@@ -343,15 +264,98 @@ export default {
           this.isFiltering = false;
         }, 50); // 短暂延迟，避免闪烁
       });
+    },
+    // 当tasks数据发生变化时，向父组件发送更新事件
+    tasks: {
+      handler(newVal) {
+        this.$emit('update-tasks', newVal);
+      },
+      deep: true
     }
   },
 
-  mounted() {
-    // 初始化时发送任务数据
-    this.$emit('update-tasks', this.tasks);
+  created() {
+    // 获取任务标签
+    this.fetchTaskTags();
+    
+    // 获取任务列表
+    this.fetchTasks();
+
+    // 如果初始selectedTaskId存在，则自动加载该任务详情
+    if (this.selectedTaskId) {
+      this.fetchTaskDetail(this.selectedTaskId);
+    }
   },
 
   methods: {
+    // 获取任务标签
+    fetchTaskTags() {
+      tasksApi.getTaskTags()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.tagOptions = response.data.data || [];
+          } else {
+            console.error('获取任务标签失败:', response.data.msg);
+          }
+        })
+        .catch(error => {
+          console.error('获取任务标签出错:', error);
+        });
+    },
+
+    // 获取任务列表
+    fetchTasks() {
+      this.isLoading = true;
+      tasksApi.getTasks()
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            this.tasks = response.data.data || [];
+            // 向父组件发送任务数据
+            this.$emit('update-tasks', this.tasks);
+          } else {
+            console.error('获取任务列表失败:', response.data.msg);
+            this.error = response.data.msg || '获取任务列表失败';
+          }
+        })
+        .catch(error => {
+          console.error('获取任务列表出错:', error);
+          this.error = '网络错误，请稍后再试';
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
+    // 获取任务详情
+    fetchTaskDetail(taskId) {
+      this.isLoading = true;
+      tasksApi.getTaskDetail(taskId)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 更新本地任务列表中的任务，或添加新任务
+            const index = this.tasks.findIndex(t => t.tid === taskId);
+            if (index !== -1) {
+              this.tasks.splice(index, 1, response.data.data);
+            } else {
+              this.tasks.push(response.data.data);
+            }
+            
+            // 显示任务详情
+            this.showTaskDetail(response.data.data);
+          } else {
+            console.error('获取任务详情失败:', response.data.msg);
+            alert('获取任务详情失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('获取任务详情出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
     formatTime(timestamp) {
       const now = Date.now();
       const diff = now - timestamp;
@@ -374,6 +378,7 @@ export default {
         return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
     },
+    
     getStatusText(status) {
       const statusMap = {
         0: '待接取',
@@ -383,6 +388,7 @@ export default {
       };
       return statusMap[status] || '未知';
     },
+    
     getStatusClass(status) {
       const classMap = {
         0: 'status-waiting',
@@ -392,12 +398,15 @@ export default {
       };
       return classMap[status] || '';
     },
+    
     truncateContent(content) {
+      if (!content) return ''; // 添加空值检查
       if (content.length > 60) {
         return content.substring(0, 60) + '...';
       }
       return content;
     },
+    
     submitNewTask() {
       // 表单验证
       if (!this.newTask.name.trim()) {
@@ -421,103 +430,127 @@ export default {
         return;
       }
 
-      // 创建新任务
-      const newTask = {
-        tid: this.nextTid++,
-        uid: this.currentUserId, // 使用当前用户ID
-        name: this.newTask.name,
-        details: this.newTask.details,
+      // 创建任务数据
+      const taskData = {
+        title: this.newTask.name,
+        content: this.newTask.details,
         tag: this.newTask.tag,
-        status: 0, // 默认待接取
-        money: this.newTask.money,
+        reward: parseInt(this.newTask.money) * 100, // 将金额转换为分
+        location: '',
         contact: this.newTask.contact,
-        notes: '',
-        time: Date.now()
+        deadline: Date.now() + 86400000 * 7 // 默认7天后截止
       };
 
-      // 添加到任务列表头部
-      this.tasks.unshift(newTask);
-
-      // 重置表单
-      this.newTask = {
-        name: '',
-        details: '',
-        tag: '',
-        money: '',
-        contact: ''
-      };
-
-      // 隐藏表单
-      this.$emit('hide-new-task-form');
-
-      // 提示成功
-      setTimeout(() => {
-        alert('任务发布成功！');
-      }, 300);
-
-      // 发出任务更新事件
-      this.$emit('update-tasks', this.tasks);
+      this.isSubmitting = true;
+      
+      tasksApi.createTask(taskData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 重置表单
+            this.newTask = {
+              name: '',
+              details: '',
+              tag: '',
+              money: '',
+              contact: ''
+            };
+            
+            // 重新获取任务列表
+            this.fetchTasks();
+            
+            // 隐藏表单
+            this.$emit('hide-new-task-form');
+            
+            // 显示成功提示
+            setTimeout(() => {
+              alert('任务发布成功！');
+            }, 300);
+          } else {
+            console.error('发布任务失败:', response.data.msg);
+            alert('发布任务失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('发布任务出错:', error);
+          alert('网络错误，请稍后再试');
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+        });
     },
+    
     showTaskDetail(task) {
       // 显示任务详情
       this.selectedTask = JSON.parse(JSON.stringify(task)); // 创建深拷贝
       this.newNote = ''; // 清空备注框
     },
+    
     closeTaskDetail() {
-      // 找到原始任务并更新状态
-      if (this.selectedTask) {
-        const originalTask = this.tasks.find(t => t.tid === this.selectedTask.tid);
-        if (originalTask) {
-          originalTask.status = this.selectedTask.status;
-          originalTask.notes = this.selectedTask.notes;
-        }
-      }
-
-      // 关闭任务详情
       this.selectedTask = null;
-
-      this.$emit('update-tasks', this.tasks);
     },
+    
     acceptTask(task) {
-      // 将任务状态改为进行中
-      task.status = 1;
+      const applicationData = {
+        message: '我想接取这个任务' // 可以让用户输入申请消息
+      };
 
-      // 更新原始任务的状态
-      const originalTask = this.tasks.find(t => t.tid === task.tid);
-      if (originalTask) {
-        originalTask.status = 1;
-      }
-
-      alert('已接取任务！');
-
-      this.$emit('update-tasks', this.tasks);
+      tasksApi.applyTask(task.tid, applicationData)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 将本地任务状态改为进行中
+            task.status = 1;
+            
+            // 更新任务列表
+            this.fetchTasks();
+            
+            // 通知用户
+            alert('已申请接取任务！');
+          } else {
+            console.error('申请任务失败:', response.data.msg);
+            alert('申请任务失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('申请任务出错:', error);
+          alert('网络错误，请稍后再试');
+        });
     },
+    
     completeTask(task) {
-      // 将任务状态改为已完成
-      task.status = 3;
-
-      // 更新原始任务的状态
-      const originalTask = this.tasks.find(t => t.tid === task.tid);
-      if (originalTask) {
-        originalTask.status = 3;
-      }
-
-      alert('任务已标记为完成！');
-      this.$emit('update-tasks', this.tasks);
+      tasksApi.completeTask(task.tid)
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            // 将本地任务状态改为已完成
+            task.status = 3;
+            
+            // 更新任务列表
+            this.fetchTasks();
+            
+            // 通知用户
+            alert('任务已标记为完成！');
+          } else {
+            console.error('完成任务失败:', response.data.msg);
+            alert('完成任务失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('完成任务出错:', error);
+          alert('网络错误，请稍后再试');
+        });
     },
+    
     terminateTask(task) {
-      // 将任务状态改为已终止
+      // 实际中可能需要添加一个API来终止任务
+      // 这里模拟终止任务
+      alert('任务终止功能暂未实现');
+      
+      // 将本地任务状态改为已终止
       task.status = 2;
-
-      // 更新原始任务的状态
-      const originalTask = this.tasks.find(t => t.tid === task.tid);
-      if (originalTask) {
-        originalTask.status = 2;
-      }
-
-      alert('任务已标记为终止！');
-      this.$emit('update-tasks', this.tasks);
+      
+      // 更新任务列表
+      this.fetchTasks();
     },
+    
     // 添加清除搜索的方法
     clearSearch() {
       // 清除搜索并通知父组件

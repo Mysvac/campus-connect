@@ -34,14 +34,14 @@ export default {
     return {
       tags: [
         { id: 0, name: '全部', active: true },
-        { id: 1, name: '1', active: false },
-        { id: 2, name: '2', active: false },
-        { id: 3, name: '3', active: false },
-        { id: 4, name: '4', active: false },
-        { id: 5, name: '5', active: false },
-        { id: 6, name: '6', active: false },
-        { id: 7, name: '7', active: false },
-        { id: 8, name: '8', active: false }
+        { id: 1, name: '快递代取', active: false },
+        { id: 2, name: '食品代购', active: false },
+        { id: 3, name: '失物招领', active: false },
+        { id: 4, name: '运动伙伴', active: false },
+        { id: 5, name: '学习互助', active: false },
+        { id: 6, name: '校园兼职', active: false },
+        { id: 7, name: '活动组织', active: false },
+        { id: 8, name: '其他', active: false }
       ]
     }
   },
