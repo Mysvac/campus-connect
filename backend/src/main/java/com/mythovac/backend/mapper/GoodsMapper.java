@@ -11,7 +11,7 @@ public interface GoodsMapper {
     List<Good> getAllGoods();
 
     @Select("SELECT * FROM goods WHERE tag = #{tag}")
-    List<Good> getAllGoodsByTag(Integer tag);
+    List<Good> getAllGoodsByTag(String tag);
 
     @Select("SELECT * FROM goods WHERE gid = #{gid}")
     Good getGoodsById(Long gid);

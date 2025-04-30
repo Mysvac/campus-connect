@@ -13,7 +13,7 @@ public class Good {
     private Integer price;
     private String name;
     private String image;
-    private Integer tag;
+    private String tag;
     private String intro;
     private Integer quantity;
     private Integer sales;

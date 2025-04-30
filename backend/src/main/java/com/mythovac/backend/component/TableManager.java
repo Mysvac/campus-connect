@@ -95,7 +95,7 @@ public class TableManager  implements CommandLineRunner {
                 price INT NOT NULL,
                 name CHAR(32) NOT NULL,
                 image CHAR(80),
-                tag INT NOT NULL,
+                tag CHAR(32) NOT NULL,
                 intro CHAR(100),
                 quantity INT NOT NULL,
                 sales INT,

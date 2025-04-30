@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface GoodsService {
     List<Good> getAllGoods();
-    List<Good> getAllGoodsByTag(Integer tag);
+    List<Good> getAllGoodsByTag(String tag);
     Good getGoodsById(Long gid);
     void insertGoods(Good goods);
     void updateGoods(Good goods);
