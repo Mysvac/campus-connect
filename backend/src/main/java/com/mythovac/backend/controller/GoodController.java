@@ -33,7 +33,7 @@ public class GoodController {
     }
 
     @GetMapping("/get-good-by-tag/{tag}")
-    public Result getScore(@PathVariable Integer tag) {
+    public Result getScore(@PathVariable String tag) {
         List<Good> res = goodsService.getAllGoodsByTag(tag);
         return Result.success(res);
     }
