@@ -645,7 +645,87 @@ export const MOCK_DATA = {
     { id: 6, name: '校园兼职' },
     { id: 7, name: '活动组织' },
     { id: 8, name: '其他' }
-  ]
+  ],
+
+  // 用户数据
+  users: [
+    {
+      uid: 1001,
+      name: "张三",
+      phone: "13800138001",
+      email: "zhangsan@example.com",
+      profile: "https://via.placeholder.com/200x200?text=User1",
+      gender: 1, // 1: 男, 2: 女, 0: 未设置
+      wallet: 10000, // 100元
+      permission: 1, // 1: 普通用户, 2: 管理员
+      registerTime: Date.now() - 86400000 * 30 // 30天前
+    },
+    {
+      uid: 1002,
+      name: "李四",
+      phone: "13800138002",
+      email: "lisi@example.com",
+      profile: "https://via.placeholder.com/200x200?text=User2",
+      gender: 1,
+      wallet: 5000,
+      permission: 1,
+      registerTime: Date.now() - 86400000 * 25
+    },
+    {
+      uid: 1003,
+      name: "王五",
+      phone: "13800138003",
+      email: "wangwu@example.com",
+      profile: "https://via.placeholder.com/200x200?text=User3",
+      gender: 1,
+      wallet: 15000,
+      permission: 1,
+      registerTime: Date.now() - 86400000 * 20
+    },
+    {
+      uid: 1004,
+      name: "赵六",
+      phone: "13800138004",
+      email: "zhaoliu@example.com",
+      profile: "https://via.placeholder.com/200x200?text=User4",
+      gender: 1,
+      wallet: 7500,
+      permission: 1,
+      registerTime: Date.now() - 86400000 * 15
+    },
+    {
+      uid: 1005,
+      name: "钱七",
+      phone: "13800138005",
+      email: "qianqi@example.com",
+      profile: "https://via.placeholder.com/200x200?text=User5",
+      gender: 2,
+      wallet: 12000,
+      permission: 1,
+      registerTime: Date.now() - 86400000 * 10
+    },
+    {
+      uid: 2001,
+      name: "管理员",
+      phone: "13900139001",
+      email: "admin@example.com",
+      profile: "https://via.placeholder.com/200x200?text=Admin",
+      gender: 1,
+      wallet: 0,
+      permission: 2,
+      registerTime: Date.now() - 86400000 * 100
+    }
+  ],
+  
+  // 用户密码映射（仅在前端模拟时使用）
+  userPasswords: {
+    "13800138001": "password123",
+    "13800138002": "password123",
+    "13800138003": "password123",
+    "13800138004": "password123",
+    "13800138005": "password123",
+    "13900139001": "admin123"
+  }
 };
 
 // 创建返回模拟数据的方法

@@ -15,11 +15,11 @@
       <div class="form-area">
         <h2 class="login-title">欢迎来到智联校园<br>━(*｀∀´*)ノ亻!</h2>
 
-        <el-form :model="{ name, password }" class="login-form">
-          <el-form-item label="账号" required>
+        <el-form :model="{ phone, password }" class="login-form">
+          <el-form-item label="手机号" required>
             <el-input
-                v-model="name"
-                placeholder="请输入账号"
+                v-model="phone"
+                placeholder="请输入手机号"
                 clearable
                 prefix-icon="el-icon-user"
             />
@@ -38,7 +38,7 @@
 
           <el-form-item>
             <div class="button-container">
-              <el-button type="primary" block @click="handleLogin">登录</el-button>
+              <el-button type="primary" block @click="handleLogin" :loading="loading">登录</el-button>
               <el-button type="text" @click="goToRegister">注册</el-button>
             </div>
           </el-form-item>
@@ -53,9 +53,11 @@ import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import ImageCarousel from '@/components/ImageCarousel.vue';
+import { userApi } from '@/api';
 
-const name = ref('');
+const phone = ref('');
 const password = ref('');
+const loading = ref(false);
 
 const carouselItems = ref([
   { id: 1, imageUrl: 'https://th.bing.com/th/id/R.4749c7cd4b6c4d572898d66924b2c136?rik=xusw0kwpp0Lykw&riu=http%3a%2f%2fusst.yanzhaowang.com%2fupload%2fimages%2fschool%2f10252%2f5b3b152df740e377951349c636ca4a7a.jpg&ehk=XhCuJHKb%2bJ7ZlYhwnEhVnCHcDrlOFbUCrjwf9SHZpWc%3d&risl=&pid=ImgRaw&r=0', altText: 'Image 1' },
@@ -78,6 +80,43 @@ const goToRegister = () => {
 
 const goToAdminSystem = () => {
   goToPage('/admin-login');
+};
+
+const handleLogin = async () => {
+  // 表单验证
+  if (!phone.value) {
+    ElMessage.error('请输入手机号');
+    return;
+  }
+  if (!password.value) {
+    ElMessage.error('请输入密码');
+    return;
+  }
+
+  try {
+    loading.value = true;
+    const response = await userApi.login({
+      phone: phone.value,
+      password: password.value
+    });
+
+    const { code, msg, data } = response.data;
+    
+    if (code === 200) {
+      ElMessage.success('登录成功');
+      // 存储用户信息
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      // 跳转到首页或其他页面
+      router.push('/message-board');
+    } else {
+      ElMessage.error(msg || '登录失败，请检查账号密码');
+    }
+  } catch (error) {
+    console.error('登录失败:', error);
+    ElMessage.error('登录请求失败，请检查网络连接');
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 

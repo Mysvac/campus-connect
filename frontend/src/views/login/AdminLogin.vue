@@ -15,11 +15,11 @@
       <div class="form-area">
         <h2 class="login-title">智联校园管理系统</h2>
 
-        <el-form :model="{ username, password, role }" class="login-form">
-          <el-form-item label="账号" required>
+        <el-form :model="{ phone, password }" class="login-form">
+          <el-form-item label="手机号" required>
             <el-input
-                v-model="username"
-                placeholder="请输入账号"
+                v-model="phone"
+                placeholder="请输入管理员手机号"
                 clearable
                 prefix-icon="el-icon-user"
             />
@@ -41,7 +41,7 @@
             <!-- 按钮容器，登录和注册按钮并排显示 -->
             <div class="button-container">
               <!-- 登录按钮 -->
-              <el-button type="primary" block @click="handleLogin">登录</el-button>
+              <el-button type="primary" block @click="handleLogin" :loading="loading">登录</el-button>
               <!-- 注册按钮 -->
               <el-button type="text" @click="goToRegister">注册</el-button>
             </div>
@@ -56,7 +56,8 @@
 import {ref} from 'vue';
 import {ElMessage} from 'element-plus';
 import {useRouter} from 'vue-router';
-import ImageCarousel from "@/components/ImageCarousel.vue"; // Import the api instance
+import ImageCarousel from "@/components/ImageCarousel.vue";
+import { userApi } from '@/api';
 
 // 轮播图数据
 const carouselItems = ref([
@@ -67,53 +68,56 @@ const carouselItems = ref([
 ]);
 
 // 表单数据
-const username = ref('');
+const phone = ref('');
 const password = ref('');
-const role = ref('admin'); // 默认选择服务员
+const loading = ref(false);
 
 // 获取路由实例
 const router = useRouter();
 
 // 登录方法
-// const handleLogin = async () => {
-//   if (!username.value || !password.value) {
-//     ElMessage.error('请输入账号和密码');
-//     return;
-//   }
-//
-//   let loginUrl = '/userlogin'; // Remove the base URL as it's already set in the api instance
-//
-//   try {
-//     const response = await api.post(loginUrl, {
-//       username: username.value,
-//       password: password.value
-//     });
-//
-//     const {code, msg, data} = response.data;
-//
-//     if (code === 1) {
-//       // 登录成功
-//       ElMessage.success(`登录成功！身份：${role.value === 'admin' ? '管理员' : '服务员'}`);
-//
-//       // 保存 JWT 到本地存储，data 直接就是 JWT
-//       localStorage.setItem('jwt', data);
-//
-//
-//       // 根据角色跳转到不同页面
-//       if (role.value === 'admin') {
-//         goToPage('/backstage/dashboard');
-//       } else {
-//         goToPage('/reception/table-status');
-//       }
-//     } else {
-//       // 登录失败
-//       ElMessage.error(msg || '登录失败，请重试');
-//     }
-//   } catch (error) {
-//     console.error('登录请求失败:', error);
-//     ElMessage.error('登录请求失败，请检查网络连接');
-//   }
-// };
+const handleLogin = async () => {
+  // 表单验证
+  if (!phone.value) {
+    ElMessage.error('请输入手机号');
+    return;
+  }
+  if (!password.value) {
+    ElMessage.error('请输入密码');
+    return;
+  }
+
+  try {
+    loading.value = true;
+    const response = await userApi.adminLogin({
+      phone: phone.value,
+      password: password.value
+    });
+
+    const { code, msg, data } = response.data;
+    
+    if (code === 200) {
+      // 检查用户权限
+      if (data.permission === 2) {
+        ElMessage.success('管理员登录成功');
+        // 存储管理员信息
+        localStorage.setItem('currentAdmin', JSON.stringify(data));
+        // 跳转到管理员首页
+        router.push('/admin/dashboard'); // 可以根据实际路由调整
+      } else {
+        ElMessage.error('您不是管理员，无权登录管理系统');
+        localStorage.removeItem('jwt');
+      }
+    } else {
+      ElMessage.error(msg || '登录失败，请检查账号密码');
+    }
+  } catch (error) {
+    console.error('登录失败:', error);
+    ElMessage.error('登录请求失败，请检查网络连接');
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 跳转方法
 const goToPage = (path) => {
