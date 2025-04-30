@@ -27,6 +27,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.security:spring-security-crypto")
 
+    compileOnly("org.projectlombok:lombok")
+
+    implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3")
+
+
+    // annotationProcessor("org.projectlombok:lombok")
+
+
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
