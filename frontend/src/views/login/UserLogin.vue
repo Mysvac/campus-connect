@@ -102,7 +102,7 @@ const handleLogin = async () => {
 
     const { code, msg, data } = response.data;
     
-    if (code === 200) {
+    if (code === 1) {
       ElMessage.success('登录成功');
       // 存储用户信息
       localStorage.setItem('currentUser', JSON.stringify(data));

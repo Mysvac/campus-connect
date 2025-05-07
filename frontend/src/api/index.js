@@ -2,7 +2,7 @@ import axios from 'axios';
 import router from '@/router';
 
 // 调试模式开关，在开发环境下可以绕过登录检查
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 
 const api = axios.create({
     baseURL: 'http://localhost:8080',

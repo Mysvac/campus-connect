@@ -62,12 +62,12 @@ export default {
                         message: data.message || ''
                     };
                     task.applicants.push(application);
-                    return getMockResponse({ success: true });
+                    return getMockResponse({success: true});
                 } else {
-                    return getMockResponse({ success: false, message: '任务已被接取' });
+                    return getMockResponse({success: false, message: '任务已被接取'});
                 }
             }
-            return getMockResponse({ success: false, message: '任务不存在' });
+            return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/apply-task/${id}`, data);
     },
@@ -80,21 +80,15 @@ export default {
             if (task) {
                 const applicant = task.applicants.find(a => a.uid === parseInt(userId));
                 if (applicant) {
-                    task.status = 1; // 已接单
                     applicant.status = 1; // 已接受
-                    // 拒绝其他申请
-                    task.applicants.forEach(a => {
-                        if (a.uid !== parseInt(userId)) {
-                            a.status = 2; // 已拒绝
-                        }
-                    });
-                    return getMockResponse({ success: true });
+                    task.status = 1; // 已接单
+                    return getMockResponse({success: true});
                 }
-                return getMockResponse({ success: false, message: '申请不存在' });
+                return getMockResponse({success: false, message: '申请人不存在'});
             }
-            return getMockResponse({ success: false, message: '任务不存在' });
+            return getMockResponse({success: false, message: '任务不存在'});
         }
-        return api.post(`/api/task/accept-applicant?taskId=${taskId}&userId=${userId}`);
+        return api.post(`/api/task/accept-applicant/${taskId}/${userId}`);
     },
 
     // 完成任务
@@ -103,40 +97,12 @@ export default {
             console.log("DEBUG MODE: 模拟完成任务");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
-                if (task.status === 1) { // 已接单
-                    task.status = 2; // 已完成
-                    return getMockResponse({ success: true });
-                } else {
-                    return getMockResponse({ success: false, message: '任务状态不正确' });
-                }
+                task.status = 2; // 已完成
+                return getMockResponse({success: true});
             }
-            return getMockResponse({ success: false, message: '任务不存在' });
+            return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/complete-task/${id}`);
-    },
-
-    // 删除任务
-    deleteTask: (id) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
-            console.log("DEBUG MODE: 模拟删除任务");
-            const taskIndex = MOCK_DATA.tasks.findIndex(t => t.tid === parseInt(id));
-            if (taskIndex !== -1) {
-                MOCK_DATA.tasks.splice(taskIndex, 1);
-                return getMockResponse({ success: true });
-            }
-            return getMockResponse({ success: false, message: '任务不存在' });
-        }
-        return api.get(`/api/task/delete-tasks-by-tid/${id}`);
-    },
-
-    // 根据标签获取任务
-    getTasksByTag: (tag) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
-            console.log("DEBUG MODE: 返回按标签过滤的模拟任务数据");
-            const filteredTasks = MOCK_DATA.tasks.filter(t => t.tag === tag);
-            return getMockResponse(filteredTasks);
-        }
-        return api.get(`/api/task/get-tasks-by-tag/${tag}`);
     },
 
     // 获取任务标签
@@ -146,5 +112,39 @@ export default {
             return getMockResponse(MOCK_DATA.taskTags);
         }
         return api.get('/api/task/get-tags');
+    },
+    
+    // 根据标签获取任务
+    getTasksByTag: (tag) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 返回模拟的标签筛选任务数据");
+            const tasks = tag === '全部' ? 
+                MOCK_DATA.tasks : 
+                MOCK_DATA.tasks.filter(t => t.tag === tag);
+            return getMockResponse(tasks);
+        }
+        return api.get(`/api/task/get-tasks-by-tag/${tag}`);
+    },
+    
+    // 获取用户发布的任务
+    getUserTasks: (userId) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 返回模拟的用户任务数据");
+            const tasks = MOCK_DATA.tasks.filter(t => t.uid === parseInt(userId));
+            return getMockResponse(tasks);
+        }
+        return api.get(`/api/task/get-tasks-by-uid/${userId}`);
+    },
+    
+    // 获取用户申请的任务
+    getUserAppliedTasks: (userId) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 返回模拟的用户申请任务数据");
+            const tasks = MOCK_DATA.tasks.filter(t => 
+                t.applicants && t.applicants.some(a => a.uid === parseInt(userId))
+            );
+            return getMockResponse(tasks);
+        }
+        return api.get(`/api/task/get-applied-tasks/${userId}`);
     }
 };

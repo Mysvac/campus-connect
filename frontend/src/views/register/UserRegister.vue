@@ -118,18 +118,21 @@ const handleSubmit = async () => {
       loading.value = true;
       
       const userData = {
-        name: customer.value.name,
+        nickname: customer.value.name,
         phone: customer.value.phone,
         email: customer.value.email,
         password: customer.value.password,
         gender: 0, // 默认未设置
-        permission: 1 // 普通用户
+        permission: 1, // 普通用户
+        wallet: 0,
+        profile: "",
+        image: ""
       };
 
       const response = await userApi.register(userData);
       const { code, msg } = response.data;
       
-      if (code === 200) {
+      if (code === 1) {
         ElMessage.success('注册成功');
         router.push('/user-login');
       } else {

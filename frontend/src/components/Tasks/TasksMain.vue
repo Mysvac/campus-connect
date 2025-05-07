@@ -292,7 +292,7 @@ export default {
     fetchTaskTags() {
       tasksApi.getTaskTags()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.tagOptions = response.data.data || [];
           } else {
             console.error('获取任务标签失败:', response.data.msg);
@@ -308,7 +308,7 @@ export default {
       this.isLoading = true;
       tasksApi.getTasks()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.tasks = response.data.data || [];
             // 向父组件发送任务数据
             this.$emit('update-tasks', this.tasks);
@@ -331,7 +331,7 @@ export default {
       this.isLoading = true;
       tasksApi.getTaskDetail(taskId)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 更新本地任务列表中的任务，或添加新任务
             const index = this.tasks.findIndex(t => t.tid === taskId);
             if (index !== -1) {
@@ -445,7 +445,7 @@ export default {
       
       tasksApi.createTask(taskData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 重置表单
             this.newTask = {
               name: '',
@@ -496,7 +496,7 @@ export default {
 
       tasksApi.applyTask(task.tid, applicationData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 将本地任务状态改为进行中
             task.status = 1;
             
@@ -519,7 +519,7 @@ export default {
     completeTask(task) {
       tasksApi.completeTask(task.tid)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已完成
             task.status = 3;
             

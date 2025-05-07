@@ -57,9 +57,9 @@ export default {
             const rating = MOCK_DATA.ratings.find(r => r.rid === data.rid || r.sid === data.sid);
             if (rating) {
                 Object.assign(rating, data);
-                return getMockResponse({ success: true });
+                return getMockResponse({success: true});
             }
-            return getMockResponse({ success: false });
+            return getMockResponse({success: false});
         }
         return api.post('/api/score/update-score', data);
     },
@@ -72,9 +72,9 @@ export default {
             if (rating) {
                 rating.isLiked = true;
                 rating.likes += 1;
-                return getMockResponse({ success: true });
+                return getMockResponse({success: true});
             }
-            return getMockResponse({ success: false });
+            return getMockResponse({success: false});
         }
         return api.post(`/api/score/like-score/${id}`);
     },
@@ -87,14 +87,14 @@ export default {
             if (rating) {
                 rating.isLiked = false;
                 rating.likes = Math.max(0, rating.likes - 1);
-                return getMockResponse({ success: true });
+                return getMockResponse({success: true});
             }
-            return getMockResponse({ success: false });
+            return getMockResponse({success: false});
         }
         return api.delete(`/api/score/unlike-score/${id}`);
     },
-
-    // 评论评分
+    
+    // 添加评分评论
     commentRating: (id, data) => {
         if (DEBUG_MODE && !localStorage.getItem('jwt')) {
             console.log("DEBUG MODE: 模拟评论评分");
@@ -114,7 +114,7 @@ export default {
                 rating.comments.push(newComment);
                 return getMockResponse(newComment);
             }
-            return getMockResponse({ success: false });
+            return getMockResponse({success: false});
         }
         return api.post(`/api/score/add-comment`, { ...data, sid: id });
     },
@@ -128,28 +128,38 @@ export default {
         }
         return api.get(`/api/score/get-comments-by-sid/${id}`);
     },
-
-    // 根据标签获取评分
-    getRatingsByTag: (tag) => {
+    
+    // 点赞评分评论
+    likeComment: (id) => {
         if (DEBUG_MODE && !localStorage.getItem('jwt')) {
-            console.log("DEBUG MODE: 返回按标签过滤的模拟评分数据");
-            let filteredRatings;
-            if (tag === '全部' || tag === 1) {
-                filteredRatings = MOCK_DATA.ratings;
-            } else {
-                filteredRatings = MOCK_DATA.ratings.filter(r => r.tag === tag);
+            console.log("DEBUG MODE: 模拟点赞评分评论");
+            for (const rating of MOCK_DATA.ratings) {
+                const comment = rating.comments.find(c => c.cid === parseInt(id));
+                if (comment) {
+                    comment.isLiked = true;
+                    comment.likes += 1;
+                    return getMockResponse({success: true});
+                }
             }
-            return getMockResponse(filteredRatings);
+            return getMockResponse({success: false});
         }
-        return api.get(`/api/score/get-score-by-tag/${tag}`);
+        return api.post(`/api/score/like-comment/${id}`);
     },
-
-    // 获取评分标签
-    getRatingTags: () => {
+    
+    // 取消点赞评论
+    unlikeComment: (id) => {
         if (DEBUG_MODE && !localStorage.getItem('jwt')) {
-            console.log("DEBUG MODE: 返回模拟的评分标签数据");
-            return getMockResponse(MOCK_DATA.ratingTags);
+            console.log("DEBUG MODE: 模拟取消点赞评分评论");
+            for (const rating of MOCK_DATA.ratings) {
+                const comment = rating.comments.find(c => c.cid === parseInt(id));
+                if (comment) {
+                    comment.isLiked = false;
+                    comment.likes = Math.max(0, comment.likes - 1);
+                    return getMockResponse({success: true});
+                }
+            }
+            return getMockResponse({success: false});
         }
-        return api.get('/api/score/get-tags');
+        return api.delete(`/api/score/unlike-comment/${id}`);
     }
 };

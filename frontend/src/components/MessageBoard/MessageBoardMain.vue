@@ -284,7 +284,7 @@ export default {
       this.isLoading = true;
       try {
         const response = await messageboardApi.getMessages();
-        if (response.data && response.data.code === 200) {
+        if (response.data && response.data.code === 1) {
           this.messages = response.data.data || [];
           this.$emit('messages-updated', this.messages);
         } else {
@@ -303,7 +303,7 @@ export default {
       this.isLoadingDetail = true;
       try {
         const response = await messageboardApi.getMessageDetail(id);
-        if (response.data && response.data.code === 200) {
+        if (response.data && response.data.code === 1) {
           this.selectedMessage = response.data.data;
           this.newComment = ''; // 清空评论框
         } else {
@@ -342,7 +342,7 @@ export default {
           tag: this.newPost.tag
         });
 
-        if (response.data && response.data.code === 200) {
+        if (response.data && response.data.code === 1) {
           // 重置表单
           this.newPost = {
             title: '',
@@ -377,7 +377,7 @@ export default {
         if (message.isLiked) {
           // 已点赞，取消点赞
           const response = await messageboardApi.unlikeMessage(message.mid);
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             message.isLiked = false;
             // 依赖后端返回的结果，不在前端手动减1
           } else {
@@ -388,7 +388,7 @@ export default {
         } else {
           // 未点赞，添加点赞
           const response = await messageboardApi.likeMessage(message.mid);
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             message.isLiked = true;
             // 依赖后端返回的结果，不在前端手动加1
           } else {
@@ -419,7 +419,7 @@ export default {
         if (comment.isLiked) {
           // 已点赞，取消点赞
           const response = await messageboardApi.unlikeComment(comment.cid);
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             comment.isLiked = false;
             // 依赖后端返回的结果，不在前端手动减1
           } else {
@@ -430,7 +430,7 @@ export default {
         } else {
           // 未点赞，添加点赞
           const response = await messageboardApi.likeComment(comment.cid);
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             comment.isLiked = true;
             // 依赖后端返回的结果，不在前端手动加1
           } else {
@@ -476,7 +476,7 @@ export default {
           content: this.newComment
         });
 
-        if (response.data && response.data.code === 200) {
+        if (response.data && response.data.code === 1) {
           // 重新获取留言详情，更新评论列表
           await this.fetchMessageDetail(this.selectedMessage.mid);
           

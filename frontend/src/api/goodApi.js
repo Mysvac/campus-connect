@@ -42,7 +42,7 @@ export default {
             MOCK_DATA.products.unshift(newProduct);
             return getMockResponse(newProduct);
         }
-        return api.get('/api/good/add-goods', data);
+        return api.post('/api/good/add-goods', data);
     },
 
     // 购买商品
@@ -83,12 +83,52 @@ export default {
     },
     
     // 根据标签获取商品
-    getProductsByTag: (tag) => {
+    getProductsByTag: (tagId) => {
         if (DEBUG_MODE && !localStorage.getItem('jwt')) {
-            console.log("DEBUG MODE: 返回按标签过滤的模拟商品数据");
-            const filteredProducts = MOCK_DATA.products.filter(p => p.tag === parseInt(tag));
-            return getMockResponse(filteredProducts);
+            console.log("DEBUG MODE: 返回模拟的标签筛选商品数据");
+            const products = tagId === 0 ? 
+                MOCK_DATA.products : 
+                MOCK_DATA.products.filter(p => p.tag === tagId);
+            return getMockResponse(products);
         }
-        return api.get(`/api/good/get-good-by-tag/${tag}`);
+        return api.get(`/api/good/get-goods-by-tag/${tagId}`);
+    },
+    
+    // 获取用户发布的商品
+    getUserProducts: (userId) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 返回模拟的用户发布商品数据");
+            const products = MOCK_DATA.products.filter(p => p.uid === parseInt(userId));
+            return getMockResponse(products);
+        }
+        return api.get(`/api/good/get-goods-by-uid/${userId}`);
+    },
+    
+    // 更新商品信息
+    updateProduct: (data) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 模拟更新商品");
+            const product = MOCK_DATA.products.find(p => p.gid === data.gid);
+            if (product) {
+                Object.assign(product, data);
+                return getMockResponse({success: true});
+            }
+            return getMockResponse({success: false});
+        }
+        return api.post('/api/good/update-good', data);
+    },
+    
+    // 删除商品
+    deleteProduct: (id) => {
+        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+            console.log("DEBUG MODE: 模拟删除商品");
+            const index = MOCK_DATA.products.findIndex(p => p.gid === parseInt(id));
+            if (index !== -1) {
+                MOCK_DATA.products.splice(index, 1);
+                return getMockResponse({success: true});
+            }
+            return getMockResponse({success: false});
+        }
+        return api.delete(`/api/good/delete-good/${id}`);
     }
 };

@@ -243,7 +243,7 @@ export default {
       this.isLoading = true;
       transactionsApi.getProductDetail(productId)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.openProductDetail(response.data.data);
           } else {
             console.error('获取商品详情失败:', response.data.msg);
@@ -264,7 +264,7 @@ export default {
       this.isLoading = true;
       transactionsApi.getProducts()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.products = response.data.data || [];
             this.emitProductsData();
           } else {
@@ -285,7 +285,7 @@ export default {
     fetchProductTags() {
       transactionsApi.getProductTags()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.tagOptions = response.data.data || [];
           } else {
             console.error('获取商品标签失败:', response.data.msg);
@@ -322,7 +322,7 @@ export default {
       
       transactionsApi.createProduct(productData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 重置表单
             this.newProduct = {
               name: '',
@@ -391,7 +391,7 @@ export default {
       
       transactionsApi.purchaseProduct(this.selectedProduct.gid, purchaseData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 更新商品库存和销量
             this.fetchProducts();
             

@@ -15,7 +15,7 @@ export default {
       if (!phone || phone.length !== 11) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "手机号无效",
             data: null
           }
@@ -25,7 +25,7 @@ export default {
       if (!password || password.length < 6) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "密码无效",
             data: null
           }
@@ -39,7 +39,7 @@ export default {
       if (!user) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "用户不存在",
             data: null
           }
@@ -49,7 +49,7 @@ export default {
       if (password !== correctPassword) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "密码错误",
             data: null
           }
@@ -59,13 +59,23 @@ export default {
       // 登录成功，生成模拟JWT令牌
       const token = `mock-jwt-token-${Date.now()}`;
       localStorage.setItem('jwt', token);
-      localStorage.setItem('currentUser', JSON.stringify(user));
       
-      // 返回脱敏的用户信息（不包含密码）
-      const safeUser = { ...user };
-      delete safeUser.password;
+      // 创建符合后端格式的用户数据
+      const userData = {
+        uid: user.uid,
+        permission: user.permission,
+        phone: user.phone,
+        wallet: user.wallet,
+        nickname: user.name, // 后端使用nickname字段
+        gender: user.gender,
+        email: user.email,
+        profile: user.profile,
+        image: user.profile  // 后端使用image字段存储头像
+      };
       
-      return getMockResponse(safeUser);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      
+      return getMockResponse(userData);
     }
     
     return api.post('/api/user/login', data);
@@ -76,13 +86,13 @@ export default {
     // 调试模式下且没有JWT令牌，模拟注册
     if (DEBUG_MODE && !localStorage.getItem('jwt')) {
       console.log("DEBUG MODE: 模拟用户注册");
-      const { name, phone, password } = data;
+      const { phone, password, nickname, permission } = data;
       
       // 校验手机号和密码
       if (!phone || phone.length !== 11) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "手机号无效",
             data: null
           }
@@ -92,7 +102,7 @@ export default {
       if (!password || password.length < 6) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "密码无效",
             data: null
           }
@@ -104,23 +114,24 @@ export default {
       if (existingUser) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "用户已存在",
             data: null
           }
         });
       }
       
-      // 创建新用户
+      // 创建新用户，符合后端的数据格式
       const newUser = {
         uid: MOCK_DATA.users.length + 10000, // 确保uid不重复
-        name: name || `用户${phone.substring(7)}`,
+        nickname: nickname || `用户${phone.substring(7)}`,
         phone,
-        email: "",
-        profile: `https://via.placeholder.com/200x200?text=User${phone.substring(7)}`,
-        gender: 0,
+        email: data.email || "",
+        profile: "",
+        image: `https://via.placeholder.com/200x200?text=User${phone.substring(7)}`,
+        gender: data.gender || 0,
         wallet: 0,
-        permission: 1, // 普通用户
+        permission: permission || 1, // 普通用户
         registerTime: Date.now()
       };
       
@@ -130,7 +141,7 @@ export default {
       
       return Promise.resolve({
         data: {
-          code: 200,
+          code: 1,
           msg: "注册成功",
           data: null
         }
@@ -152,32 +163,46 @@ export default {
       if (userIndex === -1) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "用户不存在",
             data: null
           }
         });
       }
       
-      // 更新用户信息
+      // 更新用户信息，处理字段映射
       const updatedUser = {
-        ...MOCK_DATA.users[userIndex],
-        ...data
+        ...MOCK_DATA.users[userIndex]
       };
       
-      if (data.password) {
-        // 更新密码
-        MOCK_DATA.userPasswords[phone] = data.password;
-      }
+      // 处理字段映射
+      if (data.nickname) updatedUser.name = data.nickname;
+      if (data.image) updatedUser.profile = data.image;
+      
+      // 其他字段直接复制
+      if (data.password) MOCK_DATA.userPasswords[phone] = data.password;
+      if (data.email) updatedUser.email = data.email;
+      if (data.gender) updatedUser.gender = data.gender;
+      if (data.profile) updatedUser.profile = data.profile;
       
       MOCK_DATA.users[userIndex] = updatedUser;
       
       // 如果是当前登录用户，更新本地存储
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
       if (currentUser.uid === updatedUser.uid) {
-        const safeUser = { ...updatedUser };
-        delete safeUser.password;
-        localStorage.setItem('currentUser', JSON.stringify(safeUser));
+        // 转换为后端格式
+        const userData = {
+          uid: updatedUser.uid,
+          permission: updatedUser.permission,
+          phone: updatedUser.phone,
+          wallet: updatedUser.wallet,
+          nickname: updatedUser.name,
+          gender: updatedUser.gender,
+          email: updatedUser.email,
+          profile: updatedUser.profile,
+          image: updatedUser.profile
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
       }
       
       return getMockResponse(updatedUser);
@@ -202,16 +227,36 @@ export default {
       if (uid) {
         const user = MOCK_DATA.users.find(u => u.uid === parseInt(uid));
         if (user) {
-          const safeUser = { ...user };
-          delete safeUser.password;
-          return getMockResponse(safeUser);
+          // 转换为后端格式
+          const userData = {
+            uid: user.uid,
+            permission: user.permission,
+            phone: user.phone,
+            wallet: user.wallet,
+            nickname: user.name,
+            gender: user.gender,
+            email: user.email,
+            profile: user.profile,
+            image: user.profile
+          };
+          return getMockResponse(userData);
         }
       }
       
       // 都没有就返回第一个用户
-      const defaultUser = { ...MOCK_DATA.users[0] };
-      delete defaultUser.password;
-      return getMockResponse(defaultUser);
+      const defaultUser = MOCK_DATA.users[0];
+      const userData = {
+        uid: defaultUser.uid,
+        permission: defaultUser.permission,
+        phone: defaultUser.phone,
+        wallet: defaultUser.wallet,
+        nickname: defaultUser.name,
+        gender: defaultUser.gender,
+        email: defaultUser.email,
+        profile: defaultUser.profile,
+        image: defaultUser.profile
+      };
+      return getMockResponse(userData);
     }
     
     return api.get(`/api/user/info${uid ? `/${uid}` : ''}`);
@@ -226,7 +271,7 @@ export default {
       localStorage.removeItem('currentUser');
       return Promise.resolve({
         data: {
-          code: 200,
+          code: 1,
           msg: "退出成功",
           data: null
         }
@@ -250,7 +295,7 @@ export default {
       if (!admin) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "管理员不存在",
             data: null
           }
@@ -260,7 +305,7 @@ export default {
       if (password !== correctPassword) {
         return Promise.resolve({
           data: {
-            code: 400,
+            code: 0,
             msg: "密码错误",
             data: null
           }
@@ -270,13 +315,22 @@ export default {
       // 登录成功，生成模拟JWT令牌
       const token = `mock-admin-jwt-token-${Date.now()}`;
       localStorage.setItem('jwt', token);
-      localStorage.setItem('currentAdmin', JSON.stringify(admin));
       
-      // 返回脱敏的用户信息（不包含密码）
-      const safeAdmin = { ...admin };
-      delete safeAdmin.password;
+      // 转换为后端格式
+      const adminData = {
+        uid: admin.uid,
+        permission: admin.permission,
+        phone: admin.phone,
+        wallet: admin.wallet,
+        nickname: admin.name,
+        gender: admin.gender,
+        email: admin.email,
+        profile: admin.profile,
+        image: admin.profile
+      };
+      localStorage.setItem('currentAdmin', JSON.stringify(adminData));
       
-      return getMockResponse(safeAdmin);
+      return getMockResponse(adminData);
     }
     
     return api.post('/api/user/admin-login', data);

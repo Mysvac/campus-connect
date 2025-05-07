@@ -96,7 +96,7 @@ const handleLogin = async () => {
 
     const { code, msg, data } = response.data;
     
-    if (code === 200) {
+    if (code === 1) {
       // 检查用户权限
       if (data.permission === 2) {
         ElMessage.success('管理员登录成功');

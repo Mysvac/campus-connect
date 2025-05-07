@@ -354,7 +354,7 @@ export default {
     fetchRatingTags() {
       ratingsApi.getRatingTags()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.tagOptions = response.data.data || [];
           } else {
             console.error('获取评分标签失败:', response.data.msg);
@@ -370,7 +370,7 @@ export default {
       this.isLoading = true;
       ratingsApi.getRatings()
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.ratings = response.data.data || [];
             // 发送更新事件通知父组件
             this.$emit('ratings-updated', this.ratings);
@@ -393,7 +393,7 @@ export default {
       this.isLoading = true;
       ratingsApi.getRatingDetail(id)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 查找评分是否已经存在于列表中
             const index = this.ratings.findIndex(r => r.sid === id);
             if (index !== -1) {
@@ -465,7 +465,7 @@ export default {
       
       ratingsApi.commentRating(this.currentRatingId, ratingData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             this.hasRated = true;
             
             // 重新获取评分详情，更新评论和分数
@@ -524,7 +524,7 @@ export default {
       
       ratingsApi.createRating(ratingData)
         .then(response => {
-          if (response.data && response.data.code === 200) {
+          if (response.data && response.data.code === 1) {
             // 重置表单
             this.resetNewRatingForm();
             

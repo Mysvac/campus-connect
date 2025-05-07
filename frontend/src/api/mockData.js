@@ -732,7 +732,7 @@ export const MOCK_DATA = {
 export const getMockResponse = (mockData) => {
   return Promise.resolve({
     data: {
-      code: 200,
+      code: 1,
       msg: "success",
       data: mockData
     }
