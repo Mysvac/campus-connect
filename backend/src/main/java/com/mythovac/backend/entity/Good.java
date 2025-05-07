@@ -1,8 +1,6 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -18,4 +16,5 @@ public class Good {
     private Integer quantity;
     private Integer sales;
     private Long time;
+
 }

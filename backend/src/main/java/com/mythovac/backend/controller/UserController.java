@@ -17,6 +17,17 @@ public class UserController {
     private UserService userService;
     private PasswordEncoder passwordEncoder;
 
+    public static Result checkSession(HttpSession session) {
+        if (session.getAttribute("uid") == null) {
+            return Result.error("请先登录");
+        }
+        Long permission = (Long) session.getAttribute("permission");
+        if (permission == null || permission == 0) {
+            return Result.error("用户不可用");
+        }
+        return null;
+    }
+
     public UserController(UserServiceImpl userServiceImpl, PasswordEncoder passwordEncoder) {
         this.userService = userServiceImpl;
         this.passwordEncoder = passwordEncoder;

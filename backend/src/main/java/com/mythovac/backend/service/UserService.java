@@ -1,7 +1,6 @@
 package com.mythovac.backend.service;
 
 import com.mythovac.backend.entity.User;
-import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 

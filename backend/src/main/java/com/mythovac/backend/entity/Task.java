@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -17,4 +16,5 @@ public class Task {
     private Integer status;
     private String tag;
     private Long time;
+
 }

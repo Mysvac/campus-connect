@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -11,4 +10,5 @@ public class ScoresRelease {
     private Long sid;
     private Long uid;
     private Long time;
+
 }

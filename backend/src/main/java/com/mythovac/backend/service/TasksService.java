@@ -1,10 +1,6 @@
 package com.mythovac.backend.service;
 
 import com.mythovac.backend.entity.Task;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 

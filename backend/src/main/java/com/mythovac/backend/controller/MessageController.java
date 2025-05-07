@@ -33,15 +33,13 @@ public class MessageController {
     @GetMapping("/get-message-by-mid/{mid}")
     public Result getMessage(@PathVariable Long mid) {
         Message res = messageService.getMessageById(mid);
-        if(res == null) return Result.error("留言不存在");
-        return Result.success(res);
+        return res == null ? Result.error("留言不存在") : Result.success(res);
     }
 
     @GetMapping("/get-comment-by-cid/{cid}")
     public Result getComment(@PathVariable Long cid) {
         MessagesComment res = messagesCommentService.getMessagesCommentByCid(cid);
-        if(res == null) return Result.error("留言不存在");
-        return Result.success(res);
+        return res == null ? Result.error("留言不存在") : Result.success(res);
     }
 
     @GetMapping("/get-comments-by-mid/{mid}")
@@ -52,14 +50,10 @@ public class MessageController {
 
     @PostMapping("/add-message")
     public Result addMessage(@RequestBody Message message, HttpSession session) {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
         message.setUid(uid);
         message.setTime(System.currentTimeMillis());
         messageService.insertMessage(message);
@@ -67,57 +61,53 @@ public class MessageController {
         return Result.success();
     }
 
-    @PostMapping("/like-message/{mid}")
-    public Result likeMessage(@PathVariable Long mid) {
-        Message msg =  messageService.getMessageById(mid);
-        if(msg == null) return Result.error("留言不存在");
-        msg.setPraise(msg.getPraise() + 1);
+    private Result updateMessagePraise(Long mid, int delta) {
+        Message msg = messageService.getMessageById(mid);
+        if (msg == null) return Result.error("留言不存在");
+        msg.setPraise(msg.getPraise() + delta);
         messageService.updateMessage(msg);
         return Result.success();
     }
+
+    private Result updateCommentPraise(Long cid, int delta) {
+        MessagesComment mc = messagesCommentService.getMessagesCommentByCid(cid);
+        if (mc == null) return Result.error("留言不存在");
+        mc.setPraise(mc.getPraise() + delta);
+        messagesCommentService.updateMessagesComment(mc);
+        return Result.success();
+    }
+
+    @PostMapping("/like-message/{mid}")
+    public Result likeMessage(@PathVariable Long mid) {
+        return updateMessagePraise(mid, 1);
+    }
     @PostMapping("/unlike-message/{mid}")
     public Result unlikeMessage(@PathVariable Long mid) {
-        Message msg =  messageService.getMessageById(mid);
-        if(msg == null) return Result.error("留言不存在");
-        msg.setPraise(msg.getPraise() - 1);
-        messageService.updateMessage(msg);
-        return Result.success();
+        return updateMessagePraise(mid, -1);
     }
 
     @PostMapping("like-comment/{cid}")
     public Result likeComment(@PathVariable Long cid) {
-        MessagesComment mc =  messagesCommentService.getMessagesCommentByCid(cid);
-        if(mc == null) return Result.error("留言不存在");
-        mc.setPraise(mc.getPraise() + 1);
-        messagesCommentService.updateMessagesComment(mc);
-        return Result.success();
+        return updateCommentPraise(cid, 1);
     }
     @PostMapping("unlike-comment/{cid}")
     public Result unlikeComment(@PathVariable Long cid) {
-        MessagesComment mc =  messagesCommentService.getMessagesCommentByCid(cid);
-        if(mc == null) return Result.error("留言不存在");
-        mc.setPraise(mc.getPraise() - 1);
-        messagesCommentService.updateMessagesComment(mc);
-        return Result.success();
+        return updateCommentPraise(cid, -1);
     }
 
     @PostMapping("/add-comment")
     public Result addComment(@RequestBody MessagesComment messagesComment, HttpSession session) {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
 
-        if(messagesComment == null || messagesComment.getContent() == null || messagesComment.getContent().isEmpty()) {
+        if (messagesComment == null || messagesComment.getContent() == null || messagesComment.getContent().isEmpty()) {
             return Result.error("留言内容无效");
         }
-        if(messageService.getMessageById(messagesComment.getMid()) == null){
+        if (messageService.getMessageById(messagesComment.getMid()) == null) {
             return Result.error("留言不存在");
         }
+
+        Long uid = (Long) session.getAttribute("uid");
         messagesComment.setUid(uid);
         messagesCommentService.insertMessagesComment(messagesComment);
         return Result.success();
@@ -138,15 +128,12 @@ public class MessageController {
 
     @DeleteMapping("/delete-message-by-mid/{mid}")
     public Result deleteMessage(@PathVariable Long mid, HttpSession session) {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
         Long uid = (Long)(session.getAttribute("uid"));
         Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
-        if(!Objects.equals(messageService.getMessageById(mid).getUid(), uid) && permission != 3){
+        if (!Objects.equals(messageService.getMessageById(mid).getUid(), uid) && permission != 3) {
             return Result.error("用户不可用");
         }
 

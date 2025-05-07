@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -18,6 +17,7 @@ public class User {
     private String email;
     private String profile;
     private String image;
+
 }
 
 

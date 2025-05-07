@@ -31,57 +31,47 @@ public class TaskController {
     }
 
     @GetMapping("/get-tags")
-    public Result getTags()  {
-        List<String> tags = tasksService.getAllTags(); // 原始 List<String>
+    public Result getTags() {
+        List<String> tags = tasksService.getAllTags();
         List<Map<String, Object>> result = new ArrayList<>();
-
-        int id = 1; // 从 1 开始的 ID
+        int id = 1;
         for (String tagName : tags) {
             Map<String, Object> tagMap = new HashMap<>();
             tagMap.put("id", id++);
             tagMap.put("name", tagName);
             result.add(tagMap);
         }
-
         return Result.success(result);
     }
 
     @PostMapping("/apply-task/{tid}")
-    public Result applyTask(@PathVariable Long tid, HttpSession session)  {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+    public Result applyTask(@PathVariable Long tid, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
         Task task = tasksService.getTaskById(tid);
-        if(task == null ||  task.getStatus() != 0) {
+        if (task == null || task.getStatus() != 0) {
             return Result.error("任务不存在或不可用");
         }
         TasksHandle tasksHandle = new TasksHandle();
         tasksHandle.setUid(uid);
         tasksHandle.setStatus(3);
-        tasksHandle.setTime( System.currentTimeMillis() );
+        tasksHandle.setTime(System.currentTimeMillis());
         tasksHandle.setTid(tid);
         tasksHandleService.insertTasksHandle(tasksHandle);
         return Result.success();
     }
 
+
     @PostMapping("/complete-task/{tid}")
     public Result completeTask(@PathVariable Long tid, HttpSession session)  {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
 
+        Long uid = (Long) session.getAttribute("uid");
         TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
-        if(taskHandle == null) {
+        if (taskHandle == null) {
             return Result.error("任务不存在");
         }
         taskHandle.setStatus(1);
@@ -94,17 +84,12 @@ public class TaskController {
 
     @PostMapping("/terminate-task/{tid}")
     public Result terminateTask(@PathVariable Long tid, HttpSession session)  {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
 
+        Long uid = (Long) session.getAttribute("uid");
         TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
-        if(taskHandle == null) {
+        if (taskHandle == null) {
             return Result.error("任务不存在");
         }
         taskHandle.setStatus(2);
@@ -117,17 +102,11 @@ public class TaskController {
 
     @PostMapping("/accept-applicant/{tid}/{uid}")
     public Result terminateTask(@PathVariable Long tid, @PathVariable Long uid, HttpSession session)  {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uuid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
 
         TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
-        if(taskHandle == null) {
+        if (taskHandle == null) {
             return Result.error("任务不存在");
         }
         taskHandle.setStatus(0);
@@ -154,47 +133,40 @@ public class TaskController {
 
     @PostMapping("/add-task")
     public Result addTask(@RequestBody Task task, HttpSession session)  {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
-        }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission == 0){
-            return Result.error("用户不可用");
-        }
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
 
-        if(task.getName() == null || task.getName().isEmpty()){
+        if (task.getName() == null || task.getName().isEmpty()) {
             return Result.error("任务名称不能为空");
         }
-        if(task.getTag() == null || task.getTag().isEmpty()){
+        if (task.getTag() == null || task.getTag().isEmpty()) {
             return Result.error("任务标签不能为空");
         }
-        if(task.getDetails() == null || task.getDetails().isEmpty()){
+        if (task.getDetails() == null || task.getDetails().isEmpty()) {
             return Result.error("任务描述不能为空");
         }
-        task.setUid(uid);
+        task.setUid((Long) session.getAttribute("uid"));
         tasksService.insertTask(task);
         return Result.success("添加成功");
     }
 
     @GetMapping("/delete-tasks-by-tid/{tid}")
     public Result deleteTasksByTid(@PathVariable Long tid, HttpSession session) {
-        if(session.getAttribute("uid") == null) {
-            return Result.error("请先登录");
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
+        Long permission = (Long) session.getAttribute("permission");
+
+        Task res = tasksService.getTaskById(tid);
+        if (res == null) {
+            return Result.error("任务不存在");
         }
-        Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
-        if(permission == null || permission != 0){
-            return Result.error("用户不可用");
-        }
-        if(!Objects.equals(tasksService.getTaskById(tid).getUid(), uid) && permission != 3){
+
+        if (!Objects.equals(res.getUid(), uid) && permission != 3) {
             return Result.error("用户不可用");
         }
 
-        Task res = tasksService.getTaskById(tid);
-        if(res == null){
-            return Result.error("任务不存在");
-        }
         tasksService.deleteTask(tid);
         return Result.success("删除成功");
     }

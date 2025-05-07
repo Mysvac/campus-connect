@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -13,4 +12,5 @@ public class ScoresComment {
     private Integer score;
     private String comment;
     private Long time;
+
 }

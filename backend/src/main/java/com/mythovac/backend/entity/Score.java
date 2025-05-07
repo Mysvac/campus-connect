@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -15,4 +14,5 @@ public class Score {
     private String intro;
     private String image;
     private Double score;
+
 }

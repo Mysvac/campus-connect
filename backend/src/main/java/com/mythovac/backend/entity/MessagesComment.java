@@ -1,8 +1,7 @@
 package com.mythovac.backend.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 
 @Data
 @NoArgsConstructor
@@ -14,4 +13,5 @@ public class MessagesComment {
     private String content;
     private Integer praise;
     private Long time;
+
 }

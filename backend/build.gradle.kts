@@ -32,7 +32,8 @@ dependencies {
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3")
 
 
-    // annotationProcessor("org.projectlombok:lombok")
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok") // 取消注释，启用注解处理
 
 
 

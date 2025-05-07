@@ -1,7 +1,6 @@
 package com.mythovac.backend.service;
 
 import com.mythovac.backend.entity.GoodsBuy;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
