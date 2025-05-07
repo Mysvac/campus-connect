@@ -23,7 +23,7 @@ public class TasksHandleServiceImpl implements TasksHandleService {
     }
 
     @Override
-    public TasksHandle getTasksHandleById(Long tid, Long uid) {
+    public TasksHandle getTasksHandleById(Long tid, Long uid); {
         return tasksHandleMapper.getTasksHandleById(tid, uid);
     }
 

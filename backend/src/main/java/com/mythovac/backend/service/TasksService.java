@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface TasksService {
     List<Task> getAllTasks();
+    List<String> getAllTags();
     Task getTaskById(Long tid);
     List<Task> getTasksByTag(String tag);
     void insertTask(Task task);

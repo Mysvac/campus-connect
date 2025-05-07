@@ -12,9 +12,11 @@ import com.mythovac.backend.service.impl.ScoreServiceImpl;
 import com.mythovac.backend.service.impl.ScoresCommentServiceImpl;
 import com.mythovac.backend.service.impl.ScoresReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController("score-controller")
 @RequestMapping("/api/score")
@@ -63,25 +65,37 @@ public class ScoreController {
 
 
     @PostMapping("/add-comment")
-    public Result addComment(@RequestBody ScoresComment scoresComment) {
+    public Result addComment(@RequestBody ScoresComment scoresComment, HttpSession session) {
+        if(session.getAttribute("uid") == null) {
+            return Result.error("请先登录");
+        }
+        Long uid = (Long)(session.getAttribute("uid"));
+        Long permission = (Long)(session.getAttribute("permission"));
+        if(permission == null || permission == 0){
+            return Result.error("用户不可用");
+        }
+
         if(scoresComment == null || scoresComment.getSid() == null) {
             return Result.error("评分不存在");
-        }
-        if(scoresComment.getUid() == null) {
-            return Result.error("用户不存在");
-        }
-        if(userService.getUserById(scoresComment.getUid()) == null){
-            return Result.error("用户不存在");
         }
         if(scoreService.getScoreBySid(scoresComment.getSid()) == null){
             return Result.error("评分不存在");
         }
+        scoresComment.setUid(uid);
         scoresCommentService.insertScoresComment(scoresComment);
         return Result.success();
     }
 
     @PostMapping("/update-score")
-    public Result updateScore(@RequestBody Score score) {
+    public Result updateScore(@RequestBody Score score, HttpSession session) {
+        if(session.getAttribute("uid") == null) {
+            return Result.error("请先登录");
+        }
+        Long permission = (Long)(session.getAttribute("permission"));
+        if(permission == null || permission != 0){
+            return Result.error("用户不可用");
+        }
+
         if(score == null || score.getSid() == null) {
             return Result.error("评分不存在");
         }
@@ -93,7 +107,15 @@ public class ScoreController {
     }
 
     @DeleteMapping("/delete-score-by-sid/{sid}")
-    public Result deleteScore(@PathVariable Long sid) {
+    public Result deleteScore(@PathVariable Long sid, HttpSession session) {
+        if(session.getAttribute("uid") == null) {
+            return Result.error("请先登录");
+        }
+        Long permission = (Long)(session.getAttribute("permission"));
+        if(permission == null || permission != 0){
+            return Result.error("用户不可用");
+        }
+
         if(scoreService.getScoreBySid(sid) == null){
             return Result.error("评分不存在");
         }

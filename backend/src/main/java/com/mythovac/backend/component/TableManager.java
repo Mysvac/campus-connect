@@ -199,7 +199,7 @@ public class TableManager  implements CommandLineRunner {
                 CREATE TABLE IF NOT EXISTS tasks_handle (
                 tid BIGINT NOT NULL,
                 uid BIGINT NOT NULL,
-                status INT NOT NULL CHECK( status IN ( 0, 1, 2 ) ),
+                status INT NOT NULL CHECK( status IN ( 0, 1, 2, 3 ) ),
                 notes CHAR(100),
                 time BIGINT NOT NULL,
                 CONSTRAINT PK_tasks_handle PRIMARY KEY (tid, uid),

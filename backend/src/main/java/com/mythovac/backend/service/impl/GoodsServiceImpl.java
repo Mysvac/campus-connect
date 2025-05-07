@@ -22,6 +22,10 @@ public class GoodsServiceImpl implements GoodsService {
         return goodsService.getAllGoods();
     }
 
+
+    @Override
+    public List<String> getAllTags(){ return goodsService.getAllTags(); }
+
     @Override
     public Good getGoodsById(Long gid)
     {

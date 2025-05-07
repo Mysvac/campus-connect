@@ -13,6 +13,9 @@ public interface GoodsMapper {
     @Select("SELECT * FROM goods WHERE tag = #{tag}")
     List<Good> getAllGoodsByTag(String tag);
 
+    @Select("SELECT DISTINCT tag FROM goods;")
+    List<String> getAllTags();
+
     @Select("SELECT * FROM goods WHERE gid = #{gid}")
     Good getGoodsById(Long gid);
 

@@ -10,6 +10,9 @@ public interface TasksMapper {
     @Select("SELECT * FROM tasks")
     List<Task> getAllTasks();
 
+    @Select("SELECT DISTINCT tag FROM tasks;")
+    List<String> getAllTags();
+
     @Select("SELECT * FROM tasks WHERE tag = #{tag}")
     List<Task> getTasksByTag(String tag);
 
