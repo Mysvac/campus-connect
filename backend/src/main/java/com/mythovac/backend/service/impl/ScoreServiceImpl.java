@@ -18,6 +18,8 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreMapper.getAllScores();
     }
     @Override
+    public List<Score> getAllAvailScores(){ return scoreMapper.getAllAvailScores(); }
+    @Override
     public Score getScoreBySid(Long sid){
         return scoreMapper.getScoreBySid(sid);
     }

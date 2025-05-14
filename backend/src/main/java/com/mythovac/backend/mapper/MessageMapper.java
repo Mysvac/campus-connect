@@ -7,16 +7,16 @@ import java.util.List;
 
 @Mapper
 public interface MessageMapper {
-    @Select("SELECT * FROM messages")
+    @Select("SELECT * FROM messages ORDER BY time DESC")
     List<Message> getAllMessages();
 
     @Select("SELECT * FROM messages WHERE mid = #{mid}")
     Message getMessageById(Long messageId);
 
-    @Select("SELECT * FROM messages WHERE tag = #{tag}")
+    @Select("SELECT * FROM messages WHERE tag = #{tag} ORDER BY time DESC")
     List<Message> getMessagesByTag(String tag);
 
-    @Select("SELECT * FROM messages WHERE uid = #{uid}")
+    @Select("SELECT * FROM messages WHERE uid = #{uid} ORDER BY time DESC")
     List<Message> getMessagesByUid(Long uid);
 
     @Insert("INSERT INTO messages(uid, content, title, praise, tag, time)" +

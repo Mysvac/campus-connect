@@ -7,13 +7,13 @@ import java.util.List;
 
 @Mapper
 public interface TasksMapper {
-    @Select("SELECT * FROM tasks")
+    @Select("SELECT * FROM tasks ORDER BY time DESC")
     List<Task> getAllTasks();
 
-    @Select("SELECT DISTINCT tag FROM tasks;")
+    @Select("SELECT DISTINCT tag FROM tasks ORDER BY time DESC")
     List<String> getAllTags();
 
-    @Select("SELECT * FROM tasks WHERE tag = #{tag}")
+    @Select("SELECT * FROM tasks WHERE tag = #{tag} ORDER BY time DESC")
     List<Task> getTasksByTag(String tag);
 
     @Select("SELECT * FROM tasks WHERE tid = #{tid}")

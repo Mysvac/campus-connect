@@ -30,8 +30,14 @@ public class MessageController {
         this.messagesCommentService = messagesCommentService;
     }
 
+    @GetMapping("get-all-messages")
+    public Result getMessages() {
+        List<Message> res = messageService.getAllMessages();
+        return res == null ? Result.error("留言不存在") : Result.success(res);
+    }
+
     @GetMapping("/get-message-by-mid/{mid}")
-    public Result getMessage(@PathVariable Long mid) {
+    public Result getMessageByMid(@PathVariable Long mid) {
         Message res = messageService.getMessageById(mid);
         return res == null ? Result.error("留言不存在") : Result.success(res);
     }

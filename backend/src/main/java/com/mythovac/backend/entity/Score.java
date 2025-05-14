@@ -8,6 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 public class Score {
     private Long sid;
+    private Long status;
     private String tag;
     private Integer num;
     private String goal;

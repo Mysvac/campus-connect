@@ -32,6 +32,18 @@ public class ScoreController {
         this.scoresReleaseService = scoresReleaseService;
     }
 
+    @GetMapping("get-all-scores")
+    public Result getAllScores() {
+        List<Score> res = scoreService.getAllScores();
+        return Result.success(res);
+    }
+
+    @GetMapping("get-all-avail-scores")
+    public Result getAllAvailScores() {
+        List<Score> res = scoreService.getAllAvailScores();
+        return Result.success(res);
+    }
+
     @GetMapping("/get-score-by-sid/{sid}")
     public Result getScore(@PathVariable Long sid) {
         Score res = scoreService.getScoreBySid(sid);
@@ -55,6 +67,7 @@ public class ScoreController {
         if (score == null || score.getTag() == null || score.getGoal() == null) {
             return Result.error("评分内容不符");
         }
+        score.setStatus(0L);
         scoreService.insertScore(score);
         return Result.success();
     }
