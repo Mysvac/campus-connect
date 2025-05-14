@@ -14,12 +14,13 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // 允许所有路径
-                        .allowedOrigins("*")  // 允许所有源
+                        .allowedOriginPatterns("https://10.100.164.*", "http://10.100.164.*", "http://localhost:*")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // 允许的方法
                         .allowedHeaders("*")  // 允许所有头
-                        .allowCredentials(false)  // 是否允许发送cookie
+                        .allowCredentials(true)  // 是否允许发送cookie
                         .maxAge(3600);  // 预检请求的缓存时间(秒)
             }
         };
     }
+
 }
