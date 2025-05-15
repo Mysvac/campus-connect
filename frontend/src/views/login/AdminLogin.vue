@@ -102,6 +102,7 @@ const handleLogin = async () => {
         ElMessage.success('管理员登录成功');
         // 存储管理员信息
         localStorage.setItem('currentAdmin', JSON.stringify(data));
+        localStorage.setItem('isAuthenticated', 'true'); // 设置认证标记
         // 跳转到管理员首页
         router.push('/admin/dashboard'); // 可以根据实际路由调整
       } else {

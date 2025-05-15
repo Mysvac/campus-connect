@@ -6,7 +6,7 @@ import { MOCK_DATA, getMockResponse } from './mockData';
 export default {
   // 获取留言列表
   getMessages: () => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 返回模拟的留言列表数据");
       return getMockResponse(MOCK_DATA.messages);
     }
@@ -15,7 +15,7 @@ export default {
 
   // 获取留言详情
   getMessageDetail: (id) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 返回模拟的留言详情数据");
       const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
       return getMockResponse(message || MOCK_DATA.messages[0]);
@@ -25,7 +25,7 @@ export default {
 
   // 发布留言
   createMessage: (data) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟发布留言");
       const newMessage = {
         mid: MOCK_DATA.messages.length + 1,
@@ -46,7 +46,7 @@ export default {
 
   // 点赞留言
   likeMessage: (id) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟点赞留言");
       const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
       if (message) {
@@ -61,7 +61,7 @@ export default {
 
   // 取消点赞留言
   unlikeMessage: (id) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟取消点赞留言");
       const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
       if (message) {
@@ -76,7 +76,7 @@ export default {
 
   // 评论留言
   commentMessage: (id, data) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟评论留言");
       const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
       if (message) {
@@ -98,7 +98,7 @@ export default {
 
   // 点赞评论
   likeComment: (id) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟点赞评论");
       for (const message of MOCK_DATA.messages) {
         const comment = message.comments.find(c => c.cid === parseInt(id));
@@ -115,7 +115,7 @@ export default {
 
   // 取消点赞评论
   unlikeComment: (id) => {
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟取消点赞评论");
       for (const message of MOCK_DATA.messages) {
         const comment = message.comments.find(c => c.cid === parseInt(id));

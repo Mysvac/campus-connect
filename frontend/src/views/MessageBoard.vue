@@ -46,6 +46,16 @@ export default {
       selectedMessageId: null
     }
   },
+  beforeMount() {
+    // 在组件挂载前检查登录状态
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const userDataExists = localStorage.getItem('currentUser') !== null;
+    
+    if (!isAuthenticated || !userDataExists) {
+      console.log('MessageBoard: 未认证用户，跳转到登录页');
+      this.$router.push('/user-login');
+    }
+  },
   methods: {
 
     filterByTag(tag) {

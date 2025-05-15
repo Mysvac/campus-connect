@@ -47,7 +47,24 @@
           <button class="search-button" @click="performSearch">搜索</button>
         </div>
         <div class="auth-container">
-          <router-link to="/user-login" class="auth-button">登录/注册</router-link>
+          <!-- 根据登录状态显示不同的内容 -->
+          <template v-if="isAuthenticated">
+            <el-dropdown trigger="click">
+              <span class="user-info">
+                {{ user.nickname || '用户' }}
+                <i class="el-icon-arrow-down"></i>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="goToUserCenter">个人中心</el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+          <template v-else>
+            <router-link to="/user-login" class="auth-button">登录/注册</router-link>
+          </template>
         </div>
       </div>
     </nav>
@@ -55,11 +72,19 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
+
 export default {
   name: 'Header',
   data() {
     return {
       searchQuery: ''
+    }
+  },
+  computed: {
+    ...mapGetters(['currentUser', 'isAuthenticated']),
+    user() {
+      return this.currentUser || {};
     }
   },
   methods: {
@@ -82,6 +107,19 @@ export default {
           path.includes('/transactions') ||
           path.includes('/tasks') ||
           path.includes('/ratings');
+    },
+    
+    // 新增 - 跳转到个人中心
+    goToUserCenter() {
+      // 可以添加个人中心路由
+      // this.$router.push('/user-center');
+      console.log('前往个人中心');
+    },
+    
+    // 新增 - 处理登出
+    handleLogout() {
+      this.$store.dispatch('logout');
+      this.$router.push('/user-login');
     }
   },
   // 监听来自根组件的路由变化，更新搜索提示
@@ -161,7 +199,7 @@ export default {
 
 .search-container {
   display: flex;
-  //transform: translateX(-100px); /* 向左移动 30px */
+  /* transform: translateX(-100px); 向左移动 30px */
 }
 
 .search-input {
@@ -202,6 +240,23 @@ export default {
   background-color: #B22222;
   transform: translateY(-3px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* 新增 - 用户信息样式 */
+.user-info {
+  color: white;
+  padding: 10px 18px;
+  border-radius: 25px;
+  background-color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 900px) {

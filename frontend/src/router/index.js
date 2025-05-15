@@ -46,13 +46,6 @@ const routes = [
     name: 'Tasks',
     component: Tasks,
   },
-
-  {
-    path: '/admin-login',
-    name: 'AdminLogin',
-    component: AdminLogin,
-  },
-
   {
     path: '/admin-login',
     name: 'AdminLogin',
@@ -77,5 +70,32 @@ const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
 })
+
+// 定义需要登录才能访问的路由
+const requireAuthPages = ['/message-board', '/ratings', '/tasks', '/transactions'];
+
+// 全局路由守卫
+router.beforeEach((to, from, next) => {
+  console.log(`路由守卫: 从 ${from.path} 到 ${to.path}`);
+  
+  // 检查用户是否已登录
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  const userDataExists = localStorage.getItem('currentUser') !== null;
+  const isLoggedIn = isAuthenticated && userDataExists;
+  
+  // 如果是需要认证的页面，但用户未登录，则跳转到登录页
+  if (requireAuthPages.includes(to.path) && !isLoggedIn) {
+    console.log('需要登录才能访问，跳转到登录页');
+    next('/user-login');
+  } 
+  // 如果已登录并访问登录或注册页，则跳转到首页
+  else if (isLoggedIn && (to.path === '/user-login' || to.path === '/user-register' || to.path === '/')) {
+    console.log('已登录用户访问登录/注册页，跳转到首页');
+    next('/message-board');
+  } 
+  else {
+    next(); // 放行
+  }
+});
 
 export default router

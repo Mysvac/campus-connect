@@ -3,11 +3,10 @@ import { DEBUG_MODE } from './index';
 import { MOCK_DATA, getMockResponse } from './mockData';
 
 // 用户相关 API
-export default {
-  // 用户登录
+export default {  // 用户登录
   login: (data) => {
-    // 调试模式下且没有JWT令牌，模拟登录
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    // 调试模式下且没有会话，模拟登录
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟用户登录");
       const { phone, password } = data;
       
@@ -56,9 +55,8 @@ export default {
         });
       }
       
-      // 登录成功，生成模拟JWT令牌
-      const token = `mock-jwt-token-${Date.now()}`;
-      localStorage.setItem('jwt', token);
+      // 登录成功，设置认证标记
+      localStorage.setItem('isAuthenticated', 'true');
       
       // 创建符合后端格式的用户数据
       const userData = {
@@ -80,11 +78,10 @@ export default {
     
     return api.post('/api/user/login', data);
   },
-  
-  // 用户注册
+    // 用户注册
   register: (data) => {
-    // 调试模式下且没有JWT令牌，模拟注册
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    // 调试模式下，模拟注册
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟用户注册");
       const { phone, password, nickname, permission } = data;
       
@@ -150,11 +147,10 @@ export default {
     
     return api.post('/api/user/register', data);
   },
-  
-  // 更新用户信息
+    // 更新用户信息
   updateUser: (data) => {
-    // 调试模式下且没有JWT令牌，模拟更新用户信息
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    // 调试模式下，模拟更新用户信息
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') === 'true') {
       console.log("DEBUG MODE: 模拟更新用户信息");
       const { uid, phone } = data;
       
@@ -210,11 +206,10 @@ export default {
     
     return api.post('/api/user/update', data);
   },
-
   // 获取用户信息
   getUserInfo: (uid) => {
-    // 调试模式下且没有JWT令牌，返回模拟用户数据
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    // 调试模式下，返回模拟用户数据
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') === 'true') {
       console.log("DEBUG MODE: 返回模拟用户数据");
       
       // 如果存在本地用户信息，优先返回
@@ -261,13 +256,12 @@ export default {
     
     return api.get(`/api/user/info${uid ? `/${uid}` : ''}`);
   },
-
   // 退出登录
   logout: () => {
     // 调试模式下，清除本地存储
     if (DEBUG_MODE) {
       console.log("DEBUG MODE: 用户退出登录");
-      localStorage.removeItem('jwt');
+      localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('currentUser');
       return Promise.resolve({
         data: {
@@ -280,11 +274,10 @@ export default {
     
     return api.post('/api/user/logout');
   },
-
   // 管理员登录
   adminLogin: (data) => {
-    // 调试模式下且没有JWT令牌，模拟管理员登录
-    if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+    // 调试模式下且没有会话，模拟管理员登录
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
       console.log("DEBUG MODE: 模拟管理员登录");
       const { phone, password } = data;
       
@@ -312,9 +305,8 @@ export default {
         });
       }
       
-      // 登录成功，生成模拟JWT令牌
-      const token = `mock-admin-jwt-token-${Date.now()}`;
-      localStorage.setItem('jwt', token);
+      // 登录成功，设置认证标记
+      localStorage.setItem('isAuthenticated', 'true');
       
       // 转换为后端格式
       const adminData = {

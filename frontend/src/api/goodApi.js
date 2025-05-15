@@ -6,7 +6,7 @@ import { MOCK_DATA, getMockResponse } from './mockData';
 export default {
     // 获取所有商品
     getProducts: () => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的商品列表数据");
             return getMockResponse(MOCK_DATA.products);
         }
@@ -15,7 +15,7 @@ export default {
 
     // 获取商品详情
     getProductDetail: (id) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的商品详情数据");
             const product = MOCK_DATA.products.find(p => p.gid === parseInt(id));
             return getMockResponse(product || MOCK_DATA.products[0]);
@@ -25,7 +25,7 @@ export default {
 
     // 发布新商品
     createProduct: (data) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新商品");
             const newProduct = {
                 gid: MOCK_DATA.products.length + 1,
@@ -47,7 +47,7 @@ export default {
 
     // 购买商品
     purchaseProduct: (id, data) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟购买商品");
             const product = MOCK_DATA.products.find(p => p.gid === parseInt(id));
             if (product) {
@@ -75,7 +75,7 @@ export default {
 
     // 获取商品标签
     getProductTags: () => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的商品标签数据");
             return getMockResponse(MOCK_DATA.productTags);
         }
@@ -84,7 +84,7 @@ export default {
     
     // 根据标签获取商品
     getProductsByTag: (tagId) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的标签筛选商品数据");
             const products = tagId === 0 ? 
                 MOCK_DATA.products : 
@@ -96,7 +96,7 @@ export default {
     
     // 获取用户发布的商品
     getUserProducts: (userId) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的用户发布商品数据");
             const products = MOCK_DATA.products.filter(p => p.uid === parseInt(userId));
             return getMockResponse(products);
@@ -106,7 +106,7 @@ export default {
     
     // 更新商品信息
     updateProduct: (data) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟更新商品");
             const product = MOCK_DATA.products.find(p => p.gid === data.gid);
             if (product) {
@@ -120,7 +120,7 @@ export default {
     
     // 删除商品
     deleteProduct: (id) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟删除商品");
             const index = MOCK_DATA.products.findIndex(p => p.gid === parseInt(id));
             if (index !== -1) {

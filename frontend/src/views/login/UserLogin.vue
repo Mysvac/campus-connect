@@ -49,15 +49,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 import ImageCarousel from '@/components/ImageCarousel.vue';
 import { userApi } from '@/api';
 
 const phone = ref('');
 const password = ref('');
 const loading = ref(false);
+const router = useRouter();
+const store = useStore();
 
 const carouselItems = ref([
   { id: 1, imageUrl: 'https://th.bing.com/th/id/R.4749c7cd4b6c4d572898d66924b2c136?rik=xusw0kwpp0Lykw&riu=http%3a%2f%2fusst.yanzhaowang.com%2fupload%2fimages%2fschool%2f10252%2f5b3b152df740e377951349c636ca4a7a.jpg&ehk=XhCuJHKb%2bJ7ZlYhwnEhVnCHcDrlOFbUCrjwf9SHZpWc%3d&risl=&pid=ImgRaw&r=0', altText: 'Image 1' },
@@ -66,7 +69,23 @@ const carouselItems = ref([
   { id: 4, imageUrl: '', altText: 'Image 4' },
 ]);
 
-const router = useRouter();
+// 检查登录状态，如果已登录则跳转到首页
+onMounted(() => {
+  // 检查localStorage而不是store，因为store可能还没同步
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  const userDataExists = localStorage.getItem('currentUser') !== null;
+  
+  if (isAuthenticated && userDataExists) {
+    console.log('已登录，跳转到消息板');
+    router.push('/message-board');
+  } else {
+    // 确保我们清除了可能错误设置的认证标记
+    if (isAuthenticated && !userDataExists) {
+      console.log('认证标记异常，重置状态');
+      localStorage.removeItem('isAuthenticated');
+    }
+  }
+});
 
 const goToPage = (path) => {
   router.push(path).catch(err => {
@@ -104,8 +123,8 @@ const handleLogin = async () => {
     
     if (code === 1) {
       ElMessage.success('登录成功');
-      // 存储用户信息
-      localStorage.setItem('currentUser', JSON.stringify(data));
+      // 使用Vuex存储用户信息
+      store.dispatch('login', data);
       // 跳转到首页或其他页面
       router.push('/message-board');
     } else {

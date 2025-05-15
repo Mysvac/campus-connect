@@ -3,10 +3,9 @@ import { DEBUG_MODE } from './index';
 import { MOCK_DATA, getMockResponse } from './mockData';
 
 // 任务相关 API
-export default {
-    // 获取所有任务
+export default {    // 获取所有任务
     getTasks: () => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的任务列表数据");
             return getMockResponse(MOCK_DATA.tasks);
         }
@@ -15,7 +14,7 @@ export default {
 
     // 获取任务详情
     getTaskDetail: (id) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的任务详情数据");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             return getMockResponse(task || MOCK_DATA.tasks[0]);
@@ -25,7 +24,7 @@ export default {
 
     // 发布新任务
     createTask: (data) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新任务");
             const newTask = {
                 tid: MOCK_DATA.tasks.length + 1,
@@ -50,7 +49,7 @@ export default {
 
     // 申请任务
     applyTask: (id, data) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟申请任务");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
@@ -74,7 +73,7 @@ export default {
 
     // 接受申请
     acceptApplicant: (taskId, userId) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟接受申请");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(taskId));
             if (task) {
@@ -93,7 +92,7 @@ export default {
 
     // 完成任务
     completeTask: (id) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟完成任务");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
@@ -107,7 +106,7 @@ export default {
 
     // 获取任务标签
     getTaskTags: () => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的任务标签数据");
             return getMockResponse(MOCK_DATA.taskTags);
         }
@@ -116,7 +115,7 @@ export default {
     
     // 根据标签获取任务
     getTasksByTag: (tag) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的标签筛选任务数据");
             const tasks = tag === '全部' ? 
                 MOCK_DATA.tasks : 
@@ -128,7 +127,7 @@ export default {
     
     // 获取用户发布的任务
     getUserTasks: (userId) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的用户任务数据");
             const tasks = MOCK_DATA.tasks.filter(t => t.uid === parseInt(userId));
             return getMockResponse(tasks);
@@ -138,7 +137,7 @@ export default {
     
     // 获取用户申请的任务
     getUserAppliedTasks: (userId) => {
-        if (DEBUG_MODE && !localStorage.getItem('jwt')) {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的用户申请任务数据");
             const tasks = MOCK_DATA.tasks.filter(t => 
                 t.applicants && t.applicants.some(a => a.uid === parseInt(userId))
