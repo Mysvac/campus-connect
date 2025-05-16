@@ -21,7 +21,7 @@ public class UserController {
         if (session.getAttribute("uid") == null) {
             return Result.error("请先登录");
         }
-        Long permission = (Long) session.getAttribute("permission");
+        Integer permission = (Integer) session.getAttribute("permission");
         if (permission == null || permission == 0) {
             return Result.error("用户不可用");
         }
@@ -84,7 +84,7 @@ public class UserController {
             return Result.error("请先登录");
         }
         Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
+        Integer permission = (Integer)(session.getAttribute("permission"));
         if(permission == null || permission != 3){
             return Result.error("权限不足");
         }

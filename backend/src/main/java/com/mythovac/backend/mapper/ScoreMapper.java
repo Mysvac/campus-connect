@@ -7,10 +7,10 @@ import java.util.List;
 
 @Mapper
 public interface ScoreMapper {
-    @Select("SELECT * FROM scores ORDER BY time DESC")
+    @Select("SELECT * FROM scores")
     List<Score> getAllScores();
 
-    @Select("SELECT * FROM scores WHERE status = 1 ORDER BY time DESC")
+    @Select("SELECT * FROM scores WHERE status = 1")
     List<Score> getAllAvailScores();
 
     @Select("SELECT * FROM scores WHERE sid = #{sid}")

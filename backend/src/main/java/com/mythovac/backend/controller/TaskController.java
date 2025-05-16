@@ -156,7 +156,7 @@ public class TaskController {
         if (sessionCheck != null) return sessionCheck;
 
         Long uid = (Long) session.getAttribute("uid");
-        Long permission = (Long) session.getAttribute("permission");
+        Integer permission = (Integer) session.getAttribute("permission");
 
         Task res = tasksService.getTaskById(tid);
         if (res == null) {

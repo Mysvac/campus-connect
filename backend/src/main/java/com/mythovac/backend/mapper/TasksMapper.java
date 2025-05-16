@@ -10,7 +10,7 @@ public interface TasksMapper {
     @Select("SELECT * FROM tasks ORDER BY time DESC")
     List<Task> getAllTasks();
 
-    @Select("SELECT DISTINCT tag FROM tasks ORDER BY time DESC")
+    @Select("SELECT DISTINCT tag FROM tasks")
     List<String> getAllTags();
 
     @Select("SELECT * FROM tasks WHERE tag = #{tag} ORDER BY time DESC")

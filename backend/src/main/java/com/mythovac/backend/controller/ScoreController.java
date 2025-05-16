@@ -108,7 +108,7 @@ public class ScoreController {
     public Result deleteScore(@PathVariable Long sid, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;
-        if ((Long) session.getAttribute("permission") != 3)
+        if ((Integer) session.getAttribute("permission") != 3)
             return Result.error("权限不足");
 
         if (scoreService.getScoreBySid(sid) == null) {
