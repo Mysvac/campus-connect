@@ -5,7 +5,8 @@ import router from '@/router';
 export const DEBUG_MODE = false;
 
 const api = axios.create({
-    baseURL: 'http://10.100.164.32:18081/',
+    // baseURL: 'http://10.100.164.32:18081/',
+    baseURL: 'https://api.mythovac.com/',
     withCredentials: true, // 添加此配置以允许跨域请求发送Cookie
 });
 

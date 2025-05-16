@@ -278,14 +278,18 @@ export default {
         const date = new Date(timestamp);
         return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
-    },
-    // 获取所有留言
+    },    // 获取所有留言
     async fetchMessages() {
       this.isLoading = true;
       try {
         const response = await messageboardApi.getMessages();
         if (response.data && response.data.code === 1) {
-          this.messages = response.data.data || [];
+          // 确保每条消息都有comments字段
+          this.messages = (response.data.data || []).map(message => ({
+            ...message,
+            comments: message.comments || [], // 如果后端没返回comments，则初始化为空数组
+            isLiked: message.isLiked || false // 同时确保isLiked字段存在
+          }));
           this.$emit('messages-updated', this.messages);
         } else {
           console.error('获取留言列表失败:', response.data.msg);
@@ -297,14 +301,18 @@ export default {
       } finally {
         this.isLoading = false;
       }
-    },
-    // 获取留言详情
+    },    // 获取留言详情
     async fetchMessageDetail(id) {
       this.isLoadingDetail = true;
       try {
         const response = await messageboardApi.getMessageDetail(id);
         if (response.data && response.data.code === 1) {
-          this.selectedMessage = response.data.data;
+          // 确保详情数据中包含comments字段
+          this.selectedMessage = {
+            ...response.data.data,
+            comments: response.data.data.comments || [], // 如果后端没返回comments，则初始化为空数组
+            isLiked: response.data.data.isLiked || false // 确保isLiked字段存在
+          };
           this.newComment = ''; // 清空评论框
         } else {
           console.error('获取留言详情失败:', response.data.msg);
@@ -339,7 +347,8 @@ export default {
         const response = await messageboardApi.createMessage({
           title: this.newPost.title,
           content: this.newPost.content,
-          tag: this.newPost.tag
+          tag: this.newPost.tag,
+          praise: 0,
         });
 
         if (response.data && response.data.code === 1) {
