@@ -47,15 +47,7 @@ public class GoodController {
     @GetMapping("/get-tags")
     public Result getTags() {
         List<String> tags = goodsService.getAllTags();
-        List<Map<String, Object>> result = new ArrayList<>();
-        int id = 1;
-        for (String tagName : tags) {
-            Map<String, Object> tagMap = new HashMap<>();
-            tagMap.put("id", id++);
-            tagMap.put("name", tagName);
-            result.add(tagMap);
-        }
-        return Result.success(result);
+        return Result.success(tags);
     }
 
     @PostMapping("/purchase/{gid}")
