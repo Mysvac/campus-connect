@@ -7,6 +7,17 @@ import AdminLogin from "@/views/login/AdminLogin.vue";
 import UserLogin from "@/views/login/UserLogin.vue";
 import AdminRegister from "@/views/register/AdminRegister.vue";
 import UserRegister from "@/views/register/UserRegister.vue";
+import BackstageLayout from "@/layout/BackstageLayout.vue";
+import MessageBoardManage from "@/views/Backstage/MessageBoardManage.vue";
+import MessageBoardCommentManage from "@/views/Backstage/MessageBoardCommentManage.vue";
+import TransactionsManage from "@/views/Backstage/TransactionsManage.vue";
+import TransactionsOrderManage from "@/views/Backstage/TransactionsOrderManage.vue";
+import TasksManage from "@/views/Backstage/TasksManage.vue";
+import TasksStatusManage from "@/views/Backstage/TasksStatusManage.vue";
+import RatingsManage from "@/views/Backstage/RatingsManage.vue";
+import RatingsCommentManage from "@/views/Backstage/RatingsCommentManage.vue";
+import usersManage from "@/views/Backstage/UsersManage.vue";
+import ManagerUserInfo from "@/views/Backstage/ManagerUserInfo.vue";
 
 const routes = [
 
@@ -64,7 +75,25 @@ const routes = [
     component: UserRegister,
   },
 
+  // 带导航栏和侧边栏的页面
+  {
+    path: "/backstage",
+    component: BackstageLayout, // 带导航栏和侧边栏的布局
+    children: [
+      {path: "message-board", name: "MessageBoardManage", component: MessageBoardManage },
+      {path: "message-board-comment", name: "MessageBoardCommentManage", component: MessageBoardCommentManage },
+      {path: "transactions", name: "TransactionsManage", component: TransactionsManage },
+      {path: "transactions-order", name: "TransactionsOrderManage", component: TransactionsOrderManage },
+      {path: "tasks", name: "TasksManage", component: TasksManage },
+      {path: "tasks-status", name: "TasksStatusManage", component: TasksStatusManage },
+      {path: "ratings", name: "RatingsManage", component: RatingsManage },
+      {path: "ratings-comment", name: "RatingsCommentManage", component: RatingsCommentManage },
+      {path: "users", name: "usersManage", component: usersManage },
+      {path: "manager-user", name: "ManagerUserInfo", component: ManagerUserInfo}
+    ],
+  },
 ]
+
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
