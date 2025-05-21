@@ -24,7 +24,7 @@ public interface UserMapper {
     @Update("UPDATE users SET permission = #{permission}, phone = #{phone}," +
             " password = #{password}, wallet = #{wallet}, nickname = #{nickname}, " +
             " gender = #{gender}, email = #{email}, profile = #{profile}, " +
-            " image = #{image} WHERE user_id = #{userId}")
+            " image = #{image} WHERE uid = #{uid}")
     void updateUser(User user);
 
     @Delete("DELETE FROM users WHERE uid = #{uid}")
