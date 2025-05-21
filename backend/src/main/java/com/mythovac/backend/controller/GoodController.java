@@ -85,7 +85,7 @@ public class GoodController {
     }
 
 
-    @GetMapping("/add-goods")
+    @PostMapping("/add-goods")
     public Result addGoods(@RequestBody Good good, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;
@@ -103,7 +103,7 @@ public class GoodController {
     }
 
 
-    @GetMapping("/delete-goods-by-gid/{gid}")
+    @DeleteMapping("/delete-goods-by-gid/{gid}")
     public Result addGoods(@PathVariable Long gid, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;

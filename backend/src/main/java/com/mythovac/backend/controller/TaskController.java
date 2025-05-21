@@ -150,7 +150,7 @@ public class TaskController {
         return Result.success("添加成功");
     }
 
-    @GetMapping("/delete-tasks-by-tid/{tid}")
+    @DeleteMapping("/delete-tasks-by-tid/{tid}")
     public Result deleteTasksByTid(@PathVariable Long tid, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;
