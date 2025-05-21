@@ -23,6 +23,12 @@ public class GoodsBuyServiceImpl implements GoodsBuyService {
     }
 
     @Override
+    public List<GoodsBuy> getGoodsBuyByUid(Long uid){ return goodsBuyMapper.getGoodsBuyByUid(uid); }
+
+    @Override
+    public GoodsBuy getLastGoodsBuyByUid(Long uid){ return goodsBuyMapper.getLastGoodsBuyByUid(uid); }
+
+    @Override
     public GoodsBuy getGoodsBuyById(Long oid) {
         return goodsBuyMapper.getGoodsBuyById(oid);
     }

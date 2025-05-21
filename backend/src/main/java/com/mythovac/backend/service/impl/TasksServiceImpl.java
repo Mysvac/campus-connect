@@ -19,6 +19,11 @@ public class TasksServiceImpl implements TasksService {
     }
 
     @Override
+    public List<String> getAllTags(){
+        return tasksMapper.getAllTags();
+    }
+
+    @Override
     public List<Task> getAllTasks()
     {
         return tasksMapper.getAllTasks();

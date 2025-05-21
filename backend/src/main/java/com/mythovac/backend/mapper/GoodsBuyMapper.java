@@ -10,6 +10,12 @@ public interface GoodsBuyMapper {
     @Select("SELECT * FROM goods_buy")
     List<GoodsBuy> getAllGoodsBuy();
 
+    @Select("SELECT * FROM goods_buy WHERE uid = #{uid}")
+    List<GoodsBuy> getGoodsBuyByUid(Long uid);
+
+    @Select("SELECT * FROM goods_buy WHERE uid = #{uid} ORDER BY time DESC LIMIT 1")
+    GoodsBuy getLastGoodsBuyByUid(Long uid);
+
     @Select("SELECT * FROM goods_buy WHERE oid = #{oid}")
     GoodsBuy getGoodsBuyById(Long oid);
 

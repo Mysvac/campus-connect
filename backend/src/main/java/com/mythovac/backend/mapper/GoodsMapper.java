@@ -7,11 +7,14 @@ import java.util.List;
 
 @Mapper
 public interface GoodsMapper {
-    @Select("SELECT * FROM goods")
+    @Select("SELECT * FROM goods ORDER BY time DESC")
     List<Good> getAllGoods();
 
-    @Select("SELECT * FROM goods WHERE tag = #{tag}")
+    @Select("SELECT * FROM goods WHERE tag = #{tag} ORDER BY time DESC")
     List<Good> getAllGoodsByTag(String tag);
+
+    @Select("SELECT DISTINCT tag FROM goods")
+    List<String> getAllTags();
 
     @Select("SELECT * FROM goods WHERE gid = #{gid}")
     Good getGoodsById(Long gid);

@@ -9,9 +9,11 @@ import com.mythovac.backend.service.impl.MessageServiceImpl;
 import com.mythovac.backend.service.impl.MessagesCommentServiceImpl;
 import com.mythovac.backend.service.impl.MessagesReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController("message-controller")
 @RequestMapping("/api/message")
@@ -28,18 +30,22 @@ public class MessageController {
         this.messagesCommentService = messagesCommentService;
     }
 
+    @GetMapping("get-all-messages")
+    public Result getMessages() {
+        List<Message> res = messageService.getAllMessages();
+        return res == null ? Result.error("留言不存在") : Result.success(res);
+    }
+
     @GetMapping("/get-message-by-mid/{mid}")
-    public Result getMessage(@PathVariable Long mid) {
+    public Result getMessageByMid(@PathVariable Long mid) {
         Message res = messageService.getMessageById(mid);
-        if(res == null) return Result.error("留言不存在");
-        return Result.success(res);
+        return res == null ? Result.error("留言不存在") : Result.success(res);
     }
 
     @GetMapping("/get-comment-by-cid/{cid}")
     public Result getComment(@PathVariable Long cid) {
         MessagesComment res = messagesCommentService.getMessagesCommentByCid(cid);
-        if(res == null) return Result.error("留言不存在");
-        return Result.success(res);
+        return res == null ? Result.error("留言不存在") : Result.success(res);
     }
 
     @GetMapping("/get-comments-by-mid/{mid}")
@@ -49,35 +55,66 @@ public class MessageController {
     }
 
     @PostMapping("/add-message")
-    public Result addMessage(@RequestBody Message message) {
-        if(message == null || message.getContent() == null || message.getContent().isEmpty()) {
-            return Result.error("留言内容无效");
-        }
-        if(message.getUid() == null) {
-            return Result.error("用户不存在");
-        }
-        if(userService.getUserById(message.getUid()) == null){
-            return Result.error("用户不存在");
-        }
+    public Result addMessage(@RequestBody Message message, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
+        message.setUid(uid);
+        message.setTime(System.currentTimeMillis());
         messageService.insertMessage(message);
 
         return Result.success();
     }
 
+    private Result updateMessagePraise(Long mid, int delta) {
+        Message msg = messageService.getMessageById(mid);
+        if (msg == null) return Result.error("留言不存在");
+        msg.setPraise(msg.getPraise() + delta);
+        messageService.updateMessage(msg);
+        return Result.success();
+    }
+
+    private Result updateCommentPraise(Long cid, int delta) {
+        MessagesComment mc = messagesCommentService.getMessagesCommentByCid(cid);
+        if (mc == null) return Result.error("留言不存在");
+        mc.setPraise(mc.getPraise() + delta);
+        messagesCommentService.updateMessagesComment(mc);
+        return Result.success();
+    }
+
+    @PostMapping("/like-message/{mid}")
+    public Result likeMessage(@PathVariable Long mid) {
+        return updateMessagePraise(mid, 1);
+    }
+    @PostMapping("/unlike-message/{mid}")
+    public Result unlikeMessage(@PathVariable Long mid) {
+        return updateMessagePraise(mid, -1);
+    }
+
+    @PostMapping("like-comment/{cid}")
+    public Result likeComment(@PathVariable Long cid) {
+        return updateCommentPraise(cid, 1);
+    }
+    @PostMapping("unlike-comment/{cid}")
+    public Result unlikeComment(@PathVariable Long cid) {
+        return updateCommentPraise(cid, -1);
+    }
+
     @PostMapping("/add-comment")
-    public Result addComment(@RequestBody MessagesComment messagesComment) {
-        if(messagesComment == null || messagesComment.getContent() == null || messagesComment.getContent().isEmpty()) {
+    public Result addComment(@RequestBody MessagesComment messagesComment, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        if (messagesComment == null || messagesComment.getContent() == null || messagesComment.getContent().isEmpty()) {
             return Result.error("留言内容无效");
         }
-        if(messagesComment.getUid() == null || messagesComment.getMid() == null) {
-            return Result.error("目标不存在");
-        }
-        if(userService.getUserById(messagesComment.getUid()) == null){
-            return Result.error("用户不存在");
-        }
-        if(messageService.getMessageById(messagesComment.getMid()) == null){
+        if (messageService.getMessageById(messagesComment.getMid()) == null) {
             return Result.error("留言不存在");
         }
+
+        Long uid = (Long) session.getAttribute("uid");
+        messagesComment.setUid(uid);
         messagesCommentService.insertMessagesComment(messagesComment);
         return Result.success();
     }
@@ -90,14 +127,20 @@ public class MessageController {
 
     @GetMapping("/get-messages-by-tag/{tag}")
     public Result getMessagesByTag(@PathVariable String tag) {
+
         List<Message> res = messageService.getMessagesByTag(tag);
         return Result.success(res);
     }
 
     @DeleteMapping("/delete-message-by-mid/{mid}")
-    public Result deleteMessage(@PathVariable Long mid) {
-        if(messageService.getMessageById(mid) == null){
-            return Result.error("留言不存在");
+    public Result deleteMessage(@PathVariable Long mid, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long)(session.getAttribute("uid"));
+        Integer permission = (Integer)(session.getAttribute("permission"));
+        if (!Objects.equals(messageService.getMessageById(mid).getUid(), uid) && permission != 3) {
+            return Result.error("用户不可用");
         }
 
         messagesCommentService.deleteMessagesCommentByMid(mid);
