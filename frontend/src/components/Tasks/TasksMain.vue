@@ -67,7 +67,7 @@
               </div>
             </div>
             <div class="task-tags">
-              <span class="task-tag">{{ selectedTask.tag }}</span>
+              <span class="task-tag">{{ getTagName(selectedTask.tag) }}</span>
               <span class="task-status" :class="getStatusClass(selectedTask.status)">
                 {{ getStatusText(selectedTask.status) }}
               </span>
@@ -135,10 +135,9 @@
       </div>
 
       <transition-group name="task-fade" tag="div" class="task-grid">
-        <div class="task-card" v-for="task in filteredTasks" :key="task.tid" @click="showTaskDetail(task)">
-          <div class="task-header">
+        <div class="task-card" v-for="task in filteredTasks" :key="task.tid" @click="showTaskDetail(task)">          <div class="task-header">
             <div class="task-tags">
-              <span class="task-tag">{{ task.tag }}</span>
+              <span class="task-tag">{{ getTagName(task.tag) }}</span>
               <span class="task-status" :class="getStatusClass(task.status)">
                 {{ getStatusText(task.status) }}
               </span>
@@ -212,7 +211,17 @@ export default {
       newNote: '',
       cachedFilteredTasks: [], // 用于缓存过滤后的任务
       isFiltering: false, // 标记是否正在过滤
-      tagOptions: []
+      // 初始化默认标签，保证即使API调用失败也有标签可选
+      tagOptions: [
+        { id: 1, name: '快递代取' },
+        { id: 2, name: '食品代购' },
+        { id: 3, name: '失物招领' },
+        { id: 4, name: '运动伙伴' },
+        { id: 5, name: '学习互助' },
+        { id: 6, name: '校园兼职' },
+        { id: 7, name: '活动组织' },
+        { id: 8, name: '其他' }
+      ]
     }
   },
   computed: {
@@ -286,20 +295,29 @@ export default {
       this.fetchTaskDetail(this.selectedTaskId);
     }
   },
-
-  methods: {
-    // 获取任务标签
+  methods: {    // 获取任务标签
     fetchTaskTags() {
+      // 即使API请求失败，我们也有预设的标签
       tasksApi.getTaskTags()
         .then(response => {
-          if (response.data && response.data.code === 1) {
-            this.tagOptions = response.data.data || [];
+          if (response.data && response.data.code === 1 && response.data.data && response.data.data.length > 0) {
+            // 确保API返回的标签格式正确，如果不正确则进行转换
+            const apiTags = response.data.data;
+            // 检查第一个标签的格式是否有文字类型的name
+            if (apiTags.length > 0 && typeof apiTags[0].name === 'string' && !isNaN(apiTags[0].name)) {
+              // 如果name是数字字符串，说明格式可能不对，需要保留原有的tagOptions
+              console.log('API返回的标签格式不正确，保留默认标签');
+            } else {
+              // 仅当API返回格式正确时才更新标签
+              this.tagOptions = apiTags;
+            }
           } else {
-            console.error('获取任务标签失败:', response.data.msg);
+            console.log('使用默认任务标签数据');
           }
         })
         .catch(error => {
           console.error('获取任务标签出错:', error);
+          console.log('使用默认任务标签数据');
         });
     },
 
@@ -550,6 +568,32 @@ export default {
       // 更新任务列表
       this.fetchTasks();
     },
+      // 获取标签名称
+      getTagName(tagId) {
+      // 如果tagId为空，直接返回未分类
+      if (!tagId){
+      return '未分类';}
+      
+      // 尝试使用id查找
+      let tag = this.tagOptions.find(t => t.id == tagId);
+      
+      // 处理标签name是数字字符串的情况
+      if (tag && typeof tag.name === 'string' && !isNaN(tag.name)) {
+        // 如果name是数字字符串，那么返回对应index的预设标签名称
+        const index = parseInt(tag.name);
+        const defaultNames = ['快递代取', '食品代购', '失物招领', '运动伙伴', '学习互助', '校园兼职', '活动组织', '其他'];
+        const defaultName = (index > 0 && index <= defaultNames.length) ? defaultNames[index-1] : '未分类';
+        return defaultName;
+      }
+      
+      // 如果没找到使用id查找的标签，尝试直接用tagId作为name匹配
+      if (!tag) {
+        tag = this.tagOptions.find(t => t.name === tagId);
+      }
+      
+      // 如果还是没找到，尝试直接返回tagId本身（如果它是字符串）
+      return tag ? tag.name : (typeof tagId === 'string' ? tagId : '未分类');
+    },
     
     // 添加清除搜索的方法
     clearSearch() {
@@ -713,10 +757,10 @@ export default {
   font-size: 1rem;
   margin: 5px 0;
   color: #8B0000;
-  font-weight: bold;
-  /* 最多显示两行，超出省略 */
+  font-weight: bold;  /* 最多显示两行，超出省略 */
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

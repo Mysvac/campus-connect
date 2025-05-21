@@ -266,8 +266,16 @@ export default {
       transactionsApi.getProductTags()
         .then(response => {
           if (response.data && response.data.code === 1 && response.data.data && response.data.data.length > 0) {
-            // 仅当API返回有效数据时才更新标签
-            this.tagOptions = response.data.data;
+            // 确保API返回的标签格式正确，如果不正确则进行转换
+            const apiTags = response.data.data;
+            // 检查第一个标签的格式是否有文字类型的name
+            if (apiTags.length > 0 && typeof apiTags[0].name === 'string' && !isNaN(apiTags[0].name)) {
+              // 如果name是数字字符串，说明格式可能不对，需要保留原有的tagOptions
+              console.log('API返回的标签格式不正确，保留默认标签');
+            } else {
+              // 仅当API返回格式正确时才更新标签
+              this.tagOptions = apiTags;
+            }
           } else {
             console.log('使用默认商品标签数据');
           }
@@ -393,10 +401,17 @@ export default {
         .finally(() => {
           this.isPurchasing = false;
         });
-    },
-
-    getTagName(tagId) {
+    },    getTagName(tagId) {
+      // 首先尝试通过id查找标签
       const tag = this.tagOptions.find(t => t.id == tagId);
+      // 添加调试日志查看问题
+      if (tag && typeof tag.name === 'string' && !isNaN(tag.name)) {
+        // 如果name是数字字符串，那么返回对应index的预设标签名称
+        const index = parseInt(tag.name);
+        const defaultNames = ['图书教材', '生活服务', '电子产品', '运动器材', '服装鞋帽', '日用百货', '票券礼品', '其他'];
+        const defaultName = (index > 0 && index <= defaultNames.length) ? defaultNames[index-1] : '未分类';
+        return defaultName;
+      }
       return tag ? tag.name : '未分类';
     },
 
