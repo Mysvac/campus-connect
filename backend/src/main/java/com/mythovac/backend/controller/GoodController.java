@@ -109,7 +109,7 @@ public class GoodController {
         if (sessionCheck != null) return sessionCheck;
 
         Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
+        Integer permission = (Integer)(session.getAttribute("permission"));
 
         if(goodsService.getGoodsById(gid) == null){
             return Result.error("商品不存在");

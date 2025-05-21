@@ -138,7 +138,7 @@ public class MessageController {
         if (sessionCheck != null) return sessionCheck;
 
         Long uid = (Long)(session.getAttribute("uid"));
-        Long permission = (Long)(session.getAttribute("permission"));
+        Integer permission = (Integer)(session.getAttribute("permission"));
         if (!Objects.equals(messageService.getMessageById(mid).getUid(), uid) && permission != 3) {
             return Result.error("用户不可用");
         }
