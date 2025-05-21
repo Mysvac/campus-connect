@@ -2,22 +2,12 @@
   <div class="main-layout">
     <Header @search="handleSearch" />
     <div class="content-container">
-      <TransactionsLeft
-          class="left-sidebar"
-          @filter-by-tag="filterByTag"
-          @show-new-post-form="showNewPostForm = true" />
-      <TransactionsMain
-          ref="mainComponent"
-          class="main-content"
-          :current-tag="currentTag"
-          :show-new-post-form="showNewPostForm"
-          :search-query="searchQuery"
-          @hide-new-post-form="showNewPostForm = false"
-          @products-updated="updateProducts" />
-      <TransactionsRight
-          class="right-sidebar"
-          :products="allProducts"
-          @view-product="viewProduct" />
+      <TransactionsLeft class="left-sidebar" @filter-by-tag="filterByTag"
+        @show-new-post-form="showNewPostForm = true" />
+      <TransactionsMain ref="mainComponent" class="main-content" :current-tag="currentTag"
+        :show-new-post-form="showNewPostForm" :search-query="searchQuery" @hide-new-post-form="showNewPostForm = false"
+        @products-updated="updateProducts" />
+      <TransactionsRight class="right-sidebar" :products="allProducts" @view-product="viewProduct" />
     </div>
   </div>
 </template>
@@ -90,9 +80,12 @@ export default {
   overflow: hidden;
 }
 
-.left-sidebar, .right-sidebar, .main-content {
+.left-sidebar,
+.right-sidebar,
+.main-content {
   height: 100%;
-  min-height: 0; /* 这个属性很重要，确保flex子项不会溢出 */
+  min-height: 0;
+  /* 这个属性很重要，确保flex子项不会溢出 */
 }
 
 @media (max-width: 1200px) {

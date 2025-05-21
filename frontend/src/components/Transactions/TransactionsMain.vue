@@ -11,12 +11,8 @@
       </div>
 
       <div v-else class="products-grid">
-        <div
-            v-for="product in filteredProducts"
-            :key="product.gid"
-            class="product-card"
-            @click="openProductDetail(product)"
-        >
+        <div v-for="product in filteredProducts" :key="product.gid" class="product-card"
+          @click="openProductDetail(product)">
           <div class="product-image">
             <img v-if="product.image" :src="product.image" :alt="product.name">
             <div v-else class="image-placeholder">暂无图片</div>
@@ -46,70 +42,44 @@
       <form @submit.prevent="submitNewProduct" class="new-product-form">
         <div class="form-group">
           <label for="productName">商品名称</label>
-          <input
-              type="text"
-              id="productName"
-              v-model="newProduct.name"
-              required
-              maxlength="32"
-              placeholder="请输入商品名称"
-          >
+          <input type="text" id="productName" v-model="newProduct.name" required maxlength="32" placeholder="请输入商品名称">
         </div>
 
         <div class="form-group">
           <label for="productPrice">价格 (元)</label>
-          <input
-              type="number"
-              id="productPrice"
-              v-model="newProduct.price"
-              required
-              min="0.01"
-              step="0.01"
-              placeholder="请输入商品价格"
-          >
+          <input type="number" id="productPrice" v-model="newProduct.price" required min="0.01" step="0.01"
+            placeholder="请输入商品价格">
         </div>
-
-        <div class="form-group">
-          <label for="productTag">商品标签</label>
+        <div class="form-group"> <label for="productTag">商品标签</label>
           <select id="productTag" v-model="newProduct.tag" required>
             <option value="" disabled>请选择标签</option>
-            <option v-for="tag in tagOptions" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+            <option value="1">图书教材</option>
+            <option value="2">生活服务</option>
+            <option value="3">电子产品</option>
+            <option value="4">运动器材</option>
+            <option value="5">服装鞋帽</option>
+            <option value="6">日用百货</option>
+            <option value="7">票券礼品</option>
+            <option value="8">其他</option>
           </select>
         </div>
 
         <div class="form-group">
           <label for="productQuantity">商品数量</label>
-          <input
-              type="number"
-              id="productQuantity"
-              v-model="newProduct.quantity"
-              required
-              min="1"
-              step="1"
-              placeholder="请输入商品数量"
-          >
+          <input type="number" id="productQuantity" v-model="newProduct.quantity" required min="1" step="1"
+            placeholder="请输入商品数量">
         </div>
 
         <div class="form-group">
           <label for="productImage">商品图片</label>
-          <input
-              type="file"
-              id="productImage"
-              @change="handleImageUpload"
-              accept="image/jpeg,image/png"
-          >
+          <input type="file" id="productImage" @change="handleImageUpload" accept="image/jpeg,image/png">
           <p class="help-text">*支持jpg, png格式，建议尺寸600×400px</p>
         </div>
 
         <div class="form-group">
           <label for="productIntro">商品简介</label>
-          <textarea
-              id="productIntro"
-              v-model="newProduct.intro"
-              maxlength="100"
-              placeholder="请输入商品简介"
-              rows="3"
-          ></textarea>
+          <textarea id="productIntro" v-model="newProduct.intro" maxlength="100" placeholder="请输入商品简介"
+            rows="3"></textarea>
         </div>
 
         <div class="form-actions">
@@ -136,7 +106,7 @@
 
         <div class="product-info">
           <p class="product-price">￥{{ (selectedProduct.price / 100).toFixed(2) }}</p>
-          <p class="product-tag">标签: {{ getTagName(selectedProduct.tag) }}</p>
+          <p class="product-tag">标签: {{ getTagName(selectedProduct.tag) || '未分类' }}</p>
           <p class="product-quantity">剩余数量: {{ selectedProduct.quantity }}</p>
           <p class="product-sales">已售: {{ selectedProduct.sales }}</p>
           <p class="product-intro">{{ selectedProduct.intro || '暂无简介' }}</p>
@@ -181,16 +151,23 @@ export default {
       type: String,
       default: ''
     }
-  },
-  data() {
+  }, data() {
     return {
       isLoading: true,
       products: [],
-      tagOptions: [],
-      newProduct: {
+      tagOptions: [
+        { id: 1, name: '图书教材' },
+        { id: 2, name: '生活服务' },
+        { id: 3, name: '电子产品' },
+        { id: 4, name: '运动器材' },
+        { id: 5, name: '服装鞋帽' },
+        { id: 6, name: '日用百货' },
+        { id: 7, name: '票券礼品' },
+        { id: 8, name: '其他' }
+      ], newProduct: {
         name: '',
         price: '',
-        tag: '',
+        tag: '1', // 设置默认标签为"图书教材"
         image: '',
         intro: '',
         quantity: 1
@@ -214,20 +191,24 @@ export default {
       if (this.searchQuery && this.searchQuery.trim() !== '') {
         const query = this.searchQuery.toLowerCase().trim();
         result = result.filter(product =>
-            product.name.toLowerCase().includes(query) ||
-            (product.intro && product.intro.toLowerCase().includes(query))
+          product.name.toLowerCase().includes(query) ||
+          (product.intro && product.intro.toLowerCase().includes(query))
         );
       }
 
       // 按发布时间排序（新的在前）
       return result.sort((a, b) => b.time - a.time);
     }
-  },
-  mounted() {
+  }, mounted() {
     window.addEventListener('resize', this.updateWindowSize);
     this.fetchProductTags();
     this.fetchProducts();
     this.updateWindowSize();
+
+    // 确保新建商品表单的标签选项有默认值
+    if (this.showNewPostForm && !this.newProduct.tag && this.tagOptions.length > 0) {
+      this.newProduct.tag = this.tagOptions[0].id;
+    }
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.updateWindowSize);
@@ -279,20 +260,21 @@ export default {
         .finally(() => {
           this.isLoading = false;
         });
-    },
-
-    // 获取商品标签
+    },    // 获取商品标签
     fetchProductTags() {
+      // 即使API请求失败，我们也有预设的标签
       transactionsApi.getProductTags()
         .then(response => {
-          if (response.data && response.data.code === 1) {
-            this.tagOptions = response.data.data || [];
+          if (response.data && response.data.code === 1 && response.data.data && response.data.data.length > 0) {
+            // 仅当API返回有效数据时才更新标签
+            this.tagOptions = response.data.data;
           } else {
-            console.error('获取商品标签失败:', response.data.msg);
+            console.log('使用默认商品标签数据');
           }
         })
         .catch(error => {
           console.error('获取商品标签出错:', error);
+          console.log('使用默认商品标签数据');
         });
     },
 
@@ -319,26 +301,25 @@ export default {
       };
 
       this.isSubmitting = true;
-      
+
       transactionsApi.createProduct(productData)
         .then(response => {
-          if (response.data && response.data.code === 1) {
-            // 重置表单
+          if (response.data && response.data.code === 1) {            // 重置表单
             this.newProduct = {
               name: '',
               price: '',
-              tag: '',
+              tag: '1', // 默认重置为"图书教材"
               image: '',
               intro: '',
               quantity: 1
             };
-            
+
             // 重新获取商品列表
             this.fetchProducts();
-            
+
             // 隐藏表单
             this.$emit('hide-new-post-form');
-            
+
             // 显示成功提示
             alert('商品发布成功！');
           } else {
@@ -388,16 +369,16 @@ export default {
       };
 
       this.isPurchasing = true;
-      
+
       transactionsApi.purchaseProduct(this.selectedProduct.gid, purchaseData)
         .then(response => {
           if (response.data && response.data.code === 1) {
             // 更新商品库存和销量
             this.fetchProducts();
-            
+
             // 关闭商品详情
             this.closeProductDetail();
-            
+
             // 显示成功提示
             alert(`购买成功！订单号: ${response.data.data.oid || '未知'}`);
           } else {
@@ -422,9 +403,7 @@ export default {
     formatTime(timestamp) {
       const date = new Date(timestamp);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    },
-
-    updateWindowSize() {
+    }, updateWindowSize() {
       this.isMobile = window.innerWidth < 768;
     }
   },
@@ -441,10 +420,23 @@ export default {
     },
     searchQuery() {
       // 当搜索关键词变化时，可能需要重新筛选数据
-      // 这里暂不重新请求API，而是在前端进行筛选
+    },
+    showNewPostForm(newVal) {
+      // 当显示新建商品表单时，如果标签为空，则默认选择第一个标签
+      if (newVal && !this.newProduct.tag && this.tagOptions.length > 0) {
+        this.newProduct.tag = this.tagOptions[0].id;
+      }
+    }
+  },
+  showNewPostForm(newVal) {
+    // 当显示新建商品表单时，如果标签为空，则默认选择第一个标签
+    if (newVal && !this.newProduct.tag && this.tagOptions.length > 0) {
+      this.newProduct.tag = this.tagOptions[0].id;
     }
   }
+  // 这里暂不重新请求API，而是在前端进行筛选
 }
+
 </script>
 
 <style scoped>
@@ -461,7 +453,8 @@ export default {
 .section-title {
   font-size: 1.5rem;
   margin-bottom: 20px;
-  color: #8B0000; /* Dark red matching header */
+  color: #8B0000;
+  /* Dark red matching header */
   position: relative;
   padding-bottom: 10px;
   text-align: center;
@@ -486,7 +479,8 @@ export default {
 }
 
 /* Loading and empty states */
-.loading-indicator, .empty-state {
+.loading-indicator,
+.empty-state {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -510,7 +504,8 @@ export default {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr); /* 每行固定 5 个 */
+  grid-template-columns: repeat(5, 1fr);
+  /* 每行固定 5 个 */
   gap: 15px;
   margin-top: 20px;
 }
@@ -531,7 +526,8 @@ export default {
 .product-card {
   background-color: #ffffff;
   border-radius: 6px;
-  padding: 10px; /* 缩小内边距 */
+  padding: 10px;
+  /* 缩小内边距 */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   position: relative;
   border: 1px solid #e0e0e0;
@@ -540,13 +536,15 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 180px; /* 控制商品卡片宽度 */
+  max-width: 180px;
+  /* 控制商品卡片宽度 */
   background-image: url("https://www.transparenttextures.com/patterns/transparent-square-tiles.png");
 }
 
 /* Remove post-it note effect */
 .product-card::before {
-  content: none; /* Remove the folded corner effect */
+  content: none;
+  /* Remove the folded corner effect */
 }
 
 .product-card:hover {
@@ -557,7 +555,8 @@ export default {
 /* 图片高度小一点 */
 .product-image {
   width: 100%;
-  height: 110px; /* 原来是140 */
+  height: 110px;
+  /* 原来是140 */
   margin-bottom: 8px;
   overflow: hidden;
   border-radius: 4px;
@@ -574,7 +573,8 @@ export default {
 }
 
 .product-card:hover .product-image img {
-  transform: scale(1.05); /* Subtle zoom effect on hover */
+  transform: scale(1.05);
+  /* Subtle zoom effect on hover */
 }
 
 /* Product information styling - modernized */
@@ -586,7 +586,8 @@ export default {
 
 .product-name {
   font-size: 0.95rem;
-  margin: 0 0 4px 0; /* 减小与价格之间的间距 */
+  margin: 0 0 4px 0;
+  /* 减小与价格之间的间距 */
   color: #333;
   font-weight: 600;
   height: 2.2em;
@@ -602,7 +603,8 @@ export default {
   font-size: 1rem;
   color: #B22222;
   font-weight: bold;
-  margin: 0 0 6px 0; /* 减小底部间距 */
+  margin: 0 0 6px 0;
+  /* 减小底部间距 */
 }
 
 .product-tag {
@@ -613,7 +615,8 @@ export default {
   font-size: 0.7rem;
   align-self: flex-start;
   margin-bottom: 6px;
-  border: none; /* Remove border for cleaner look */
+  border: none;
+  /* Remove border for cleaner look */
 }
 
 .product-stats {
@@ -622,7 +625,8 @@ export default {
   font-size: 0.8rem;
   color: #777;
   margin-top: auto;
-  border-top: 1px solid #eee; /* Lighter border */
+  border-top: 1px solid #eee;
+  /* Lighter border */
   padding-top: 10px;
 }
 
@@ -638,7 +642,8 @@ export default {
   flex-direction: column;
 }
 
-.modal-header, .form-header {
+.modal-header,
+.form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -646,7 +651,8 @@ export default {
   color: white;
 }
 
-.modal-header h2, .form-header h2 {
+.modal-header h2,
+.form-header h2 {
   color: #777;
   margin: 0;
   font-size: 1.3rem;
