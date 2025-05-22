@@ -25,12 +25,12 @@
         <el-menu-item index="3-2" @click="goToPage('/backstage/tasks-status')">任务状态</el-menu-item>
       </el-sub-menu>
 
-      <el-sub-menu index="3">
+      <el-sub-menu index="4">
         <template #title>
           评分管理
         </template>
-        <el-menu-item index="3-1" @click="goToPage('/backstage/ratings')">评分内容</el-menu-item>
-        <el-menu-item index="3-2" @click="goToPage('/backstage/ratings-comment')">评分评论</el-menu-item>
+        <el-menu-item index="4-1" @click="goToPage('/backstage/ratings')">评分内容</el-menu-item>
+        <el-menu-item index="4-2" @click="goToPage('/backstage/ratings-comment')">评分评论</el-menu-item>
       </el-sub-menu>
 
       <el-menu-item index="5" @click="goToPage('/backstage/users')">用户管理</el-menu-item>
