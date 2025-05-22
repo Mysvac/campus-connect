@@ -33,7 +33,6 @@
             class="nav-item"
             exact-active-class="active"
         >评分</router-link>
-
       </div>
       <div class="action-container">
         <div class="search-container">
@@ -50,20 +49,34 @@
           <!-- 根据登录状态显示不同的内容 -->
           <template v-if="isAuthenticated">
             <el-dropdown trigger="click">
-              <span class="user-info">
-                {{ user.nickname || '用户' }}
-                <i class="el-icon-arrow-down"></i>
-              </span>
+              <div class="user-profile">
+                <img
+                    :src="user.image || '/api/placeholder/40/40'"
+                    alt="用户头像"
+                    class="user-avatar"
+                />
+                <span class="user-name">{{ user.nickname || '用户' }}</span>
+                <i class="el-icon-arrow-down dropdown-arrow"></i>
+              </div>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="goToUserCenter">个人中心</el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                  <el-dropdown-item @click="goToUserCenter">
+                    <i class="el-icon-user"></i>
+                    个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">
+                    <i class="el-icon-switch-button"></i>
+                    退出登录
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </template>
           <template v-else>
-            <router-link to="/user-login" class="auth-button">登录/注册</router-link>
+            <router-link to="/user-login" class="auth-button">
+              <i class="el-icon-user"></i>
+              登录/注册
+            </router-link>
           </template>
         </div>
       </div>
@@ -108,15 +121,20 @@ export default {
           path.includes('/tasks') ||
           path.includes('/ratings');
     },
-    
-    // 新增 - 跳转到个人中心
+
+    // 跳转到个人中心
     goToUserCenter() {
-      // 可以添加个人中心路由
-      // this.$router.push('/user-center');
+      this.$router.push('/user-info');
       console.log('前往个人中心');
     },
-    
-    // 新增 - 处理登出
+
+    // 跳转到设置页面
+    goToSettings() {
+      this.$router.push('/settings');
+      console.log('前往设置');
+    },
+
+    // 处理登出
     handleLogout() {
       this.$store.dispatch('logout');
       this.$router.push('/user-login');
@@ -234,6 +252,9 @@ export default {
   border-radius: 25px;
   font-weight: bold;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .auth-button:hover {
@@ -242,21 +263,83 @@ export default {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* 新增 - 用户信息样式 */
-.user-info {
-  color: white;
-  padding: 10px 18px;
+/* 用户头像和信息样式 */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 15px;
   border-radius: 25px;
   background-color: rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
-.user-info:hover {
+.user-profile:hover {
   background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.user-profile:hover .user-avatar {
+  border-color: white;
+  transform: scale(1.1);
+}
+
+.user-name {
+  color: white;
+  font-weight: bold;
+  font-size: 0.95rem;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-arrow {
+  color: white;
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.user-profile:hover .dropdown-arrow {
+  transform: translateY(-1px);
+}
+
+/* Element UI 下拉菜单样式覆盖 */
+:deep(.el-dropdown-menu) {
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: none;
+  padding: 8px 0;
+}
+
+:deep(.el-dropdown-menu__item) {
+  padding: 12px 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background-color: #f5f5f5;
+  color: #8B0000;
+}
+
+:deep(.el-dropdown-menu__item i) {
+  font-size: 16px;
 }
 
 @media (max-width: 900px) {
@@ -279,6 +362,7 @@ export default {
     width: 100%;
     justify-content: center;
     margin-bottom: 15px;
+    padding-left: 0;
   }
 
   .action-container {
@@ -290,6 +374,10 @@ export default {
   .search-container {
     margin-bottom: 10px;
   }
+
+  .user-name {
+    max-width: 80px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -300,6 +388,20 @@ export default {
 
   .search-input {
     width: 140px;
+  }
+
+  .user-profile {
+    padding: 6px 12px;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .user-name {
+    font-size: 0.9rem;
+    max-width: 60px;
   }
 }
 </style>
