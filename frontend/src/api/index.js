@@ -3,10 +3,11 @@ import router from '@/router';
 
 // 调试模式开关，在开发环境下可以绕过登录检查
 export const DEBUG_MODE = false;
+export const baseURL = 'https://api.mythovac.com/';
 
 const api = axios.create({
     // baseURL: 'http://10.100.164.32:18081/',
-    baseURL: 'https://api.mythovac.com/',
+    baseURL: baseURL,
     withCredentials: true, // 添加此配置以允许跨域请求发送Cookie
 });
 

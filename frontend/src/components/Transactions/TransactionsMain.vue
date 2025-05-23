@@ -135,6 +135,7 @@
 
 <script>
 import { transactionsApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: 'TransactionsMain',
@@ -284,26 +285,54 @@ export default {
           console.error('获取商品标签出错:', error);
           console.log('使用默认商品标签数据');
         });
-    },
-
-    handleImageUpload(event) {
+    },    handleImageUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        // 实际中，这里应该有上传图片到服务器的逻辑
-        // 为了演示，我们只是创建一个本地URL
-        this.newProduct.image = URL.createObjectURL(file);
-      }
-    },
+        // 显示上传中提示
+        // alert('图片上传中...');
+        
+        // 创建FormData对象并添加文件
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // 调用API上传图片
+        transactionsApi.uploadImage(formData)
+          .then(response => {
+            if (response.data) {
+              // 获取服务器返回的图片URL
+              const imageUrl = response.data;
 
-    submitNewProduct() {
+                // 移除 baseURL 末尾的斜杠（如果有），再拼接 imageUrl
+                const cleanBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+                this.newProduct.image = cleanBaseURL + imageUrl;
+
+              // 显示成功提示
+              alert('图片上传成功');
+            } else {
+              console.error('上传图片失败:', response.data.msg);
+              alert('上传图片失败: ' + (response.data.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('上传图片出错:', error);
+            alert('网络错误，请稍后再试');
+          });
+      }
+    },    submitNewProduct() {
       // 将价格转换为分
       const priceInCents = Math.round(parseFloat(this.newProduct.price) * 100);
+
+      // 检查是否已上传图片
+      if (!this.newProduct.image) {
+        alert('请先上传商品图片');
+        return;
+      }
 
       const productData = {
         name: this.newProduct.name,
         price: priceInCents,
         tag: parseInt(this.newProduct.tag),
-        image: this.newProduct.image || null,
+        image: this.newProduct.image, // 使用从服务器返回的图片URL
         intro: this.newProduct.intro,
         quantity: parseInt(this.newProduct.quantity)
       };
@@ -312,7 +341,8 @@ export default {
 
       transactionsApi.createProduct(productData)
         .then(response => {
-          if (response.data && response.data.code === 1) {            // 重置表单
+          if (response.data && response.data.code === 1) {
+            // 重置表单
             this.newProduct = {
               name: '',
               price: '',

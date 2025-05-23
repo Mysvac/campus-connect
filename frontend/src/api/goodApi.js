@@ -23,6 +23,21 @@ export default {
         return api.get(`/api/good/get-good-by-gid/${id}`);
     },
 
+    // 上传图片
+    uploadImage: (formData) => {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟上传图片");
+            // 模拟返回一个图片URL
+            const mockImageUrl = `/image/mock-${Date.now()}.jpg`;
+            return getMockResponse({ url: mockImageUrl });
+        }
+        return api.post('/api/image/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
     // 发布新商品
     createProduct: (data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
