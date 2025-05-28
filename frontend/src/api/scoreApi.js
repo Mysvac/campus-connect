@@ -6,8 +6,8 @@ import { MOCK_DATA, getMockResponse } from './mockData';
 export default {    // 获取评分标签
     getRatingTags: () => {
         console.log("获取评分标签");
-        // 提供一些通用的评分标签
-        const mockTags = ['课程', '食堂', '宿舍', '图书馆', '校园设施', '教师', '活动', '服务', '公共区域', '其他'];
+        // 提供与实际评分数据一致的标签
+        const mockTags = ['课程教学', '学习场所', '餐饮美食', '住宿条件', '运动健身', '校园服务', '校园活动'];
         
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的评分标签数据");
