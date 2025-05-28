@@ -33,6 +33,11 @@ public class GoodsServiceImpl implements GoodsService {
     }
 
     @Override
+    public List<Good> getAllGoodsByPhone(String phone) {
+        return goodsMapper.getAllGoodsByPhone(phone);
+    }
+
+    @Override
     public List<String> getAllTags(){ return goodsMapper.getAllTags(); }
 
     @Override

@@ -8,6 +8,7 @@ public interface GoodsService {
     List<Good> getAllGoods();
     List<Good> getAllGoodsByTag(String tag);
     List<Good> getAllGoodsByUid(Long uid);
+    List<Good> getAllGoodsByPhone(String phone);
     List<String> getAllTags();
     Good getGoodsById(Long gid);
     void insertGoods(Good goods);
