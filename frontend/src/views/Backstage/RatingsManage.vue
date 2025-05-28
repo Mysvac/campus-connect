@@ -61,12 +61,12 @@
                 <el-button size="small" type="primary">上传图片</el-button>
               </el-upload>
               <div v-if="row.image" style="margin-top: 8px;">
-                <img :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+                <img :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
                 <el-button type="text" @click="row.image = ''" style="margin-left: 5px;">删除</el-button>
               </div>
             </div>
             <div v-else>
-              <img v-if="row.image" :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+              <img v-if="row.image" :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
               <span v-else>无</span>
             </div>
           </template>
@@ -150,6 +150,7 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { getImageUrl } from '@/utils/imageUtils';
 
 export default {
   name: "RatingsManage",

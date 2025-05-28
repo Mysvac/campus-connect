@@ -1,10 +1,10 @@
 <template>
   <aside class="right-aside">
     <div class="hot-topics">
-      <h3 class="section-title">热门</h3>
+      <h3 class="section-title">最新</h3>
 
       <div class="topic-list">
-        <div class="topic-item" v-for="(task, index) in sortedWaitingTasks"
+        <div class="topic-item" v-for="(task, index) in sortedLatestTasks"
              :key="task.tid"
              @click="showTaskDetail(task)">
           <span class="topic-rank" :class="{'top-three': index < 3}">{{ index + 1 }}</span>
@@ -29,13 +29,12 @@ export default {
       type: Array,
       default: () => []
     }
-  },
-  computed: {
-    sortedWaitingTasks() {
-      // 过滤出状态为待接取(status=0)的任务，并按金额从高到低排序
+  },  computed: {
+    sortedLatestTasks() {
+      // 过滤出状态为待接取(status=0)的任务，并按时间从新到旧排序
       return this.tasks
           .filter(task => task.status === 0)
-          .sort((a, b) => b.money - a.money)
+          .sort((a, b) => b.time - a.time)
           .slice(0, 8); // 最多显示8个
     }
   },
@@ -157,6 +156,7 @@ export default {
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

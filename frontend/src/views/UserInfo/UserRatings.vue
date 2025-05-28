@@ -46,7 +46,8 @@
                   :before-upload="beforeImageUpload"
               >
                 <el-button size="small" type="primary">上传图片</el-button>
-              </el-upload>              <div v-if="row.image" style="margin-top: 8px;">
+              </el-upload>
+              <div v-if="row.image" style="margin-top: 8px;">
                 <img :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
                 <el-button type="text" @click="row.image = ''" style="margin-left: 5px;">删除</el-button>
               </div>
