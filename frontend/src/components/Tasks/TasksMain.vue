@@ -446,17 +446,15 @@ export default {
       if (!this.newTask.contact.trim()) {
         alert('请输入联系方式');
         return;
-      }
-
-      // 创建任务数据
+      }      // 创建任务数据
       const taskData = {
-        title: this.newTask.name,
-        content: this.newTask.details,
+        name: this.newTask.name,
+        details: this.newTask.details,
         tag: this.newTask.tag,
-        reward: parseInt(this.newTask.money) * 100, // 将金额转换为分
-        location: '',
+        money: parseInt(this.newTask.money),
         contact: this.newTask.contact,
-        deadline: Date.now() + 86400000 * 7 // 默认7天后截止
+        status: 0,
+        time: Date.now()
       };
 
       this.isSubmitting = true;

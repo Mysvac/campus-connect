@@ -20,9 +20,7 @@ export default {    // 获取所有任务
             return getMockResponse(task || MOCK_DATA.tasks[0]);
         }
         return api.get(`/api/task/get-tasks-by-tid/${id}`);
-    },
-
-    // 发布新任务
+    },    // 发布新任务
     createTask: (data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新任务");
@@ -33,11 +31,8 @@ export default {    // 获取所有任务
                 details: data.details,
                 tag: data.tag,
                 money: data.money,
-                reward: data.reward,
                 status: 0, // 未接单
-                location: data.location,
                 contact: data.contact,
-                deadline: data.deadline,
                 time: Date.now(),
                 applicants: []
             };
