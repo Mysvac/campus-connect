@@ -74,7 +74,7 @@
 
       <div class="detail-header">
         <div class="detail-img-container">
-          <img :src="currentRating.image" :alt="currentRating.goal" class="detail-img">
+          <img :src="getImageUrl(currentRating.image)" :alt="currentRating.goal" class="detail-img">
           <div class="detail-tag">{{ currentRating.tag }}</div>
         </div>
 
@@ -96,10 +96,8 @@
         <div class="detail-intro">
           <h3 class="section-subtitle">介绍</h3>
           <p>{{ currentRating.intro }}</p>
-        </div>
-
-        <div class="rating-comments-section">
-          <h3 class="section-subtitle">评论 ({{ currentRating.comments.length }})</h3>
+        </div>        <div class="rating-comments-section">
+          <h3 class="section-subtitle">评论 ({{ currentRating.comments ? currentRating.comments.length : 0 }})</h3>
 
           <!-- 我的评分 -->
           <div class="my-rating" v-if="!hasRated">
@@ -122,12 +120,10 @@
                 placeholder="分享你的评价..."
             ></textarea>
             <button class="submit-btn" @click="submitRating">提交评价</button>
-          </div>
-
-          <!-- 评论列表 -->
+          </div>          <!-- 评论列表 -->
           <div class="comments-list">
             <div
-                v-for="comment in currentRating.comments"
+                v-for="comment in (currentRating.comments || [])"
                 :key="`${comment.sid}-${comment.uid}`"
                 class="comment-item"
             >
@@ -191,7 +187,7 @@
             @click="viewRatingDetails(rating.sid)"
         >
           <div class="rating-img-container">
-            <img :src="rating.image" :alt="rating.goal" class="rating-img">
+            <img :src="getImageUrl(rating.image)" :alt="rating.goal" class="rating-img">
             <div class="rating-tag">{{ rating.tag }}</div>
           </div>
           <div class="rating-info">
@@ -220,6 +216,7 @@
 
 <script>
 import { ratingsApi } from '@/api';
+import { getImageUrl } from '@/utils/imageUtils';
 
 export default {
   name: 'RatingContent',
@@ -301,9 +298,12 @@ export default {
       }
 
       return result;
-    },
-    currentRating() {
-      return this.ratings.find(r => r.sid === this.currentRatingId) || null;
+    },    currentRating() {
+      const rating = this.ratings.find(r => r.sid === this.currentRatingId);
+      if (rating && !rating.comments) {
+        rating.comments = [];
+      }
+      return rating || null;
     }
   },
   watch: {
@@ -363,20 +363,25 @@ export default {
         .catch(error => {
           console.error('获取评分标签出错:', error);
         });
-    },
-
-    // 获取评分列表
+    },    // 获取评分列表
     fetchRatings() {
       this.isLoading = true;
       ratingsApi.getRatings()
         .then(response => {
           if (response.data && response.data.code === 1) {
-            this.ratings = response.data.data || [];
+            // 确保每个评分对象都有comments数组
+            const ratingsData = (response.data.data || []).map(rating => {
+              if (!rating.comments) {
+                rating.comments = [];
+              }
+              return rating;
+            });
+            this.ratings = ratingsData;
             // 发送更新事件通知父组件
             this.$emit('ratings-updated', this.ratings);
           } else {
-            console.error('获取评分列表失败:', response.data.msg);
-            this.error = response.data.msg || '获取评分列表失败';
+            console.error('获取评分列表失败:', response.data?.msg);
+            this.error = response.data?.msg || '获取评分列表失败';
           }
         })
         .catch(error => {
@@ -386,31 +391,38 @@ export default {
         .finally(() => {
           this.isLoading = false;
         });
-    },
-
-    // 获取评分详情
+    },    // 获取评分详情
     fetchRatingDetail(id) {
       this.isLoading = true;
       ratingsApi.getRatingDetail(id)
         .then(response => {
           if (response.data && response.data.code === 1) {
+            // 确保评分对象有comments数组
+            const ratingData = response.data.data;
+            if (!ratingData.comments) {
+              ratingData.comments = [];
+            }
+            
             // 查找评分是否已经存在于列表中
             const index = this.ratings.findIndex(r => r.sid === id);
             if (index !== -1) {
               // 更新已有评分
-              this.ratings.splice(index, 1, response.data.data);
+              this.ratings.splice(index, 1, ratingData);
             } else {
               // 添加新评分到列表
-              this.ratings.push(response.data.data);
+              this.ratings.push(ratingData);
             }
             this.currentRatingId = id;
             this.currentViewMode = 'detail';
             
             // 检查用户是否已经评分
             this.checkUserRating();
+            
+            // 获取该评分的评论
+            this.fetchRatingComments(id);
           } else {
-            console.error('获取评分详情失败:', response.data.msg);
-            alert('获取评分详情失败: ' + (response.data.msg || '未知错误'));
+            console.error('获取评分详情失败:', response.data?.msg);
+            alert('获取评分详情失败: ' + (response.data?.msg || '未知错误'));
           }
         })
         .catch(error => {
@@ -419,6 +431,25 @@ export default {
         })
         .finally(() => {
           this.isLoading = false;
+        });
+    },
+
+    // 获取评分评论
+    fetchRatingComments(id) {
+      ratingsApi.getRatingComments(id)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            // 找到对应的评分并更新其评论
+            const rating = this.ratings.find(r => r.sid === id);
+            if (rating) {
+              rating.comments = response.data.data || [];
+            }
+          } else {
+            console.error('获取评分评论失败:', response.data?.msg);
+          }
+        })
+        .catch(error => {
+          console.error('获取评分评论出错:', error);
         });
     },
 
@@ -447,9 +478,7 @@ export default {
       this.hasRated = false;
       this.userRating = 0;
       this.userComment = '';
-    },
-    
-    submitRating() {
+    },      submitRating() {
       if (this.userRating === 0) {
         alert('请先给出您的评分');
         return;
@@ -458,7 +487,8 @@ export default {
       const ratingData = {
         sid: this.currentRatingId,
         score: this.userRating,
-        content: this.userComment
+        content: this.userComment,
+        time: Date.now() // 添加时间戳
       };
 
       this.isSubmitting = true;
@@ -468,7 +498,7 @@ export default {
           if (response.data && response.data.code === 1) {
             this.hasRated = true;
             
-            // 重新获取评分详情，更新评论和分数
+            // 重新获取评分详情和评论
             this.fetchRatingDetail(this.currentRatingId);
             
             // 清空评论
@@ -494,30 +524,60 @@ export default {
       const date = new Date(timestamp);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
-    
-    handleImageUpload(event) {
+      handleImageUpload(event) {
       const file = event.target.files[0];
       if (file) {
-        // 实际中，这里应该有上传图片的逻辑
-        // 为了演示，我们只是创建一个本地URL
-        this.newRating.image = URL.createObjectURL(file);
+        // 文件大小验证
+        if (file.size > 2 * 1024 * 1024) {
+          alert('图片大小不能超过2MB');
+          return;
+        }
+
+        // 文件类型验证
+        if (!file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+          alert('只支持JPG、JPEG、PNG格式的图片');
+          return;
+        }
+
+        // 创建FormData对象并添加文件
+        const formData = new FormData();
+        formData.append('file', file);        // 调用API上传图片
+        ratingsApi.uploadImage(formData)
+          .then(response => {
+            if (response.data) {
+              // 直接保存服务器返回的相对路径，不拼接host
+              this.newRating.image = response.data;
+              alert('图片上传成功');
+            } else {
+              console.error('上传图片失败:', response.data?.msg);
+              alert('上传图片失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('上传图片出错:', error);
+            alert('网络错误，请稍后再试');
+          });
       }
     },
-    
-    submitNewRating() {
+      submitNewRating() {
       if (this.newRating.score === 0) {
         alert('请先给出您的评分');
         return;
       }
 
+      // 检查是否已上传图片
+      if (!this.newRating.image || this.newRating.image === '/images/default.jpg') {
+        alert('请先上传评分图片');
+        return;
+      }      // 使用后端Score实体的字段名
       const ratingData = {
-        targetType: this.newRating.tag,
-        targetId: Date.now().toString(), // 简单生成一个ID，实际应用中可能需要指定
-        targetName: this.newRating.goal,
-        rating: this.newRating.score,
-        review: this.newRating.comment,
+        tag: this.newRating.tag,
+        goal: this.newRating.goal,
         intro: this.newRating.intro,
-        image: this.newRating.image
+        image: this.newRating.image,
+        score: this.newRating.score,
+        num: 1, // 提交时只有一个人评分
+        status: 0 // 新创建的评分状态为0
       };
 
       this.isSubmitting = true;
@@ -556,8 +616,7 @@ export default {
       this.showNewRatingForm = false;
       this.$emit('hide-new-post-form');
     },
-    
-    resetNewRatingForm() {
+      resetNewRatingForm() {
       this.newRating = {
         goal: '',
         tag: '',
@@ -566,6 +625,11 @@ export default {
         score: 0,
         comment: ''
       };
+    },
+    
+    // 获取完整的图片URL
+    getImageUrl(imagePath) {
+      return getImageUrl(imagePath);
     }
   }
 }
@@ -700,11 +764,11 @@ export default {
 
 .rating-intro {
   color: #6c757d;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.95rem;  line-height: 1.6;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-grow: 1;

@@ -36,6 +36,19 @@ export default {    // 获取评分标签
             return getMockResponse(rating || MOCK_DATA.ratings[0]);
         }
         return api.get(`/api/score/get-score-by-sid/${id}`);
+    },    // 上传图片
+    uploadImage: (formData) => {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟上传图片");
+            // 模拟返回一个相对路径（不包含host）
+            const mockImagePath = `/image/mock-${Date.now()}.jpg`;
+            return getMockResponse(mockImagePath);
+        }
+        return api.post('/api/image/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
     },
 
     // 添加新评分
@@ -46,14 +59,13 @@ export default {    // 获取评分标签
                 rid: MOCK_DATA.ratings.length + 1,
                 sid: MOCK_DATA.ratings.length + 1,
                 uid: 101, // 模拟用户ID
-                targetType: data.targetType,
-                targetId: data.targetId,
-                targetName: data.targetName,
                 goal: data.goal,
-                rating: data.rating,
-                score: data.rating,
-                review: data.review,
                 tag: data.tag,
+                intro: data.intro,
+                image: data.image,
+                score: data.score,
+                num: 1,
+                status: 0,
                 time: Date.now(),
                 likes: 0,
                 isLiked: false,

@@ -46,14 +46,13 @@
                   :before-upload="beforeImageUpload"
               >
                 <el-button size="small" type="primary">上传图片</el-button>
-              </el-upload>
-              <div v-if="row.image" style="margin-top: 8px;">
-                <img :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+              </el-upload>              <div v-if="row.image" style="margin-top: 8px;">
+                <img :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
                 <el-button type="text" @click="row.image = ''" style="margin-left: 5px;">删除</el-button>
               </div>
             </div>
             <div v-else>
-              <img v-if="row.image" :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+              <img v-if="row.image" :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
               <span v-else>无</span>
             </div>
           </template>
@@ -115,9 +114,8 @@
               :before-upload="beforeImageUpload"
           >
             <el-button size="small" type="primary">上传图片</el-button>
-          </el-upload>
-          <div v-if="newRating.image" style="margin-top: 8px;">
-            <img :src="newRating.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+          </el-upload>          <div v-if="newRating.image" style="margin-top: 8px;">
+            <img :src="getImageUrl(newRating.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
             <el-button type="text" @click="newRating.image = ''" style="margin-left: 5px;">删除</el-button>
           </div>
         </el-form-item>
@@ -137,6 +135,7 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { getImageUrl } from '@/utils/imageUtils';
 
 export default {
   name: "RatingsManage",
@@ -215,14 +214,12 @@ export default {
       //   console.error('获取评分列表失败:', error);
       //   this.isLoading = false;
       //   ElMessage.error('获取评分列表失败');
-      // });
-
-      // 模拟数据
+      // });      // 模拟数据
       setTimeout(() => {
         this.ratingData = [
-          { sid: 1, tag: '课程互助', num: 25, goal: '高数', intro: '高数互助评分', image: 'https://example.com/img1.jpg', score: 4.5, isEditing: false },
-          { sid: 2, tag: '校园活动', num: 100, goal: '歌手大赛', intro: '歌手大赛评分', image: 'https://example.com/img2.jpg', score: 4.8, isEditing: false },
-          { sid: 3, tag: '失物招领', num: 10, goal: '学生卡', intro: '失物招领评分', image: 'https://example.com/img3.jpg', score: 4.2, isEditing: false }
+          { sid: 1, tag: '课程互助', num: 25, goal: '高数', intro: '高数互助评分', image: '/image/mock-course-123.jpg', score: 4.5, isEditing: false, uid: 101 },
+          { sid: 2, tag: '校园活动', num: 100, goal: '歌手大赛', intro: '歌手大赛评分', image: '/image/mock-activity-456.jpg', score: 4.8, isEditing: false, uid: 101 },
+          { sid: 3, tag: '失物招领', num: 10, goal: '学生卡', intro: '失物招领评分', image: '/image/mock-lost-789.jpg', score: 4.2, isEditing: false, uid: 101 }
         ];
         this.isLoading = false;
       }, 500);
@@ -377,28 +374,39 @@ export default {
           { value: '校园问题', label: '校园问题' }
         ];
       }, 300);
-    },
-
-    // 图片上传成功处理
+    },    // 图片上传成功处理
     handleImageSuccess(response, file, target) {
-      if (response && response.url) {
-        target.image = response.url;
+      // 优先使用服务器返回的相对路径
+      if (response && response.relativePath) {
+        target.image = response.relativePath;
+      } else if (response && response.url) {
+        // 如果返回的是完整URL，提取相对路径部分
+        const url = response.url;
+        if (url.includes('/image/')) {
+          target.image = url.substring(url.indexOf('/image/'));
+        } else {
+          target.image = url;
+        }
+      } else if (file && file.response && file.response.relativePath) {
+        target.image = file.response.relativePath;
       } else if (file && file.response && file.response.url) {
-        target.image = file.response.url;
+        const url = file.response.url;
+        if (url.includes('/image/')) {
+          target.image = url.substring(url.indexOf('/image/'));
+        } else {
+          target.image = url;
+        }
       } else if (file && file.url) {
         target.image = file.url;
       } else if (file && file.raw) {
-        const URL = window.URL || window.webkitURL;
-        if (URL) {
-          target.image = URL.createObjectURL(file.raw);
-        }
+        // 对于本地预览，生成一个临时的相对路径
+        const timestamp = Date.now();
+        target.image = `/image/temp-${timestamp}.jpg`;
       }
       this.$nextTick(() => {
         ElMessage.success('图片上传成功');
       });
-    },
-
-    // 图片上传前验证
+    },// 图片上传前验证
     beforeImageUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
       const isLt2M = file.size / 1024 / 1024 < 2;
@@ -413,6 +421,11 @@ export default {
       }
       return isJPG && isLt2M;
     },
+    
+    // 获取完整的图片URL
+    getImageUrl(imagePath) {
+      return getImageUrl(imagePath);
+    }
   },
   created() {
     this.fetchTags();
