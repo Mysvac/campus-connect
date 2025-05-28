@@ -13,6 +13,9 @@ public interface ScoresCommentMapper {
     @Select("SELECT * FROM scores_comment WHERE sid = #{sid}")
     List<ScoresComment> getScoresCommentBySid(Long sid);
 
+    @Select("SELECT * FROM scores_comment WHERE sid = #{sid} AND uid = #{uid}")
+    ScoresComment getScoresCommentBySidAndUid(Long sid, Long uid);
+
     @Insert("INSERT INTO scores_comment (sid, uid, score, comment, time)" +
             " VALUES (#{sid}, #{uid}, ${score}, #{comment}, ${time})")
     void insertScoresComment(ScoresComment scoresComment);

@@ -14,15 +14,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
+/**
+ * 图片上传控制器
+ * 处理图片上传请求
+ */
 @RestController
 @RequestMapping("/api/image")
 public class ImageController {
+    // 注入配置文件中的上传目录和访问前缀
     @Value("${file.upload-dir}") // 从配置文件中读取上传目录
     private String uploadDir;
 
+    // 访问前缀，用于返回图片的访问地址
     @Value("${file.access-prefix}") // 访问前缀，如 /images/
     private String accessPrefix;
 
+    /**
+     * 上传图片
+     * @param file 上传的图片文件
+     * @return 图片的访问地址或错误信息
+     */
     @PostMapping("/upload")
     public String uploadImage(@RequestParam("file") MultipartFile file) {
         try {
@@ -34,8 +45,11 @@ public class ImageController {
 
             // 生成唯一文件名
             String originalFilename = file.getOriginalFilename();
-            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+            String fileExtension = null;
+            if (originalFilename != null) {
+                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String uniqueFileName = UUID.randomUUID() + fileExtension;
 
             // 保存文件
             Path filePath = Paths.get(uploadDir, uniqueFileName);

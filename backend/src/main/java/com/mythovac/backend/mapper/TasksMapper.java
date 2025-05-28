@@ -16,6 +16,9 @@ public interface TasksMapper {
     @Select("SELECT * FROM tasks WHERE tag = #{tag} ORDER BY time DESC")
     List<Task> getTasksByTag(String tag);
 
+    @Select("SELECT * FROM tasks WHERE uid = #{uid} ORDER BY time DESC")
+    List<Task> getTasksByUid(Long uid);
+
     @Select("SELECT * FROM tasks WHERE tid = #{tid}")
     Task getTaskById(Long tid);
 
