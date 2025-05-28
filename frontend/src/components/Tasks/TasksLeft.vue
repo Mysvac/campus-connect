@@ -44,14 +44,12 @@ export default {
         { id: 8, name: '其他', active: false }
       ]
     }
-  },
-  methods: {
-    selectTag(tagId) {
+  },  methods: {    selectTag(tagId) {
       this.tags.forEach(tag => tag.active = false);
       const selectedTag = this.tags.find(tag => tag.id === tagId);
       if (selectedTag) selectedTag.active = true;
-      const tagName = selectedTag ? selectedTag.name : '全部';
-      this.$emit('filter-by-tag', tagName === '全部' ? null : tagName);
+      // 发出标签ID而不是标签名称
+      this.$emit('filter-by-tag', tagId === 0 ? null : tagId.toString());
     }
   }
 }

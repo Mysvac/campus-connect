@@ -223,16 +223,13 @@ export default {
         { id: 8, name: '其他' }
       ]
     }
-  },
-  computed: {
+  },  computed: {
     filteredTasks() {
       if (this.isFiltering) {
         return this.cachedFilteredTasks;
       }
 
-      let filtered = this.tasks;
-
-      // 按标签筛选
+      let filtered = this.tasks;      // 按标签筛选
       if (this.currentTag) {
         filtered = filtered.filter(task => task.tag === this.currentTag);
       }
