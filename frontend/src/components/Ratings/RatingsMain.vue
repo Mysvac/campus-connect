@@ -487,7 +487,7 @@ export default {
       const ratingData = {
         sid: this.currentRatingId,
         score: this.userRating,
-        content: this.userComment,
+        comment: this.userComment,
         time: Date.now() // 添加时间戳
       };
 
