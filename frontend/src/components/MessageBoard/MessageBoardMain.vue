@@ -81,6 +81,15 @@
               <i class="icon">💬</i>
               <span>{{ selectedMessage.comments.length }}</span>
             </button>
+            <!-- 删除按钮，仅对留言拥有者显示 -->
+            <button 
+              v-if="currentUser && currentUser.uid === selectedMessage.uid" 
+              class="action-btn delete" 
+              @click="confirmDeleteMessage(selectedMessage)"
+            >
+              <i class="icon">🗑️</i>
+              <span>删除</span>
+            </button>
           </div>
         </div>
 
@@ -168,6 +177,15 @@
               <i class="icon">💬</i>
               <span>{{ message.comments.length }}</span>
             </button>
+            <!-- 删除按钮，仅对留言拥有者显示 -->
+            <button 
+              v-if="currentUser && currentUser.uid === message.uid" 
+              class="action-btn delete" 
+              @click.stop="confirmDeleteMessage(message)"
+            >
+              <i class="icon">🗑️</i>
+              <span>删除</span>
+            </button>
           </div>
         </div>
       </transition-group>
@@ -179,7 +197,30 @@
       
       <!-- 没有任何留言时显示 -->
       <div class="no-results" v-if="!isLoading && !searchQuery && messages.length === 0">
-        <p>暂无留言，快来发表第一条留言吧！</p>
+        <p>暂无留言，快来发表第一条留言吧！</p>      </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal-overlay" v-if="showDeleteModal" @click="showDeleteModal = false">
+      <div class="delete-modal" @click.stop>
+        <div class="modal-header">
+          <h3>确认删除</h3>
+          <button class="close-btn" @click="showDeleteModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <p>确定要删除这条留言吗？</p>
+          <div class="message-preview" v-if="messageToDelete">
+            <strong>{{ messageToDelete.title }}</strong>
+            <p>{{ messageToDelete.content.substring(0, 100) }}{{ messageToDelete.content.length > 100 ? '...' : '' }}</p>
+          </div>
+          <p class="warning-text">删除后无法恢复，请谨慎操作。</p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showDeleteModal = false" :disabled="isDeleting">取消</button>
+          <button class="delete-confirm-btn" @click="confirmDelete" :disabled="isDeleting">
+            {{ isDeleting ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
       </div>
     </div>
   </main>
@@ -220,9 +261,14 @@ export default {
       isLoading: true, // 加载留言列表状态
       isLoadingDetail: false, // 加载留言详情状态
       isSubmitting: false, // 提交新留言状态
-      isSubmittingComment: false, // 提交评论状态      error: null,
+      isSubmittingComment: false, // 提交评论状态
+      error: null,
       usernameCache: {}, // 用户名结果缓存
-      usernamePromiseCache: {} // 用户名Promise缓存，防止并发请求
+      usernamePromiseCache: {}, // 用户名Promise缓存，防止并发请求
+      // 删除相关状态
+      showDeleteModal: false, // 显示删除确认弹窗
+      messageToDelete: null, // 要删除的留言
+      isDeleting: false // 删除中状态
     }
   },
   computed: {
@@ -244,6 +290,16 @@ export default {
       }
 
       return filtered;
+    },
+    // 获取当前用户信息
+    currentUser() {
+      try {
+        const user = localStorage.getItem('currentUser');
+        return user ? JSON.parse(user) : null;
+      } catch (error) {
+        console.error('获取当前用户信息失败:', error);
+        return null;
+      }
     }
   },
   watch: {
@@ -596,6 +652,60 @@ export default {
     // 清除搜索
     clearSearch() {
       this.$emit('clear-search');
+    },
+    // 删除留言
+    async deleteMessage(messageId) {
+      if (confirm('确定要删除这条留言吗？')) {
+        try {
+          const response = await messageboardApi.deleteMessage(messageId);
+          if (response.data && response.data.code === 1) {
+            // 删除成功，重新获取留言列表
+            await this.fetchMessages();
+            this.$emit('show-toast', { type: 'success', message: '留言删除成功' });
+          } else {
+            this.$emit('show-toast', { type: 'error', message: response.data.msg || '删除留言失败' });
+          }
+        } catch (error) {
+          this.$emit('show-toast', { type: 'error', message: '网络错误，请稍后再试' });
+        }
+      }
+    },
+    // 显示删除确认弹窗
+    confirmDeleteMessage(message) {
+      this.messageToDelete = message;
+      this.showDeleteModal = true;
+    },
+    // 确认删除留言
+    async confirmDelete() {
+      if (!this.messageToDelete) return;
+
+      this.isDeleting = true;      try {
+        const response = await messageboardApi.deleteMessage(this.messageToDelete.mid);
+        if (response.data && response.data.code === 1) {
+          // 删除成功
+          this.showDeleteModal = false;
+          
+          // 如果删除的是当前正在查看的留言，关闭详情页
+          if (this.selectedMessage && this.selectedMessage.mid === this.messageToDelete.mid) {
+            this.selectedMessage = null;
+            this.$emit('message-detail-closed');
+          }
+          
+          this.messageToDelete = null;
+
+          // 重新获取留言列表
+          await this.fetchMessages();
+
+          this.$emit('show-toast', { type: 'success', message: '留言删除成功' });
+        } else {
+          this.$emit('show-toast', { type: 'error', message: response.data.msg || '删除留言失败' });
+        }
+      } catch (error) {
+        console.error('删除留言出错:', error);
+        this.$emit('show-toast', { type: 'error', message: '网络错误，请稍后再试' });
+      } finally {
+        this.isDeleting = false;
+      }
     }
   },
   created() {
@@ -1278,6 +1388,179 @@ export default {
 .submit-btn:disabled, .submit-comment-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* 删除确认模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.delete-modal {
+  background-color: white;
+  border-radius: 8px;
+  padding: 0;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.delete-modal .modal-header {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-modal .modal-header h3 {
+  margin: 0;
+  color: #dc3545;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.delete-modal .close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.delete-modal .close-btn:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.delete-modal .modal-body {
+  padding: 20px;
+}
+
+.delete-modal .modal-body p {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 16px;
+}
+
+.message-preview {
+  background-color: #f8f9fa;
+  border-left: 4px solid #dc3545;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.message-preview strong {
+  display: block;
+  color: #495057;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.message-preview p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.warning-text {
+  color: #dc3545 !important;
+  font-size: 14px !important;
+  font-weight: 500;
+}
+
+.modal-actions {
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background-color: #f8f9fa;
+  border-radius: 0 0 8px 8px;
+}
+
+.modal-actions .cancel-btn {
+  padding: 8px 16px;
+  border: 1px solid #6c757d;
+  background-color: white;
+  color: #6c757d;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.modal-actions .cancel-btn:hover:not(:disabled) {
+  background-color: #6c757d;
+  color: white;
+}
+
+.delete-confirm-btn {
+  padding: 8px 16px;
+  border: none;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.delete-confirm-btn:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.delete-confirm-btn:disabled,
+.modal-actions .cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 删除按钮样式 */
+.action-btn.delete {
+  color: #dc3545;
+  transition: all 0.2s;
+}
+
+.action-btn.delete:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #c82333;
+}
+
+.action-btn.delete .icon {
+  font-size: 16px;
 }
 
 </style>
