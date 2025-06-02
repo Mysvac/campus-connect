@@ -322,9 +322,29 @@ export default {  // 用户登录
       };
       localStorage.setItem('currentAdmin', JSON.stringify(adminData));
       
-      return getMockResponse(adminData);
-    }
+      return getMockResponse(adminData);    }
     
     return api.post('/api/user/admin-login', data);
+  },
+
+  // 获取用户名
+  getUsername: (uid) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+      console.log("DEBUG MODE: 获取用户名");
+      const user = MOCK_DATA.users.find(u => u.uid === parseInt(uid));
+      if (user) {
+        return getMockResponse(user.name);
+      } else {
+        return Promise.resolve({
+          data: {
+            code: 0,
+            msg: "用户不存在",
+            data: null
+          }
+        });
+      }
+    }
+    
+    return api.get(`/api/user/get-username/${uid}`);
   }
 };

@@ -56,9 +56,8 @@
         <div class="detail-message-card">
           <div class="message-header">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
-              <div>
-                <h4 class="user-name">用户{{ selectedMessage.uid }}</h4>
+              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">              <div>
+                <h4 class="user-name">{{ selectedMessage.username || `用户${selectedMessage.uid}` }}</h4>
                 <span class="post-time">{{ formatTime(selectedMessage.time) }}</span>
               </div>
             </div>
@@ -92,9 +91,8 @@
             <div class="comment-item" v-for="comment in selectedMessage.comments" :key="comment.cid">
               <div class="comment-header">
                 <div class="user-info">
-                  <img :src="'https://via.placeholder.com/30'" alt="用户头像" class="comment-avatar">
-                  <div>
-                    <h5 class="comment-user-name">用户{{ comment.uid }}</h5>
+                  <img :src="'https://via.placeholder.com/30'" alt="用户头像" class="comment-avatar">                  <div>
+                    <h5 class="comment-user-name">{{ comment.username || `用户${comment.uid}` }}</h5>
                     <span class="comment-time">{{ formatTime(comment.time) }}</span>
                   </div>
                 </div>
@@ -148,9 +146,8 @@
         <div class="message-card" v-for="message in displayedMessages" :key="message.mid" @click="showMessageDetail(message)">
           <div class="message-header">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
-              <div>
-                <h4 class="user-name">用户{{ message.uid }}</h4>
+              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">              <div>
+                <h4 class="user-name">{{ message.username || `用户${message.uid}` }}</h4>
                 <span class="post-time">{{ formatTime(message.time) }}</span>
               </div>
             </div>
@@ -189,7 +186,7 @@
 </template>
 
 <script>
-import { messageboardApi } from '@/api';
+import { messageboardApi, userApi } from '@/api';
 
 export default {
   name: 'MessageBoardMain',
@@ -210,8 +207,7 @@ export default {
       type: Number,
       default: null
     }
-  },
-  data() {
+  },  data() {
     return {
       messages: [],
       newPost: {
@@ -224,8 +220,9 @@ export default {
       isLoading: true, // 加载留言列表状态
       isLoadingDetail: false, // 加载留言详情状态
       isSubmitting: false, // 提交新留言状态
-      isSubmittingComment: false, // 提交评论状态
-      error: null
+      isSubmittingComment: false, // 提交评论状态      error: null,
+      usernameCache: {}, // 用户名结果缓存
+      usernamePromiseCache: {} // 用户名Promise缓存，防止并发请求
     }
   },
   computed: {
@@ -255,8 +252,83 @@ export default {
         this.fetchMessageDetail(newId);
       }
     }
-  },
-  methods: {
+  },  methods: {    // 获取用户名
+    async fetchUsername(uid) {
+      // 确保uid是字符串类型进行比较
+      const uidStr = String(uid);
+      
+      // 如果已经缓存了用户名结果，直接返回
+      if (this.usernameCache[uidStr]) {
+        console.log('✅ 从结果缓存获取用户名:', uidStr, '->', this.usernameCache[uidStr]);
+        return this.usernameCache[uidStr];
+      }
+
+      // 如果正在请求中，等待现有的Promise
+      if (this.usernamePromiseCache[uidStr]) {
+        console.log('⏳ 等待正在进行的请求:', uidStr);
+        return await this.usernamePromiseCache[uidStr];
+      }
+
+      console.log('🔍 开始新的API请求:', uidStr);
+      
+      // 创建新的Promise并缓存
+      const promise = this.fetchUsernameFromAPI(uidStr);
+      this.usernamePromiseCache[uidStr] = promise;
+
+      try {
+        const username = await promise;
+        // 请求成功后，缓存结果并清除Promise缓存
+        this.usernameCache[uidStr] = username;
+        delete this.usernamePromiseCache[uidStr];
+        console.log('✅ 获取用户名成功并缓存:', uidStr, '->', username);
+        console.log('更新后的结果缓存:', JSON.stringify(this.usernameCache, null, 2));
+        return username;
+      } catch (error) {
+        // 请求失败时，清除Promise缓存，但不缓存错误结果
+        delete this.usernamePromiseCache[uidStr];
+        console.error('❌ 获取用户名失败:', error);
+        return `用户${uid}`;
+      }
+    },
+
+    // 实际的API请求方法
+    async fetchUsernameFromAPI(uidStr) {
+      const response = await userApi.getUsername(uidStr);
+      if (response.data && response.data.code === 1) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.msg || '获取用户名失败');
+      }
+    },
+
+    // 为留言和评论添加用户名
+    async enrichWithUsernames(messages) {
+      const promises = [];
+      
+      for (const message of messages) {
+        // 获取留言发布者用户名
+        promises.push(
+          this.fetchUsername(message.uid).then(username => {
+            message.username = username;
+          })
+        );
+
+        // 获取评论者用户名
+        if (message.comments && message.comments.length > 0) {
+          for (const comment of message.comments) {
+            promises.push(
+              this.fetchUsername(comment.uid).then(username => {
+                comment.username = username;
+              })
+            );
+          }
+        }
+      }
+
+      await Promise.all(promises);
+      return messages;
+    },
+
     formatTime(timestamp) {
       const now = Date.now();
       const diff = now - timestamp;
@@ -285,11 +357,16 @@ export default {
         const response = await messageboardApi.getMessages();
         if (response.data && response.data.code === 1) {
           // 确保每条消息都有comments字段
-          this.messages = (response.data.data || []).map(message => ({
+          let messages = (response.data.data || []).map(message => ({
             ...message,
             comments: message.comments || [], // 如果后端没返回comments，则初始化为空数组
             isLiked: message.isLiked || false // 同时确保isLiked字段存在
           }));
+
+          // 获取用户名并添加到留言和评论中
+          messages = await this.enrichWithUsernames(messages);
+          
+          this.messages = messages;
           this.$emit('messages-updated', this.messages);
         } else {
           console.error('获取留言列表失败:', response.data.msg);
@@ -308,11 +385,16 @@ export default {
         const response = await messageboardApi.getMessageDetail(id);
         if (response.data && response.data.code === 1) {
           // 确保详情数据中包含comments字段
-          this.selectedMessage = {
+          let messageDetail = {
             ...response.data.data,
             comments: response.data.data.comments || [], // 如果后端没返回comments，则初始化为空数组
             isLiked: response.data.data.isLiked || false // 确保isLiked字段存在
           };
+
+          // 获取用户名并添加到留言和评论中
+          const enrichedMessages = await this.enrichWithUsernames([messageDetail]);
+          this.selectedMessage = enrichedMessages[0];
+          
           this.newComment = ''; // 清空评论框
         } else {
           console.error('获取留言详情失败:', response.data.msg);
@@ -1147,6 +1229,7 @@ export default {
 /* 点赞高亮效果 */
 .action-btn.like.active .icon,
 .comment-action-btn.like.active .icon {
+  filter: brightness(1.2);
 }
 
 /* 添加消息列表过渡动画 */
