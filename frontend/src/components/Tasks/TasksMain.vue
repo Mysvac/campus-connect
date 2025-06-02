@@ -300,13 +300,14 @@ export default {
           if (response.data && response.data.code === 1 && response.data.data && response.data.data.length > 0) {
             // 确保API返回的标签格式正确，如果不正确则进行转换
             const apiTags = response.data.data;
-            // 检查第一个标签的格式是否有文字类型的name
-            if (apiTags.length > 0 && typeof apiTags[0].name === 'string' && !isNaN(apiTags[0].name)) {
-              // 如果name是数字字符串，说明格式可能不对，需要保留原有的tagOptions
-              console.log('API返回的标签格式不正确，保留默认标签');
-            } else {
-              // 仅当API返回格式正确时才更新标签
+            // 检查第一个标签的格式是否有正确的name属性
+            if (apiTags.length > 0 && apiTags[0].name && typeof apiTags[0].name === 'string' && isNaN(apiTags[0].name)) {
+              // name是非数字字符串，格式正确，更新标签
               this.tagOptions = apiTags;
+              console.log('成功获取任务标签:', apiTags);
+            } else {
+              // 如果name是数字字符串或格式不对，说明格式可能不对，需要保留原有的tagOptions
+              console.log('API返回的标签格式不正确，保留默认标签');
             }
           } else {
             console.log('使用默认任务标签数据');
@@ -553,15 +554,26 @@ export default {
     },
     
     terminateTask(task) {
-      // 实际中可能需要添加一个API来终止任务
-      // 这里模拟终止任务
-      alert('任务终止功能暂未实现');
-      
-      // 将本地任务状态改为已终止
-      task.status = 2;
-      
-      // 更新任务列表
-      this.fetchTasks();
+      tasksApi.terminateTask(task.tid)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            // 将本地任务状态改为已终止
+            task.status = 3;
+
+            // 更新任务列表
+            this.fetchTasks();
+            
+            // 通知用户
+            alert('任务已标记为终止！');
+          } else {
+            console.error('终止任务失败:', response.data.msg);
+            alert('终止任务失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('终止任务出错:', error);
+          alert('网络错误，请稍后再试');
+        });
     },
       // 获取标签名称
       getTagName(tagId) {
