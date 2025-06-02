@@ -13,6 +13,12 @@ public interface TasksHandleMapper {
     @Select("SELECT * FROM tasks_handle WHERE tid = #{tid} AND uid = #{uid}")
     TasksHandle getTasksHandleById(Long tid, Long uid);
 
+    @Select("SELECT * FROM tasks_handle WHERE tid = #{tid}")
+    List<TasksHandle> getAllTasksHandleByTid(Long tid);
+
+    @Select("SELECT * FROM tasks_handle WHERE uid = #{uid}")
+    List<TasksHandle> getAllTasksHandleByUid(Long uid);
+
     @Insert("INSERT INTO tasks_handle (tid, uid, status, notes, time) VALUES (#{tid}, #{uid}, #{status}, #{notes}, #{time})")
     void insertTasksHandle(TasksHandle tasksHandle);
 

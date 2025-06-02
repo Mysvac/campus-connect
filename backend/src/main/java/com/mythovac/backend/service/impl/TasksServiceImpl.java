@@ -30,6 +30,11 @@ public class TasksServiceImpl implements TasksService {
     }
 
     @Override
+    public List<Task> getTasksByUid(Long uid){
+        return tasksMapper.getTasksByUid(uid);
+    }
+
+    @Override
     public Task getTaskById(Long tid)
     {
         return tasksMapper.getTaskById(tid);

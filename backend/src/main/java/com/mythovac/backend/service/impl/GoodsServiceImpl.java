@@ -27,6 +27,15 @@ public class GoodsServiceImpl implements GoodsService {
         return goodsMapper.getAllGoods();
     }
 
+    @Override
+    public List<Good> getAllGoodsByUid(Long uid){
+        return goodsMapper.getAllGoodsByUid(uid);
+    }
+
+    @Override
+    public List<Good> getAllGoodsByPhone(String phone) {
+        return goodsMapper.getAllGoodsByPhone(phone);
+    }
 
     @Override
     public List<String> getAllTags(){ return goodsMapper.getAllTags(); }

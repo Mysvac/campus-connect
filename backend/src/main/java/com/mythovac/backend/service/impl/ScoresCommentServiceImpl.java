@@ -22,6 +22,10 @@ public class ScoresCommentServiceImpl implements ScoresCommentService {
         return scoresCommentMapper.getScoresCommentBySid(sid);
     }
     @Override
+    public ScoresComment getScoresCommentBySidAndUid(Long sid, Long uid){
+        return scoresCommentMapper.getScoresCommentBySidAndUid(sid, uid);
+    }
+    @Override
     public void insertScoresComment(ScoresComment scoresComment){
         scoresCommentMapper.insertScoresComment(scoresComment);
     }

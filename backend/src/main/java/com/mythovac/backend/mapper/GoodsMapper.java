@@ -13,6 +13,12 @@ public interface GoodsMapper {
     @Select("SELECT * FROM goods WHERE tag = #{tag} ORDER BY time DESC")
     List<Good> getAllGoodsByTag(String tag);
 
+    @Select("SELECT * FROM goods WHERE uid = #{uid} ORDER BY time DESC")
+    List<Good> getAllGoodsByUid(Long uid);
+
+    @Select("SELECT * FROM goods WHERE uid IN (SELECT uid FROM users WHERE phone = #{phone}) ORDER BY time DESC")
+    List<Good> getAllGoodsByPhone(String phone);
+
     @Select("SELECT DISTINCT tag FROM goods")
     List<String> getAllTags();
 

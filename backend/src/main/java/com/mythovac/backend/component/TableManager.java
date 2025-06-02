@@ -23,6 +23,10 @@ public class TableManager  implements CommandLineRunner {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /***
+     * 运行时创建表格，如果不存在
+     * @param args
+     */
     @Override
     public void run(String... args) {
         createTableUsers();

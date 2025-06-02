@@ -1,9 +1,6 @@
 package com.mythovac.backend.controller;
 
-import com.mythovac.backend.entity.Result;
-import com.mythovac.backend.entity.Good;
-import com.mythovac.backend.entity.GoodsBuy;
-import com.mythovac.backend.entity.GoodsRelease;
+import com.mythovac.backend.entity.*;
 import com.mythovac.backend.service.*;
 import com.mythovac.backend.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpSession;
@@ -11,13 +8,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
+/**
+ * 商品控制器
+ * 处理商品相关请求，包括获取商品、购买商品、添加商品等
+ */
 @RestController("good-controller")
 @RequestMapping("/api/good")
 public class GoodController {
-    private UserService userService;
-    private GoodsService goodsService;
-    private GoodsBuyService goodsBuyService;
-    private GoodsReleaseService goodsReleaseService;
+    private final UserService userService;
+    private final GoodsService goodsService;
+    private final GoodsBuyService goodsBuyService;
+    private final GoodsReleaseService goodsReleaseService;
 
     public GoodController(UserServiceImpl userService,GoodsService goodsService , GoodsBuyService goodsBuyService, GoodsReleaseService goodsReleaseService) {
         this.userService = userService;
@@ -26,30 +27,80 @@ public class GoodController {
         this.goodsReleaseService = goodsReleaseService;
     }
 
+    /**
+     * 获取指定商品信息
+     * @param gid 商品ID
+     * @return 商品信息或错误信息，单个
+     */
     @GetMapping("/get-good-by-gid/{gid}")
     public Result getScore(@PathVariable Long gid) {
         Good res = goodsService.getGoodsById(gid);
         return res == null ? Result.error("商品不存在") : Result.success(res);
     }
 
+    /**
+     * 根据Tag获取商品列表
+     * @param tag 商品Tag
+     * @return 商品信息或错误信息，数组
+     */
     @GetMapping("/get-good-by-tag/{tag}")
     public Result getScore(@PathVariable String tag) {
         List<Good> res = goodsService.getAllGoodsByTag(tag);
         return Result.success(res);
     }
 
+    /**
+     * 获取所有商品信息
+     * @return 所有商品发信息或错误信息，数组
+     */
     @GetMapping("/get-all-goods")
     public Result getAllGoods() {
         List<Good> res = goodsService.getAllGoods();
         return Result.success(res);
     }
 
+    /**
+     * 获取用户发布的商品列表
+     * @param uid uid
+     * @return 用户发布的商品列表
+     */
+    @GetMapping("/get-all-goods-by-uid/{uid}")
+    public Result getAllGoodsByUid(@PathVariable Long uid) {
+        List<Good> res = goodsService.getAllGoodsByUid(uid);
+        return Result.success(res);
+    }
+
+    /**
+     * 获取当前用户的购买的商品列表
+     * @param session HttpSession
+     * @return 用户购买的商品列表
+     */
+    @GetMapping("/get-goodsbuy")
+    public Result getAllGoodsBuyByUid(HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
+        List<GoodsBuy> res = goodsBuyService.getGoodsBuyByUid(uid);
+        return Result.success(res);
+    }
+
+    /**
+     * 获取可能的Tag列表
+     * @return Tags列表
+     */
     @GetMapping("/get-tags")
     public Result getTags() {
         List<String> tags = goodsService.getAllTags();
         return Result.success(tags);
     }
 
+    /**
+     * 购买商品
+     * @param gid 商品ID
+     * @param session HttpSession
+     * @return 是否购买成功
+     */
     @PostMapping("/purchase/{gid}")
     public Result purchase(@PathVariable Long gid, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
@@ -59,6 +110,11 @@ public class GoodController {
         Good good = goodsService.getGoodsById(gid);
         if (good == null) return Result.error("商品不存在");
         if (good.getQuantity() == 0) return Result.error("商品空货");
+
+        User usr = userService.getUserById(uid);
+        if(usr.getWallet() < good.getPrice()) {
+            return Result.error("余额不足");
+        }
 
         GoodsBuy goodsBuy = new GoodsBuy();
         goodsBuy.setGid(gid);
@@ -71,12 +127,22 @@ public class GoodController {
 
         GoodsBuy res = goodsBuyService.getLastGoodsBuyByUid(uid);
         good.setQuantity(good.getQuantity() - 1);
+        good.setSales(good.getSales() == null ? 1 : good.getSales() + 1);
         goodsService.updateGoods(good);
+
+        usr.setWallet(usr.getWallet() - good.getPrice());
+        userService.updateUser(usr);
 
         return Result.success( res );
     }
 
 
+    /**
+     * 发布商品
+     * @param good 商品信息
+     * @param session HttpSession
+     * @return 是否发布成功
+     */
     @PostMapping("/add-goods")
     public Result addGoods(@RequestBody Good good, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
@@ -95,6 +161,12 @@ public class GoodController {
     }
 
 
+    /**
+     * 删除商品
+     * @param gid 商品ID
+     * @param session HttpSession
+     * @return 是否删除成功
+     */
     @DeleteMapping("/delete-goods-by-gid/{gid}")
     public Result addGoods(@PathVariable Long gid, HttpSession session) {
         Result sessionCheck = UserController.checkSession(session);
