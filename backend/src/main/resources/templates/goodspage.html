@@ -125,13 +125,166 @@
             left: 0;
             right: 0;
         }
+
+        /* 登录弹窗样式 */
+        .login-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .login-modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .login-modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .login-modal-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .login-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-close:hover {
+            color: #666;
+        }
+
+        .login-modal-body {
+            padding: 30px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+
+        .login-btn {
+            padding: 12px 24px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #ff5252;
+        }
+
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .error-message {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: #00aa00;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .product-detail-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .product-image {
+                flex: none;
+                height: 300px;
+            }
+
+            .login-modal-content {
+                margin: 20% auto;
+                width: 95%;
+            }
+
+            .login-modal-body {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="full-page-view product-detail-view">
+
+   <div class="full-page-view product-detail-view">
         <div class="modal-header">
             <h2 th:text="${product.name}">商品名称</h2>
-            <button class="close-btn" onclick="history.back()">×</button>
         </div>
 
         <div class="product-detail-content">
@@ -150,49 +303,303 @@
             </div>
         </div>
 
-        <div class="purchase-section">
-            <div class="quantity-selector">
-                <button onclick="decreaseQuantity()">-</button>
-                <input type="number" id="quantity" value="1" min="1" th:max="${product.quantity}">
-                <button onclick="increaseQuantity()">+</button>
-            </div>
-
-            <div class="purchase-actions">
-                <button class="purchase-btn" 
-                        onclick="purchaseProduct()"
-                        th:disabled="${product.quantity < 1}">
-                    立即购买
-                </button>
-            </div>
+    <div class="purchase-section">
+        <div class="quantity-selector">
+        
+            <p>购买数量：<input type="number" id="quantity" value="1" min="1" th:max="${product.quantity}"></p>
+            
         </div>
 
-        <div class="bottom-stripe"></div>
+        <div class="purchase-actions">
+            <button class="purchase-btn" type="button" onclick="handlePurchase()">
+                立即购买
+            </button>
+        </div>
     </div>
 
-    <script th:inline="javascript">
-        const product = /*[[${product}]]*/ {};
-        const quantity = document.getElementById('quantity');
+    <div class="bottom-stripe"></div>
+</div>
 
-        function decreaseQuantity() {
-            if (quantity.value > 1) {
-                quantity.value = parseInt(quantity.value) - 1;
+<!-- 登录弹窗 -->
+<div id="loginModal" class="login-modal">
+    <div class="login-modal-content">
+        <div class="login-modal-header">
+            <h3>用户登录</h3>
+            <button class="login-close" onclick="closeLoginModal()">&times;</button>
+        </div>
+        <div class="login-modal-body">
+            <form class="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="phone">手机号</label>
+                    <input type="tel" id="phone" name="phone" placeholder="请输入手机号" required>
+                    <div class="error-message" id="phoneError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" placeholder="请输入密码" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+                <div class="error-message" id="loginError"></div>
+                <div class="success-message" id="loginSuccess"></div>
+                <button type="submit" class="login-btn" id="loginBtn">登录</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const product = /*[[${product}]]*/ {};
+    const baseURL = 'https://api.mythovac.com/api/';
+    const DEBUG_MODE = true; // Enable debug mode
+    
+    // Mock helpers
+    const MOCK_DATA = { products: [] };
+    const getMockResponse = data => Promise.resolve(data);
+    const api = {
+        post: (url, data) => fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        }).then(res => res.json())
+    };
+
+    const quantity = document.getElementById('quantity');
+    let isLoggedIn = false;
+    let currentUser = null;
+
+    // 初始化时检查登录状态
+    window.onload = function() {
+        checkLoginStatus();
+    };
+
+    // 检查登录状态
+    function checkLoginStatus() {
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const userData = localStorage.getItem('currentUser');
+
+        if (isAuthenticated && userData) {
+            isLoggedIn = true;
+            currentUser = JSON.parse(userData);
+            console.log('用户已登录:', currentUser);
+        }
+    }
+
+    // 数量减少
+    function decreaseQuantity() {
+        const currentValue = parseInt(quantity.value) || 1;
+        if (currentValue > 1) {
+            quantity.value = currentValue - 1;
+        }
+    }
+
+    // 增加调试
+    console.log('Product data:', product);
+
+    // 数量增加
+    function increaseQuantity() {
+        const currentValue = parseInt(quantity.value) || 1;
+        const maxQuantity = product.quantity;
+        if (currentValue < maxQuantity) {
+            quantity.value = currentValue + 1;
+        }
+    }
+
+    // 处理购买按钮点击
+    function handlePurchase() {
+        if (!isLoggedIn) {
+            // 未登录，显示登录弹窗
+            showLoginModal();
+        } else {
+            // 已登录，执行购买逻辑
+            purchaseProduct();
+        }
+    }
+
+    // 显示登录弹窗
+    function showLoginModal() {
+        document.getElementById('loginModal').style.display = 'block';
+        // 清空之前的错误信息
+        clearMessages();
+    }
+
+    // 关闭登录弹窗
+    function closeLoginModal() {
+        document.getElementById('loginModal').style.display = 'none';
+        // 清空表单
+        document.getElementById('phone').value = '';
+        document.getElementById('password').value = '';
+        clearMessages();
+    }
+
+    // 清空消息
+    function clearMessages() {
+        const errorElements = document.querySelectorAll('.error-message');
+        const successElements = document.querySelectorAll('.success-message');
+
+        errorElements.forEach(el => {
+            el.style.display = 'none';
+            el.textContent = '';
+        });
+
+        successElements.forEach(el => {
+            el.style.display = 'none';
+            el.textContent = '';
+        });
+    }
+
+    // 显示错误信息
+    function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+
+    // 显示成功信息
+    function showSuccess(elementId, message) {
+        const successElement = document.getElementById(elementId);
+        successElement.textContent = message;
+        successElement.style.display = 'block';
+    }
+
+    // 处理登录
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const phone = document.getElementById('phone').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const loginBtn = document.getElementById('loginBtn');
+
+        // 清空之前的错误信息
+        clearMessages();
+
+    
+
+        try {
+            // 设置加载状态
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+            loginBtn.classList.add('loading');
+
+            // 调用真实的登录API
+            const response = await fetch(baseURL + 'user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include', // 等同于 withCredentials: true
+                body: JSON.stringify({
+                    phone: phone,
+                    password: password
+                })
+            });
+
+            const responseData = await response.json();
+            const { code, msg, data } = responseData;
+
+            if (code === 1) {
+                // 登录成功
+                showSuccess('loginSuccess', '登录成功！');
+
+                // 存储登录状态
+                isLoggedIn = true;
+                currentUser = data;
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('currentUser', JSON.stringify(data));
+
+                // 延迟关闭弹窗并执行购买
+                setTimeout(() => {
+                    closeLoginModal();
+                    purchaseProduct();
+                }, 1000);
+
+            } else {
+                showError('loginError', msg || '登录失败，请检查账号密码');
             }
+
+        } catch (error) {
+            console.error('登录失败:', error);
+            
+            // 显示网络错误信息
+            showError('loginError', '登录请求失败，请检查网络连接');
+        } finally {
+            // 恢复按钮状态
+            loginBtn.disabled = false;
+            loginBtn.textContent = '登录';
+            loginBtn.classList.remove('loading');
+        }
+    }
+
+    // 实际的购买逻辑
+    async function purchaseProduct() {
+        const purchaseQuantity = parseInt(quantity.value) || 0;
+        const maxQuantity = product.quantity || 0;
+
+        console.log('Purchase check:', {
+            purchaseQuantity,
+            maxQuantity,
+            valid: purchaseQuantity > 0 && purchaseQuantity <= maxQuantity
+        });
+
+        if (purchaseQuantity <= 0) {
+            alert('请选择购买数量');
+            return;
         }
 
-        function increaseQuantity() {
-            if (parseInt(quantity.value) < product.quantity) {
-                quantity.value = parseInt(quantity.value) + 1;
-            }
+        if (purchaseQuantity > maxQuantity) {
+            alert('购买数量不能超过库存数量');
+            return;
         }
 
-        function purchaseProduct() {
-            // 这里添加购买逻辑
-            const purchaseQuantity = parseInt(quantity.value);
-            if (purchaseQuantity > 0 && purchaseQuantity <= product.quantity) {
-                // 可以发送到后端的购买请求
-                alert('购买功能待实现');
+        try {
+            const response = await (function() {
+                if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+                    console.log("DEBUG MODE: 模拟购买商品");
+                    if (product) {
+                        if (product.quantity >= purchaseQuantity) {
+                            product.quantity -= purchaseQuantity;
+                            product.sales += purchaseQuantity;
+                            return getMockResponse({
+                                oid: Date.now(),
+                                gid: product.id,
+                                uid: 101,
+                                quantity: purchaseQuantity,
+                                total: product.price * purchaseQuantity,
+                                status: 0,
+                                time: Date.now()
+                            });
+                        }
+                        return getMockResponse({ success: false, message: '商品库存不足' });
+                    }
+                    return getMockResponse({ success: false, message: '商品不存在' });
+                }
+                return api.post(`good/purchase/${product.id}`, { quantity: purchaseQuantity });
+            })();
+
+            if (response && !response.success) {
+                alert(response.message || '购买失败');
+                return;
             }
+
+            // 更新页面显示
+            document.querySelector('.product-quantity').textContent = '剩余数量: ' + (product.quantity - purchaseQuantity);
+            document.querySelector('.product-sales').textContent = '已售: ' + (product.sales + purchaseQuantity);
+
+            alert(`购买成功！\n商品：${product.name}\n数量：${purchaseQuantity}\n总价：￥${(product.price * purchaseQuantity / 100).toFixed(2)}`);
+
+        } catch (error) {
+            console.error('购买失败:', error);
+            alert('购买请求失败，请检查网络连接');
         }
-    </script>
+    }
+
+    // 点击弹窗外部关闭弹窗
+    window.onclick = function(event) {
+        const modal = document.getElementById('loginModal');
+        if (event.target === modal) {
+            closeLoginModal();
+        }
+    };
+</script>
 </body>
-</html> 
+</html>
