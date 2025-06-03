@@ -52,11 +52,10 @@
       </div>
 
       <div class="detail-content" v-if="!isLoadingDetail">
-        <!-- 留言内容 -->
-        <div class="detail-message-card">
+        <!-- 留言内容 -->          <div class="detail-message-card">
           <div class="message-header">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">              <div>
+              <img :src="getUserAvatar(selectedMessage)" alt="用户头像" class="user-avatar">              <div>
                 <h4 class="user-name">{{ selectedMessage.username || `用户${selectedMessage.uid}` }}</h4>
                 <span class="post-time">{{ formatTime(selectedMessage.time) }}</span>
               </div>
@@ -97,10 +96,9 @@
         <div class="comments-section">
           <h4>评论 ({{ selectedMessage.comments.length }})</h4>
           <div class="comments-list" v-if="selectedMessage.comments.length > 0">
-            <div class="comment-item" v-for="comment in selectedMessage.comments" :key="comment.cid">
-              <div class="comment-header">
+            <div class="comment-item" v-for="comment in selectedMessage.comments" :key="comment.cid">              <div class="comment-header">
                 <div class="user-info">
-                  <img :src="'https://via.placeholder.com/30'" alt="用户头像" class="comment-avatar">                  <div>
+                  <img :src="getUserAvatar(comment)" alt="用户头像" class="comment-avatar">                  <div>
                     <h5 class="comment-user-name">{{ comment.username || `用户${comment.uid}` }}</h5>
                     <span class="comment-time">{{ formatTime(comment.time) }}</span>
                   </div>
@@ -151,11 +149,10 @@
       </div>
       
       <!-- 留言列表 -->
-      <transition-group name="message-fade" tag="div" class="message-list" v-else>
-        <div class="message-card" v-for="message in displayedMessages" :key="message.mid" @click="showMessageDetail(message)">
+      <transition-group name="message-fade" tag="div" class="message-list" v-else>        <div class="message-card" v-for="message in displayedMessages" :key="message.mid" @click="showMessageDetail(message)">
           <div class="message-header">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">              <div>
+              <img :src="getUserAvatar(message)" alt="用户头像" class="user-avatar">              <div>
                 <h4 class="user-name">{{ message.username || `用户${message.uid}` }}</h4>
                 <span class="post-time">{{ formatTime(message.time) }}</span>
               </div>
@@ -228,6 +225,7 @@
 
 <script>
 import { messageboardApi, userApi } from '@/api';
+import { baseURL } from '@/api/index';
 
 export default {
   name: 'MessageBoardMain',
@@ -261,10 +259,11 @@ export default {
       isLoading: true, // 加载留言列表状态
       isLoadingDetail: false, // 加载留言详情状态
       isSubmitting: false, // 提交新留言状态
-      isSubmittingComment: false, // 提交评论状态
-      error: null,
+      isSubmittingComment: false, // 提交评论状态      error: null,
       usernameCache: {}, // 用户名结果缓存
       usernamePromiseCache: {}, // 用户名Promise缓存，防止并发请求
+      userAvatarCache: {}, // 用户头像缓存
+      userAvatarPromiseCache: {}, // 用户头像Promise缓存，防止并发请求
       // 删除相关状态
       showDeleteModal: false, // 显示删除确认弹窗
       messageToDelete: null, // 要删除的留言
@@ -379,10 +378,87 @@ export default {
             );
           }
         }
+      }      await Promise.all(promises);
+      return messages;
+    },
+
+    // 获取用户头像
+    async fetchUserAvatar(uid) {
+      const uidStr = String(uid);
+      
+      // 如果已经缓存了头像结果，直接返回
+      if (this.userAvatarCache[uidStr]) {
+        return this.userAvatarCache[uidStr];
       }
 
-      await Promise.all(promises);
-      return messages;
+      // 如果正在请求中，等待现有的Promise
+      if (this.userAvatarPromiseCache[uidStr]) {
+        return await this.userAvatarPromiseCache[uidStr];
+      }
+
+      // 创建新的Promise并缓存
+      const promise = this.fetchUserAvatarFromAPI(uidStr);
+      this.userAvatarPromiseCache[uidStr] = promise;
+
+      try {
+        const avatarUrl = await promise;
+        // 请求成功后，缓存结果并清除Promise缓存
+        this.userAvatarCache[uidStr] = avatarUrl;
+        delete this.userAvatarPromiseCache[uidStr];
+        return avatarUrl;
+      } catch (error) {
+        // 请求失败时，清除Promise缓存，返回默认头像
+        delete this.userAvatarPromiseCache[uidStr];
+        console.error('获取用户头像失败:', error);
+        const defaultAvatar = `https://via.placeholder.com/40?text=U${uid}`;
+        this.userAvatarCache[uidStr] = defaultAvatar;
+        return defaultAvatar;
+      }
+    },    // 实际的用户头像API请求方法    
+    async fetchUserAvatarFromAPI(uidStr) {
+      try {
+        const response = await userApi.getUserData(uidStr);
+        if (response.data && response.data.code === 1 && response.data.data) {
+          const userData = response.data.data;
+          // 同时处理image_path和image字段
+          const imagePath = userData.image_path || userData.image;
+          if (imagePath) {
+            // 如果头像路径是相对路径，拼接baseURL
+            if (imagePath.startsWith('/') || imagePath.startsWith('image/')) {
+              const cleanBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+              return `${cleanBaseURL}/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+            }
+            // 如果是完整URL，直接返回
+            return imagePath;
+          }
+        }
+        // throw new Error('用户头像数据不存在');
+      } catch (error) {
+        console.error('从API获取用户头像失败:', error);
+        throw error;
+      }
+    },
+
+    // 获取用户头像的辅助方法
+    getUserAvatar(userObj) {
+      if (!userObj || !userObj.uid) {
+        return 'https://via.placeholder.com/40?text=?';
+      }
+
+      const uidStr = String(userObj.uid);
+      // 如果已经缓存了头像，直接返回
+      if (this.userAvatarCache[uidStr]) {
+        return this.userAvatarCache[uidStr];
+      }
+
+      // 异步获取头像，同时返回默认头像
+      this.fetchUserAvatar(userObj.uid).then(avatarUrl => {
+        // 触发响应式更新
+        this.$forceUpdate();
+      });
+
+      // 返回默认头像
+      return `https://via.placeholder.com/40?text=U${userObj.uid}`;
     },
 
     formatTime(timestamp) {

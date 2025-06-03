@@ -57,10 +57,9 @@
 
       <div class="detail-content">
         <!-- 任务内容 -->
-        <div class="detail-task-card">
-          <div class="task-header">
+        <div class="detail-task-card">          <div class="task-header">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
+              <img :src="getUserAvatar(selectedTask)" alt="用户头像" class="user-avatar">
               <div>
                 <h4 class="user-name">用户{{ selectedTask.uid }}</h4>
                 <span class="post-time">{{ formatTime(selectedTask.time) }}</span>
@@ -139,10 +138,9 @@
         <!-- 申请者管理（仅任务发布者可见） -->
         <div class="applicants-section" v-if="selectedTask && selectedTask.uid === currentUserId && selectedTask.status === 0">
           <h4>申请者列表</h4>
-          <div class="applicants-list" v-if="taskApplicants.length > 0">
-            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">
+          <div class="applicants-list" v-if="taskApplicants.length > 0">            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">
               <div class="applicant-info">
-                <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
+                <img :src="getUserAvatar(applicant)" alt="用户头像" class="user-avatar">
                 <div class="applicant-details">
                   <span class="applicant-name">用户{{ applicant.uid }}</span>
                   <span class="apply-time">{{ formatTime(applicant.time) }}</span>
@@ -190,10 +188,9 @@
           <div class="task-money">
             <i class="icon">💰</i>
             <span>{{ task.money }}元</span>
-          </div>
-          <div class="task-footer">
+          </div>          <div class="task-footer">
             <div class="user-info">
-              <img :src="'https://via.placeholder.com/30'" alt="用户头像" class="user-avatar-small">
+              <img :src="getUserAvatar(task)" alt="用户头像" class="user-avatar-small">
               <span class="post-time-sm">{{ formatTime(task.time) }}</span>
             </div>
           </div>
@@ -209,7 +206,8 @@
 </template>
 
 <script>
-import { tasksApi } from '@/api';
+import { tasksApi, userApi } from '@/api';
+import { baseURL } from '@/api/index';
 
 export default {
   name: 'TaskBoardMain',
@@ -259,12 +257,13 @@ export default {
         { id: 4, name: '运动伙伴' },
         { id: 5, name: '学习互助' },
         { id: 6, name: '校园兼职' },
-        { id: 7, name: '活动组织' },
-        { id: 8, name: '其他' }
+        { id: 7, name: '活动组织' },        { id: 8, name: '其他' }
       ],
-      taskApplicants: [] // 新增申请者列表
+      taskApplicants: [], // 新增申请者列表
+      userAvatarCache: {}, // 用户头像缓存
+      userAvatarPromiseCache: {} // 用户头像Promise缓存，防止并发请求
     }
-  },  computed: {
+  },computed: {
     filteredTasks() {
       if (this.isFiltering) {
         return this.cachedFilteredTasks;
@@ -708,7 +707,78 @@ export default {
           console.error('拒绝申请者出错:', error);
           alert('网络错误，请稍后再试');
         });
-    }
+    },
+    // 头像获取相关方法
+    async fetchUserAvatar(uid) {
+      // 检查缓存
+      if (this.userAvatarCache[uid]) {
+        return this.userAvatarCache[uid];
+      }
+
+      // 检查是否已有pending的请求
+      if (this.userAvatarPromiseCache[uid]) {
+        return this.userAvatarPromiseCache[uid];
+      }
+
+      // 创建新的请求Promise
+      const promise = this.fetchUserAvatarFromAPI(uid);
+      this.userAvatarPromiseCache[uid] = promise;
+
+      try {
+        const avatarUrl = await promise;
+        this.userAvatarCache[uid] = avatarUrl;
+        return avatarUrl;
+      } catch (error) {
+        console.error('获取用户头像失败:', error);
+        const fallbackUrl = `https://via.placeholder.com/40?text=U${uid}`;
+        this.userAvatarCache[uid] = fallbackUrl;
+        return fallbackUrl;
+      } finally {
+        // 清除Promise缓存
+        delete this.userAvatarPromiseCache[uid];
+      }
+    },    async fetchUserAvatarFromAPI(uid) {
+      try {
+        const response = await userApi.getUserData(uid);
+        if (response.data && response.data.code === 1 && response.data.data) {
+          const userData = response.data.data;
+          // 同时处理image_path和image字段
+          const imagePath = userData.image_path || userData.image;
+          if (imagePath) {
+            // 如果头像路径是相对路径，拼接baseURL
+            if (imagePath.startsWith('/') || imagePath.startsWith('image/')) {
+              const cleanBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+              return `${cleanBaseURL}/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+            }
+            // 如果是完整URL，直接返回
+            return imagePath;
+          }
+        }
+        throw new Error('用户头像数据不存在');
+      } catch (error) {
+        console.error('从API获取用户头像失败:', error);
+        throw error;
+      }
+    },
+
+    getUserAvatar(userObj) {
+      if (!userObj || !userObj.uid) {
+        return 'https://via.placeholder.com/40?text=U';
+      }
+      
+      const cached = this.userAvatarCache[userObj.uid];
+      if (cached) {
+        return cached;
+      }
+      
+      // 异步获取头像，但不阻塞渲染
+      this.fetchUserAvatar(userObj.uid);
+      
+      // 返回占位符，等待头像加载完成后会自动更新
+      return `https://via.placeholder.com/40?text=U${userObj.uid}`;
+    },
+
+    // ...existing code...
   }
 }
 </script>

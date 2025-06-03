@@ -213,7 +213,8 @@
 </template>
 
 <script>
-import { ratingsApi } from '@/api';
+import { ratingsApi, userApi } from '@/api';
+import { baseURL } from '@/api/index';
 import { getImageUrl } from '@/utils/imageUtils';
 
 export default {
@@ -254,10 +255,11 @@ export default {
         intro: '',
         image: '/images/default.jpg',
         score: 0,
-        comment: ''
-      },
+        comment: ''      },
       ratings: [],
-      tagOptions: []
+      tagOptions: [],
+      userAvatarCache: {}, // 用户头像缓存
+      userAvatarPromiseCache: {} // 用户头像Promise缓存，防止并发请求
     }
   },
   computed: {
@@ -454,12 +456,8 @@ export default {
       } catch (error) {
         console.error('获取评分评论出错:', error);
       }
-    },
-
-    // 为评论添加用户信息（用户名和头像）
+    },    // 为评论添加用户信息（用户名和头像）
     async enrichCommentsWithUserInfo(comments) {
-      const { userApi } = await import('@/api');
-      
       const promises = comments.map(async comment => {
         try {
           // 获取用户名
@@ -470,8 +468,13 @@ export default {
             comment.userName = `用户${comment.uid}`;
           }
           
-          // 设置默认头像
-          comment.userAvatar = `https://via.placeholder.com/48?text=U${comment.uid}`;
+          // 获取用户头像
+          try {
+            comment.userAvatar = await this.fetchUserAvatar(comment.uid);
+          } catch (avatarError) {
+            console.error(`获取用户${comment.uid}头像失败:`, avatarError);
+            comment.userAvatar = `https://via.placeholder.com/48?text=U${comment.uid}`;
+          }
           
           return comment;
         } catch (error) {
@@ -694,7 +697,77 @@ export default {
     // 获取完整的图片URL
     getImageUrl(imagePath) {
       return getImageUrl(imagePath);
-    }
+    },
+
+    // 头像获取相关方法
+    async fetchUserAvatar(uid) {
+      // 检查缓存
+      if (this.userAvatarCache[uid]) {
+        return this.userAvatarCache[uid];
+      }
+
+      // 检查是否已有pending的请求
+      if (this.userAvatarPromiseCache[uid]) {
+        return this.userAvatarPromiseCache[uid];
+      }
+
+      // 创建新的请求Promise
+      const promise = this.fetchUserAvatarFromAPI(uid);
+      this.userAvatarPromiseCache[uid] = promise;
+
+      try {
+        const avatarUrl = await promise;
+        this.userAvatarCache[uid] = avatarUrl;
+        return avatarUrl;
+      } catch (error) {
+        console.error('获取用户头像失败:', error);
+        const fallbackUrl = `https://via.placeholder.com/48?text=U${uid}`;
+        this.userAvatarCache[uid] = fallbackUrl;
+        return fallbackUrl;
+      } finally {
+        // 清除Promise缓存
+        delete this.userAvatarPromiseCache[uid];
+      }
+    },    async fetchUserAvatarFromAPI(uid) {
+      try {
+        const response = await userApi.getUserData(uid);
+        if (response.data && response.data.code === 1 && response.data.data) {
+          const userData = response.data.data;
+          // 同时处理image_path和image字段
+          const imagePath = userData.image_path || userData.image;
+          if (imagePath) {
+            // 如果头像路径是相对路径，拼接baseURL
+            if (imagePath.startsWith('/') || imagePath.startsWith('image/')) {
+              const cleanBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+              return `${cleanBaseURL}/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+            }
+            // 如果是完整URL，直接返回
+            return imagePath;
+          }
+        }
+        throw new Error('用户头像数据不存在');
+      } catch (error) {
+        console.error('从API获取用户头像失败:', error);
+        throw error;
+      }
+    },
+
+    getUserAvatar(userObj) {
+      if (!userObj || !userObj.uid) {
+        return 'https://via.placeholder.com/48?text=U';
+      }
+      
+      const cached = this.userAvatarCache[userObj.uid];
+      if (cached) {
+        return cached;
+      }
+      
+      // 异步获取头像，但不阻塞渲染
+      this.fetchUserAvatar(userObj.uid);
+      
+      // 返回占位符，等待头像加载完成后会自动更新
+      return `https://via.placeholder.com/48?text=U${userObj.uid}`;
+    },
   }
 }
 </script>
