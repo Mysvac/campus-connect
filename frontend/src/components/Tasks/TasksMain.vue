@@ -94,12 +94,10 @@
               <i class="icon">📞</i>
               <span>联系方式: 接取任务后可见</span>
             </div>
-          </div>
-
-          <div class="task-actions" v-if="selectedTask.status === 0">
+          </div>          <div class="task-actions" v-if="selectedTask.status === 0">
             <button class="action-btn accept" @click="acceptTask(selectedTask)">
               <i class="icon">✓</i>
-              <span>接取任务</span>
+              <span>申请任务</span>
             </button>
           </div>
           <div class="task-actions" v-else-if="selectedTask.status === 1">
@@ -111,6 +109,18 @@
               <i class="icon">✗</i>
               <span>终止任务</span>
             </button>
+          </div>
+          <div class="task-actions" v-else-if="selectedTask.status === 2">
+            <div class="status-info terminated">
+              <i class="icon">⚠️</i>
+              <span>任务已终止</span>
+            </div>
+          </div>
+          <div class="task-actions" v-else-if="selectedTask.status === 3">
+            <div class="status-info completed">
+              <i class="icon">✅</i>
+              <span>任务已完成</span>
+            </div>
           </div>
         </div>
 
@@ -124,6 +134,36 @@
             <p>暂无备注</p>
           </div>
 
+        </div>
+
+        <!-- 申请者管理（仅任务发布者可见） -->
+        <div class="applicants-section" v-if="selectedTask && selectedTask.uid === currentUserId && selectedTask.status === 0">
+          <h4>申请者列表</h4>
+          <div class="applicants-list" v-if="taskApplicants.length > 0">
+            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">
+              <div class="applicant-info">
+                <img :src="'https://via.placeholder.com/40'" alt="用户头像" class="user-avatar">
+                <div class="applicant-details">
+                  <span class="applicant-name">用户{{ applicant.uid }}</span>
+                  <span class="apply-time">{{ formatTime(applicant.time) }}</span>
+                  <span class="apply-message" v-if="applicant.message">{{ applicant.message }}</span>
+                </div>
+              </div>
+              <div class="applicant-actions">
+                <button class="action-btn accept-applicant" @click="acceptApplicant(selectedTask.tid, applicant.uid)">
+                  <i class="icon">✓</i>
+                  <span>接受</span>
+                </button>
+                <button class="action-btn reject-applicant" @click="rejectApplicant(selectedTask.tid, applicant.uid)">
+                  <i class="icon">✗</i>
+                  <span>拒绝</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="no-applicants" v-else>
+            <p>暂无申请者</p>
+          </div>
         </div>
       </div>
     </div>
@@ -221,7 +261,8 @@ export default {
         { id: 6, name: '校园兼职' },
         { id: 7, name: '活动组织' },
         { id: 8, name: '其他' }
-      ]
+      ],
+      taskApplicants: [] // 新增申请者列表
     }
   },  computed: {
     filteredTasks() {
@@ -393,19 +434,15 @@ export default {
         const date = new Date(timestamp);
         return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
-    },
-    
-    getStatusText(status) {
+    },      getStatusText(status) {
       const statusMap = {
         0: '待接取',
         1: '进行中',
-        2: '已终止',
+        2: '终止',
         3: '已完成'
       };
       return statusMap[status] || '未知';
-    },
-    
-    getStatusClass(status) {
+    },      getStatusClass(status) {
       const classMap = {
         0: 'status-waiting',
         1: 'status-ongoing',
@@ -497,13 +534,15 @@ export default {
       // 显示任务详情
       this.selectedTask = JSON.parse(JSON.stringify(task)); // 创建深拷贝
       this.newNote = ''; // 清空备注框
+
+      // 获取申请者列表
+      this.fetchTaskApplicants(task.tid);
     },
     
     closeTaskDetail() {
       this.selectedTask = null;
     },
-    
-    acceptTask(task) {
+      acceptTask(task) {
       const applicationData = {
         message: '我想接取这个任务' // 可以让用户输入申请消息
       };
@@ -511,14 +550,14 @@ export default {
       tasksApi.applyTask(task.tid, applicationData)
         .then(response => {
           if (response.data && response.data.code === 1) {
-            // 将本地任务状态改为进行中
-            task.status = 1;
+            // 申请任务成功，任务状态仍然是待接取状态，等待发布者同意
+            // 不需要修改任务状态，只需要刷新任务列表
             
             // 更新任务列表
             this.fetchTasks();
             
             // 通知用户
-            alert('已申请接取任务！');
+            alert('已成功申请任务，等待发布者同意！');
           } else {
             console.error('申请任务失败:', response.data.msg);
             alert('申请任务失败: ' + (response.data.msg || '未知错误'));
@@ -529,9 +568,8 @@ export default {
           alert('网络错误，请稍后再试');
         });
     },
-    
-    completeTask(task) {
-      tasksApi.completeTask(task.tid)
+      completeTask(task) {
+      tasksApi.completeTask(task.tid, this.currentUserId)
         .then(response => {
           if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已完成
@@ -552,13 +590,12 @@ export default {
           alert('网络错误，请稍后再试');
         });
     },
-    
-    terminateTask(task) {
+      terminateTask(task) {
       tasksApi.terminateTask(task.tid)
         .then(response => {
           if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已终止
-            task.status = 3;
+            task.status = 2;
 
             // 更新任务列表
             this.fetchTasks();
@@ -606,6 +643,71 @@ export default {
     clearSearch() {
       // 清除搜索并通知父组件
       this.$emit('clear-search');
+    },
+
+    // 获取任务申请者列表
+    fetchTaskApplicants(taskId) {
+      tasksApi.getTaskApplicants(taskId)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            this.taskApplicants = response.data.data || [];
+          } else {
+            console.error('获取任务申请者列表失败:', response.data.msg);
+            this.taskApplicants = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取任务申请者列表出错:', error);
+          this.taskApplicants = [];
+        });
+    },
+
+    // 接受申请者
+    acceptApplicant(taskId, userId) {
+      tasksApi.acceptApplicant(taskId, userId)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            // 更新任务状态
+            const task = this.tasks.find(t => t.tid === taskId);
+            if (task) {
+              task.status = 1; // 进行中
+            }
+            
+            // 更新申请者列表
+            this.fetchTaskApplicants(taskId);
+            
+            // 通知用户
+            alert('已接受申请者！');
+          } else {
+            console.error('接受申请者失败:', response.data.msg);
+            alert('接受申请者失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('接受申请者出错:', error);
+          alert('网络错误，请稍后再试');
+        });
+    },
+
+    // 拒绝申请者
+    rejectApplicant(taskId, userId) {
+      tasksApi.rejectApplicant(taskId, userId)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            // 更新申请者列表
+            this.fetchTaskApplicants(taskId);
+            
+            // 通知用户
+            alert('已拒绝申请者！');
+          } else {
+            console.error('拒绝申请者失败:', response.data.msg);
+            alert('拒绝申请者失败: ' + (response.data.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('拒绝申请者出错:', error);
+          alert('网络错误，请稍后再试');
+        });
     }
   }
 }
@@ -758,6 +860,12 @@ export default {
   background-color: #fbe9e7;
   color: #c62828;
   border: 1px solid #c62828;
+}
+
+.status-unstarted {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #7b1fa2;
 }
 
 .task-title {
@@ -1114,6 +1222,30 @@ export default {
   background-color: #ffccbc;
 }
 
+/* 状态信息样式 */
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  justify-content: center;
+}
+
+.status-info.terminated {
+  background-color: #fbe9e7;
+  color: #c62828;
+  border: 1px solid #c62828;
+}
+
+.status-info.completed {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #2e7d32;
+}
+
 /* 备注部分样式 */
 .notes-section {
   margin-top: 30px;
@@ -1144,6 +1276,117 @@ export default {
   color: #777;
   font-style: italic;
   margin-bottom: 20px;
+}
+
+/* 申请者管理样式 */
+.applicants-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.applicants-section h4 {
+  font-size: 1.1rem;
+  color: #8B0000;
+  margin: 0 0 15px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: bold;
+}
+
+.applicants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.applicant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.applicant-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.applicant-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.applicant-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.apply-time {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.apply-message {
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.applicant-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn.accept-applicant {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #2e7d32;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.action-btn.accept-applicant:hover {
+  background-color: #c8e6c9;
+}
+
+.action-btn.reject-applicant {
+  background-color: #fbe9e7;
+  color: #c62828;
+  border: 1px solid #c62828;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.action-btn.reject-applicant:hover {
+  background-color: #ffccbc;
+}
+
+.no-applicants {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+  font-style: italic;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 
