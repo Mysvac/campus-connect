@@ -13,6 +13,7 @@ import com.mythovac.backend.service.impl.ScoresCommentServiceImpl;
 import com.mythovac.backend.service.impl.ScoresReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -128,12 +129,16 @@ public class ScoreController {
             scoresCommentService.insertScoresComment(scoresComment);
             Score score = scoreService.getScoreBySid(scoresComment.getSid());
             score.setNum(score.getNum() + 1);
-            score.setScore((score.getScore() * (score.getNum() - 1) + scoresComment.getScore())/ score.getNum());
+            score.setScore((score.getScore() * (score.getNum() - 1) + scoresComment.getScore())/ (double) score.getNum());
+            if(score.getScore() < 0.0) score.setScore(0.0);
+            if(score.getScore() > 5.0) score.setScore(5.0);
             scoreService.updateScore(score);
         } else {
             scoresCommentService.updateScoresComment(scoresComment);
             Score score = scoreService.getScoreBySid(scoresComment.getSid());
-            score.setScore((score.getScore() * score.getNum() - sc.getScore() + scoresComment.getScore())/ score.getNum());
+            score.setScore((score.getScore() * score.getNum() - sc.getScore() + scoresComment.getScore())/ (double) score.getNum());
+            if(score.getScore() < 0.0) score.setScore(0.0);
+            if(score.getScore() > 5.0) score.setScore(5.0);
             scoreService.updateScore(score);
         }
         return Result.success();
