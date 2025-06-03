@@ -77,10 +77,12 @@ public class TaskController {
 
         TasksHandle tasksHandle = new TasksHandle();
         tasksHandle.setUid(uid);
-        tasksHandle.setStatus(0); // 0 表示等待审核
+        tasksHandle.setStatus(1);
         tasksHandle.setTime(System.currentTimeMillis());
         tasksHandle.setTid(tid);
         tasksHandleService.insertTasksHandle(tasksHandle);
+        task.setStatus(1);
+        tasksService.updateTask(task);
         return Result.success();
     }
 
@@ -160,41 +162,46 @@ public class TaskController {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;
 
-
         Task task = tasksService.getTaskById(tid);
+
         if (task == null) {
             return Result.error("任务不存在");
         }
-        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
+        if(
+                !Objects.equals(uid, task.getUid()) &&
+               (Integer) session.getAttribute("permission") != 3
+        ) {
             return Result.error("权限不足");
         }
         var taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
         taskHandle.setStatus(2);
         tasksHandleService.updateTasksHandle(taskHandle);
-        return Result.success();
-    }
-
-    /**
-     * 同意任务的申请
-     * @param session HttpSession
-     * @return 用户任务列表
-     */
-    @PostMapping("/accept-applicant/{tid}/{uid}")
-    public Result terminateTask(@PathVariable Long tid, @PathVariable Long uid, HttpSession session)  {
-        Result sessionCheck = UserController.checkSession(session);
-        if (sessionCheck != null) return sessionCheck;
-
-        TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
-        if (taskHandle == null) {
-            return Result.error("任务不存在");
-        }
-        taskHandle.setStatus(0);
-        tasksHandleService.updateTasksHandle(taskHandle);
-        Task task = tasksService.getTaskById(tid);
-        task.setStatus(1); //
+        task.setStatus(0);
         tasksService.updateTask(task);
         return Result.success();
     }
+
+//    /**
+//     * 同意任务的申请
+//     * @param session HttpSession
+//     * @return 用户任务列表
+//     */
+//    @PostMapping("/accept-applicant/{tid}/{uid}")
+//    public Result terminateTask(@PathVariable Long tid, @PathVariable Long uid, HttpSession session)  {
+//        Result sessionCheck = UserController.checkSession(session);
+//        if (sessionCheck != null) return sessionCheck;
+//
+//        TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
+//        if (taskHandle == null) {
+//            return Result.error("任务不存在");
+//        }
+//        taskHandle.setStatus(1);
+//        tasksHandleService.updateTasksHandle(taskHandle);
+//        Task task = tasksService.getTaskById(tid);
+//        task.setStatus(1); //
+//        tasksService.updateTask(task);
+//        return Result.success();
+//    }
 
     /**
      * 获取当前任务的被申请情况
@@ -202,8 +209,8 @@ public class TaskController {
      * @param tid 任务ID
      * @return 用户任务列表
      */
-    @GetMapping("/get-taskshandle-by-tid")
-    public Result getTasksHandleByTid(@RequestParam Long tid) {
+    @GetMapping("/get-taskshandle-by-tid/{tid}")
+    public Result getTasksHandleByTid(@PathVariable Long tid) {
         List<TasksHandle> res = tasksHandleService.getAllTasksHandleByTid(tid);
         if(res == null){
             return Result.error("任务不存在或没有申请记录");
@@ -251,7 +258,7 @@ public class TaskController {
      * @return 用户任务列表
      */
     @GetMapping("/get-taskshandle-by-uid/{uid}")
-    public Result getTasksHandleByUid(@RequestParam Long uid) {
+    public Result getTasksHandleByUid(@PathVariable Long uid) {
         List<TasksHandle> res = tasksHandleService.getAllTasksHandleByUid(uid);
         if(res == null){
             return Result.error("任务不存在或用户没有领取申请记录");

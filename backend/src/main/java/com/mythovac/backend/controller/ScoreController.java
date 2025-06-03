@@ -148,6 +148,21 @@ public class ScoreController {
     }
 
     /**
+     * 获取某日自己的评分
+     * @param uid 用户ID
+     * @return Result
+     */
+    @GetMapping("/get-scores-comment-by-uid/{uid}")
+    public Result getScoreCommentByUid(@PathVariable Long uid) {
+        List<ScoresComment> res = scoresCommentService.getScoresCommentByUid(uid);
+        if (res == null || res.isEmpty()) {
+            return Result.error("没有找到评分评论");
+        }
+        return Result.success(res);
+    }
+
+
+    /**
      * 更新评分信息
      * @param score 评分信息
      * @return Result
