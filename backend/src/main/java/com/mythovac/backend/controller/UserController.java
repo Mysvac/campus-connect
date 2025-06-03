@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 /**
  * 用户控制器
  * 处理用户注册、登录、更新等请求
@@ -145,10 +147,10 @@ public class UserController {
     @GetMapping("/get-user-data/{uid}")
     public Result getData(@PathVariable Long uid) {
         User user = userService.getUserById(uid);
-        user.setPassword("");
         if (user == null) {
             return Result.error("null");
         }
+        user.setPassword("");
         return Result.success(user);
     }
 
@@ -162,10 +164,16 @@ public class UserController {
         if(session.getAttribute("uid") == null) {
             return Result.error("请先登录");
         }
-        // Long uid = (Long)(session.getAttribute("uid"));
+        Long uid = (Long)(session.getAttribute("uid"));
         Integer permission = (Integer)(session.getAttribute("permission"));
-        if(permission == null || permission != 3){
+        if(!Objects.equals(user.getUid(), uid) && (permission == null || permission != 3)){
             return Result.error("权限不足");
+        }
+        if(permission != 3 && !Objects.equals(user.getPermission(), permission)) {
+            return Result.error("你无法修改权限");
+        }
+        if(user.getPassword() == null || user.getPassword().length() < 6) {
+            return Result.error("密码无效");
         }
 
         User user1 = userService.getUserByPhone(user.getPhone());

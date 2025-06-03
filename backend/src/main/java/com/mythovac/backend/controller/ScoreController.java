@@ -99,6 +99,9 @@ public class ScoreController {
             return Result.error("评分内容不符");
         }
         score.setStatus(0L);
+        if( score.getScore() == null) score.setScore(5.0);
+        if( score.getNum() == null) score.setNum(0);
+
         scoreService.insertScore(score);
         return Result.success();
     }

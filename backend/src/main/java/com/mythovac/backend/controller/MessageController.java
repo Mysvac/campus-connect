@@ -95,6 +95,28 @@ public class MessageController {
     }
 
     /**
+     * 修改留言
+     * @param message 留言内容
+     * @param session HTTP会话
+     * @return 操作结果
+     */
+    @PostMapping("/update-message")
+    public Result updateMessage(@RequestBody Message message, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
+        if(!Objects.equals(message.getUid(),uid) && (Integer) session.getAttribute("permission") != 3) {
+            return Result.error("你没有权限修改此留言");
+        }
+
+        message.setTime(System.currentTimeMillis());
+        messageService.updateMessage(message);
+
+        return Result.success();
+    }
+
+    /**
      * 更新留言点赞数
      * 内部辅助函数
      * @param mid 留言id
