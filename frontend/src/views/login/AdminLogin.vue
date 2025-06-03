@@ -34,16 +34,11 @@
                 clearable
                 prefix-icon="el-icon-lock"
             />
-          </el-form-item>
-
-
-          <el-form-item>
-            <!-- 按钮容器，登录和注册按钮并排显示 -->
+          </el-form-item>          <el-form-item>
+            <!-- 登录按钮容器 -->
             <div class="button-container">
               <!-- 登录按钮 -->
               <el-button type="primary" block @click="handleLogin" :loading="loading">登录</el-button>
-              <!-- 注册按钮 -->
-              <el-button type="text" @click="goToRegister">注册</el-button>
             </div>
           </el-form-item>
         </el-form>
@@ -86,10 +81,9 @@ const handleLogin = async () => {
     ElMessage.error('请输入密码');
     return;
   }
-
   try {
     loading.value = true;
-    const response = await userApi.adminLogin({
+    const response = await userApi.login({
       phone: phone.value,
       password: password.value
     });
@@ -98,13 +92,13 @@ const handleLogin = async () => {
     
     if (code === 1) {
       // 检查用户权限
-      if (data.permission === 2) {
+      if (data.permission === 3) {
         ElMessage.success('管理员登录成功');
         // 存储管理员信息
         localStorage.setItem('currentAdmin', JSON.stringify(data));
         localStorage.setItem('isAuthenticated', 'true'); // 设置认证标记
         // 跳转到管理员首页
-        router.push('/admin/dashboard'); // 可以根据实际路由调整
+        router.push('/backstage'); // 可以根据实际路由调整
       } else {
         ElMessage.error('您不是管理员，无权登录管理系统');
         localStorage.removeItem('jwt');
@@ -126,12 +120,6 @@ const goToPage = (path) => {
     console.error("跳转失败:", err);
   });
 };
-
-// 注册方法
-const goToRegister = () => {
-  goToPage('/admin-register');
-};
-
 
 const goToOrderSystem = () => {
   goToPage('/user-login');
