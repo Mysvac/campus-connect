@@ -1,6 +1,5 @@
 <template>
-  <div>
-    <!-- 任务处理信息列表 -->
+  <div>    <!-- 任务处理信息列表 -->
     <el-table :data="paginatedTaskData" style="width: 100%" stripe v-loading="isLoading">
       <el-table-column label="任务编号" prop="tid" width="100">
         <template #default="{ row }">
@@ -14,7 +13,36 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="状态" prop="status" width="120">
+      <el-table-column label="金额" prop="taskMoney" width="80">
+        <template #default="{ row }">
+          <span>{{ row.taskMoney ? row.taskMoney + ' 元' : '-' }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="标签" prop="taskTag" width="100">
+        <template #default="{ row }">
+          <el-tag v-if="row.taskTag" size="small" type="info">{{ row.taskTag }}</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="任务详情" prop="taskDetails" min-width="200">
+        <template #default="{ row }">
+          <el-tooltip
+              v-if="row.taskDetails"
+              :content="row.taskDetails"
+              placement="top"
+              :hide-after="0"
+              :enterable="false"
+              :disabled="row.taskDetails.length < 30"
+          >
+            <span>{{ row.taskDetails.length > 30 ? row.taskDetails.substring(0, 30) + '...' : row.taskDetails }}</span>
+          </el-tooltip>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="申请状态" prop="status" width="120">
         <template #default="{ row }">
           <el-tag
             :type="getStatusType(row.status)"
@@ -25,54 +53,24 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="备注" prop="notes">
-        <template #default="{ row }">
-          <el-input
-            v-if="row.isEditing"
-            v-model="row.notes"
-            type="textarea"
-            size="small"
-            placeholder="请输入备注"
-            maxlength="100"
-            show-word-limit
-          ></el-input>
-          <span v-else>{{ row.notes }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="处理时间" prop="time" width="180">
+      <el-table-column label="申请时间" prop="time" width="180">
         <template #default="{ row }">
           <span>{{ formatTime(row.time) }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="160">
+      <el-table-column label="操作" width="100">
         <template #default="scope">
           <el-button
-            type="warning"
-            size="small"
-            @click="editRow(scope.row)"
-            v-if="!scope.row.isEditing"
+              type="danger"
+              size="small"
+              @click="cancelApplication(scope.row)"
+              v-if="scope.row.status === 0"
           >
-            编辑
+            取消申请
           </el-button>
-          <el-button
-            type="success"
-            size="small"
-            @click="saveRow(scope.row)"
-            v-if="scope.row.isEditing"
-          >
-            保存
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            @click="deleteRow(scope.row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
+          <span v-else>-</span>
+        </template>      </el-table-column>
     </el-table>
 
     <!-- 分页组件 -->
@@ -86,85 +84,29 @@
         layout="total, sizes, prev, pager, next, jumper"
         :total="filteredTaskData.length"
       >
-      </el-pagination>
-    </div>
-
-    <!-- 添加任务处理记录对话框 -->
-    <el-dialog title="接受新任务" v-model="dialogVisible" width="40%">
-      <el-form :model="newTask" label-width="100px" :rules="rules" ref="taskForm">
-        <el-form-item label="任务编号" prop="tid">
-          <el-input v-model.number="newTask.tid" type="number" placeholder="请输入任务编号"></el-input>
-        </el-form-item>
-        <el-form-item label="任务名" prop="taskName">
-          <el-input v-model="newTask.taskName" placeholder="请输入任务名"></el-input>
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="newTask.status" placeholder="请选择状态">
-            <el-option
-              v-for="status in statusOptions"
-              :key="status.value"
-              :label="status.label"
-              :value="status.value">
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="notes">
-          <el-input v-model="newTask.notes" type="textarea" :rows="4" placeholder="请输入备注" maxlength="100" show-word-limit></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitNewTask">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+      </el-pagination>    </div>
   </div>
 </template>
 
 <script>
 import { ElMessage } from 'element-plus';
+import api from '@/api';
 
 export default {
-  name: "TaskProcessingManagement",
-  data() {
+  name: "TaskProcessingManagement",  data() {
     return {
       selectedStatus: "",
       taskData: [],
       isLoading: false,
-      dialogVisible: false,
-      currentUserId: 101, // 当前登录用户的ID，实际使用时从登录信息中获取
-      newTask: {
-        tid: '',
-        taskName: '',
-        uid: '', // 将自动设置为当前用户ID
-        status: 0,
-        notes: '',
-        time: null
-      },
+      currentUserId: null, // 当前登录用户的ID，从登录信息中获取
       currentPage: 1,
       pageSize: 7,
       statusOptions: [
-        { value: 0, label: '进行中' },
-        { value: 1, label: '完成' },
-        { value: 2, label: '失败' }
-      ],
-      rules: {
-        tid: [
-          { required: true, message: '请输入任务编号', trigger: 'blur' },
-          { type: 'number', message: '任务编号必须为数字', trigger: 'blur' }
-        ],
-        taskName: [
-          { required: true, message: '请输入任务名', trigger: 'blur' },
-          { max: 50, message: '任务名不能超过50个字符', trigger: 'blur' }
-        ],
-        status: [
-          { required: true, message: '请选择状态', trigger: 'change' }
-        ],
-        notes: [
-          { max: 100, message: '备注长度不能超过100个字符', trigger: 'blur' }
-        ]
-      }
+        { value: 0, label: '待同意' },
+        { value: 1, label: '进行中' },
+        { value: 2, label: '终止' },
+        { value: 3, label: '完成' }
+      ]
     };
   },
   computed: {
@@ -182,72 +124,124 @@ export default {
       return this.filteredTaskData.slice(start, end);
     },
   },
-  methods: {
-    // 获取任务处理列表
-    fetchTasks() {
+  methods: {    // 获取任务处理列表
+    async fetchTasks() {
       this.isLoading = true;
-      // 这里替换为实际的API调用，传入当前用户ID
-      // this.$axios.get(`/api/tasks/processing?uid=${this.currentUserId}`).then(response => {
-      //   this.taskData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取任务处理列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取任务处理列表失败');
-      // });
-
-      // 模拟数据 - 只显示当前用户接受的任务
-      setTimeout(() => {
-        this.taskData = [
-          { tid: 1001, taskName: '高数资料整理', uid: 101, status: 0, notes: '正在收集资料，预计明天完成', time: Date.now() - 86400000, isEditing: false },
-          { tid: 1002, taskName: '英语讲义翻译', uid: 102, status: 1, notes: '已完成资料整理并提交', time: Date.now() - 172800000, isEditing: false },
-          { tid: 1003, taskName: '失物招领', uid: 101, status: 2, notes: '无法完成任务，原因：资源不足', time: Date.now() - 259200000, isEditing: false },
-          { tid: 1004, taskName: '二手书收集', uid: 104, status: 0, notes: '正在进行中，预计周五前完成', time: Date.now() - 345600000, isEditing: false },
-          { tid: 1005, taskName: 'Python答疑', uid: 101, status: 1, notes: '任务已按要求完成', time: Date.now() - 432000000, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
-    },
-
-    // 编辑行
-    editRow(row) {
-      // 先关闭其他正在编辑的行
-      this.taskData.forEach(item => {
-        if (item.tid !== row.tid || item.uid !== row.uid) {
-          item.isEditing = false;
+      
+      // 如果没有用户ID，先获取当前用户信息
+      if (!this.currentUserId) {
+        try {
+          await this.getCurrentUserId();
+        } catch (error) {
+          this.isLoading = false;
+          return;
         }
-      });
-      // 设置当前行为编辑状态
-      row.isEditing = true;
+      }      try {
+        console.log('[DEBUG] Fetching tasks handle for user:', this.currentUserId);
+        const response = await api.get(`/api/task/get-taskshandle-by-uid/${this.currentUserId}`);
+        console.log('[DEBUG] Tasks handle response:', response);
+        
+        if (response.data && response.data.code === 1) {
+          // 获取任务处理记录后，需要获取对应的任务信息来补充任务名
+          const tasksHandleData = response.data.data;
+          console.log('[DEBUG] Got tasks handle data:', tasksHandleData);
+          
+          this.taskData = await Promise.all(tasksHandleData.map(async (item) => {
+            try {
+              const taskResponse = await api.get(`/api/task/get-tasks-by-tid/${item.tid}`);
+              let taskName = '未知任务';
+              let taskDetails = '';
+              let taskMoney = 0;
+              let taskTag = '';
+              
+              if (taskResponse.data && taskResponse.data.code === 1) {
+                const taskData = taskResponse.data.data;
+                taskName = taskData.name;
+                taskDetails = taskData.details;
+                taskMoney = taskData.money;
+                taskTag = taskData.tag;
+              }
+              return {
+                ...item,
+                taskName: taskName,
+                taskDetails: taskDetails,
+                taskMoney: taskMoney,                taskTag: taskTag
+              };
+            } catch (error) {
+              console.error(`获取任务${item.tid}详情失败:`, error);
+              return {
+                ...item,
+                taskName: '获取失败',
+                taskDetails: '',
+                taskMoney: 0,
+                taskTag: ''
+              };
+            }
+          }));
+          console.log('[DEBUG] Final task data:', this.taskData);
+        } else {
+          console.log('没有找到任务处理记录或获取失败:', response.data?.msg);
+          this.taskData = [];
+        }
+      } catch (error) {
+        console.error('获取任务处理列表失败:', error);
+        ElMessage.error('获取任务处理列表失败');
+        this.taskData = [];
+      } finally {
+        this.isLoading = false;
+      }
+    },    // 获取当前用户ID
+    async getCurrentUserId() {
+      try {
+        // 检查用户是否已认证
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+          console.log('[DEBUG] User not authenticated');
+          return null;
+        }
+        
+        // 优先从localStorage获取当前用户信息
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser.uid) {
+          console.log('[DEBUG] Got user ID from localStorage:', currentUser.uid);
+          this.currentUserId = currentUser.uid;
+          return currentUser.uid;
+        }
+        
+        console.log('[DEBUG] No user ID found in localStorage');
+        return null;
+      } catch (error) {
+        console.error('[DEBUG] Error getting current user ID:', error);
+        return null;
+      }
     },
 
-    // 保存行
-    saveRow(row) {
-      // 这里只允许编辑备注
-      row.isEditing = false;
-      ElMessage.success('更新任务处理成功');
-    },
+    // 取消申请
+    async cancelApplication(row) {
+      try {
+        // 弹出确认框
+        await this.$confirm('确定要取消这个任务申请吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
 
-    // 删除行
-    deleteRow(row) {
-      // 弹出确认框
-      this.$confirm('此操作将永久删除该任务处理记录, 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 模拟删除
-        const index = this.taskData.findIndex(item => item.tid === row.tid && item.uid === row.uid);
+        // 这里应该调用后端API来取消申请
+        // 由于要求不修改后端，暂时只做前端模拟
+        const index = this.taskData.findIndex(item => 
+          item.tid === row.tid && item.uid === row.uid
+        );
+        
         if (index !== -1) {
           this.taskData.splice(index, 1);
+          ElMessage.success('已取消申请');
         }
-        ElMessage.success('删除任务处理成功');
-      }).catch(() => {
-        ElMessage.info('已取消删除');
-      });
-    },
-
-    // 处理分页大小变化
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('取消申请失败:', error);
+          ElMessage.error('取消申请失败');
+        }
+      }
+    },    // 处理分页大小变化
     handleSizeChange(size) {
       this.pageSize = size;
       this.currentPage = 1;
@@ -268,19 +262,24 @@ export default {
     getStatusLabel(status) {
       const statusObj = this.statusOptions.find(item => item.value === status);
       return statusObj ? statusObj.label : '未知状态';
-    },
-
-    // 根据状态获取对应的类型样式
+    },    // 根据状态获取对应的类型样式
     getStatusType(status) {
       const statusMap = {
-        0: 'warning',  // 进行中
-        1: 'success',  // 完成
-        2: 'danger'    // 失败
+        0: 'warning',  // 待同意 - 黄色
+        1: 'info',     // 进行中 - 蓝色
+        2: 'danger',   // 终止 - 红色
+        3: 'success'   // 完成 - 绿色
       };
       return statusMap[status] || 'info';
+    }},
+  async created() {
+    // 初始化用户ID
+    try {
+      await this.getCurrentUserId();
+    } catch (error) {
+      console.error('初始化用户ID失败');
     }
-  },
-  created() {
+    
     this.fetchTasks();
   },
 };
