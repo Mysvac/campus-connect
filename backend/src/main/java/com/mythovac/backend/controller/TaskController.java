@@ -47,11 +47,12 @@ public class TaskController {
         return Result.success(tasksService.getAllTags());
     }
 
-    /**
-     * 任务Task：
-     * 0.待接取 1.进行中 2.终止 3.完成
-     * 任务处理:TaskHandle:
-     * 0.待同意 1.进行中 2.终止 3.完成
+    /*
+      任务Task：
+      0.待接取 1.进行中 2.终止 3.完成
+
+      任务处理:TaskHandle:
+      0.待同意 1.进行中 2.终止 3.完成
      */
 
     /**
@@ -70,6 +71,10 @@ public class TaskController {
         if (task == null || task.getStatus() != 0) {
             return Result.error("任务不存在或不可用");
         }
+        if (tasksHandleService.getTasksHandleById(tid, uid) != null) {
+            return Result.error("请勿重复申请任务");
+        }
+
         TasksHandle tasksHandle = new TasksHandle();
         tasksHandle.setUid(uid);
         tasksHandle.setStatus(0); // 0 表示等待审核

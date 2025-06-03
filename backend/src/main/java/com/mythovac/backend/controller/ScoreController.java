@@ -13,6 +13,7 @@ import com.mythovac.backend.service.impl.ScoresCommentServiceImpl;
 import com.mythovac.backend.service.impl.ScoresReleaseServiceImpl;
 import com.mythovac.backend.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -98,6 +99,9 @@ public class ScoreController {
             return Result.error("评分内容不符");
         }
         score.setStatus(0L);
+        if( score.getScore() == null) score.setScore(5.0);
+        if( score.getNum() == null) score.setNum(0);
+
         scoreService.insertScore(score);
         return Result.success();
     }
@@ -118,19 +122,26 @@ public class ScoreController {
         if (scoreService.getScoreBySid(scoresComment.getSid()) == null) {
             return Result.error("评分不存在");
         }
+        if (scoresComment.getScore() == null) {
+            return Result.error("评分分数不能为空");
+        }
+
         scoresComment.setUid((Long) session.getAttribute("uid"));
-        scoresCommentService.insertScoresComment(scoresComment);
         ScoresComment sc = scoresCommentService.getScoresCommentBySidAndUid(scoresComment.getSid(), scoresComment.getUid());
         if (sc == null) {
             scoresCommentService.insertScoresComment(scoresComment);
             Score score = scoreService.getScoreBySid(scoresComment.getSid());
             score.setNum(score.getNum() + 1);
-            score.setScore((score.getScore() * (score.getNum() - 1) + scoresComment.getScore())/ score.getNum());
+            score.setScore((score.getScore() * (score.getNum() - 1) + scoresComment.getScore())/ (double) score.getNum());
+            if(score.getScore() < 0.0) score.setScore(0.0);
+            if(score.getScore() > 5.0) score.setScore(5.0);
             scoreService.updateScore(score);
         } else {
             scoresCommentService.updateScoresComment(scoresComment);
             Score score = scoreService.getScoreBySid(scoresComment.getSid());
-            score.setScore((score.getScore() * score.getNum() - sc.getScore() + scoresComment.getScore())/ score.getNum());
+            score.setScore((score.getScore() * score.getNum() - sc.getScore() + scoresComment.getScore())/ (double) score.getNum());
+            if(score.getScore() < 0.0) score.setScore(0.0);
+            if(score.getScore() > 5.0) score.setScore(5.0);
             scoreService.updateScore(score);
         }
         return Result.success();
