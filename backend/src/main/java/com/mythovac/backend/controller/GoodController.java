@@ -190,4 +190,33 @@ public class GoodController {
         return Result.success("添加商品成功");
     }
 
+    @PostMapping("/update-good")
+    public Result updateGood(@RequestBody Good good, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long) session.getAttribute("uid");
+        Integer permission = (Integer) session.getAttribute("permission");
+
+        if (good == null || good.getGid() == null) {
+            return Result.error("商品信息无效");
+        }
+
+        Good existingGood = goodsService.getGoodsById(good.getGid());
+        if (existingGood == null) {
+            return Result.error("商品不存在");
+        }
+
+        if (!Objects.equals(existingGood.getUid(), uid) && permission != 3) {
+            return Result.error("无权限修改此商品");
+        }
+
+        // 保持原有的uid和sales不变
+        good.setUid(existingGood.getUid());
+        good.setSales(existingGood.getSales());
+        good.setTime(System.currentTimeMillis());
+
+        goodsService.updateGoods(good);
+        return Result.success("更新商品成功");
+    }
 }
