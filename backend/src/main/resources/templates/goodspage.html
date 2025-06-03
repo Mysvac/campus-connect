@@ -320,8 +320,9 @@
 </div>
 
 <script th:inline="javascript">
-    // 确保product对象正确初始化
+    // 从服务器获取商品数据
     const product = /*[[${product}]]*/ null;
+    
     const baseURL = '/api/'; // 使用相对路径
     const DEBUG_MODE = false; // 生产环境禁用调试模式
     
@@ -374,7 +375,7 @@
 
     // 验证商品数据
     function validateProductData() {
-        if (!product || !product.id) {
+        if (!product || !product.gid) {
             console.error('商品信息未正确加载');
             alert('商品信息加载失败，请刷新页面重试');
             return false;
@@ -524,7 +525,7 @@
         }
 
         try {
-            const response = await api.post(`purchase/${product.id}`);
+            const response = await api.post(`purchase/${product.gid}`);
 
             if (!response || response.code !== 1) {
                 throw new Error(response?.msg || '购买失败');
