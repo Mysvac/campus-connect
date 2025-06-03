@@ -13,6 +13,9 @@ public interface ScoresCommentMapper {
     @Select("SELECT * FROM scores_comment WHERE sid = #{sid}")
     List<ScoresComment> getScoresCommentBySid(Long sid);
 
+    @Select("SELECT * FROM scores_comment WHERE uid = #{uid}")
+    List<ScoresComment> getScoresCommentByUid(Long uid);
+
     @Select("SELECT * FROM scores_comment WHERE sid = #{sid} AND uid = #{uid}")
     ScoresComment getScoresCommentBySidAndUid(Long sid, Long uid);
 

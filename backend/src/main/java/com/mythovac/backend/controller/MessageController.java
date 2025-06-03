@@ -88,6 +88,7 @@ public class MessageController {
 
         Long uid = (Long) session.getAttribute("uid");
         message.setUid(uid);
+        if(message.getPraise() == null) message.setPraise(0);
         message.setTime(System.currentTimeMillis());
         messageService.insertMessage(message);
 
@@ -106,10 +107,15 @@ public class MessageController {
         if (sessionCheck != null) return sessionCheck;
 
         Long uid = (Long) session.getAttribute("uid");
-        if(!Objects.equals(message.getUid(),uid) && (Integer) session.getAttribute("permission") != 3) {
+        var oldmsg = messageService.getMessageById(message.getMid());
+        if(!Objects.equals(oldmsg.getUid(),uid) && (Integer) session.getAttribute("permission") != 3) {
             return Result.error("你没有权限修改此留言");
         }
-
+        message.setUid(uid);
+        if(message.getPraise() == null) message.setPraise(oldmsg.getPraise());
+        if(message.getContent() == null) message.setContent(oldmsg.getContent());
+        if(message.getTitle() == null) message.setTitle(oldmsg.getTitle());
+        if(message.getTag() == null) message.setTag(oldmsg.getTag());
         message.setTime(System.currentTimeMillis());
         messageService.updateMessage(message);
 
