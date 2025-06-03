@@ -127,8 +127,7 @@ export default {
         }
         return api.post(`/api/message/like-comment/${id}`);
     },
-    
-    // 取消点赞评论
+      // 取消点赞评论
     unlikeComment: (id) => {
         // 调试模式下且没有JWT令牌，模拟取消点赞评论
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -144,5 +143,20 @@ export default {
             return getMockResponse({success: false});
         }
         return api.delete(`/api/message/unlike-comment/${id}`);
+    },
+
+    // 删除留言
+    deleteMessage: (id) => {
+        // 调试模式下且没有JWT令牌，模拟删除留言
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟删除留言");
+            const index = MOCK_DATA.messages.findIndex(m => m.mid === parseInt(id));
+            if (index !== -1) {
+                MOCK_DATA.messages.splice(index, 1);
+                return getMockResponse({success: true});
+            }
+            return getMockResponse({success: false});
+        }
+        return api.delete(`/api/message/delete-message-by-mid/${id}`);
     }
 };
