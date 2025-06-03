@@ -223,7 +223,9 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import taskApi from '@/api/taskApi';
+import api from '@/api';
 
 export default {
   name: "TaskManagement",
@@ -246,12 +248,13 @@ export default {
       },
       currentPage: 1,
       pageSize: 7,
-      currentUserId: 101, // 假设当前登录用户ID，实际应从登录状态获取
+      currentUserId: null, // 当前登录用户ID，从登录状态获取
+      tagOptions: [], // 标签选项，从API获取
       statusOptions: [
         { value: 0, label: '待接取' },
         { value: 1, label: '进行中' },
         { value: 2, label: '终止' },
-        { value: 3, label: '完成' }
+        { value: 3, label: '已完成' }
       ],
       rules: {
         uid: [
@@ -306,43 +309,83 @@ export default {
       return this.filteredTaskData.slice(start, end);
     },
   },
-  methods: {
-    // 获取任务列表
+  methods: {    // 获取任务列表
     fetchTasks() {
+      console.log('fetchTasks 被调用, 当前用户ID:', this.currentUserId);
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tasks').then(response => {
-      //   this.taskData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取任务列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取任务列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.taskData = [
-          { tid: 1, uid: 101, name: '快递代取', money: 10, contact: '微信: wx123456', details: '帮我去学校快递站取一个快递，送到宿舍楼下即可。', status: 0, tag: '校园跑腿', time: Date.now() - 86400000, isEditing: false },
-          { tid: 2, uid: 102, name: '数学辅导', money: 80, contact: 'QQ: 987654321', details: '需要一名数学好的同学辅导高数，两小时，地点图书馆。', status: 1, tag: '学习辅导', time: Date.now() - 172800000, isEditing: false },
-          { tid: 3, uid: 103, name: '海报设计', money: 50, contact: '电话: 13812345678', details: '为社团活动设计一张海报，要求简洁大方，有创意。', status: 2, tag: '设计服务', time: Date.now() - 259200000, isEditing: false },
-          { tid: 4, uid: 104, name: '宿舍打扫', money: 30, contact: '微信: clean888', details: '帮忙打扫宿舍，包括拖地，整理物品等，约1小时工作量。', status: 3, tag: '生活服务', time: Date.now() - 345600000, isEditing: false },
-          { tid: 5, uid: 105, name: '资料整理', money: 45, contact: '邮箱: student@edu.cn', details: '帮忙整理一些学习资料，需要用Word排版，大约20页左右。', status: 0, tag: '文档处理', time: Date.now() - 432000000, isEditing: false }
-        ];
+      
+      // 如果没有用户ID，先获取当前用户信息
+      if (!this.currentUserId) {
+        console.log('用户ID为空，尝试获取用户ID');
+        this.getCurrentUserId().then(() => {
+          console.log('获取用户ID成功，开始加载任务:', this.currentUserId);
+          this.loadUserTasks();
+        }).catch(() => {
+          console.log('获取用户ID失败');
+          this.isLoading = false;
+        });
+      } else {
+        console.log('用户ID已存在，直接加载任务:', this.currentUserId);
+        this.loadUserTasks();
+      }
+    },    // 获取当前用户ID
+    async getCurrentUserId() {
+      try {
+        // 检查用户是否已认证
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+          console.log('[DEBUG] User not authenticated');
+          return null;
+        }
+        
+        // 优先从localStorage获取当前用户信息
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser.uid) {
+          console.log('[DEBUG] Got user ID from localStorage:', currentUser.uid);
+          this.currentUserId = currentUser.uid;
+          return currentUser.uid;
+        }
+        
+        console.log('[DEBUG] No user ID found in localStorage');
+        return null;
+      } catch (error) {
+        console.error('[DEBUG] Error getting current user ID:', error);
+        return null;
+      }
+    },// 加载用户任务
+    async loadUserTasks() {
+      try {
+        console.log('开始获取用户任务, 用户ID:', this.currentUserId);
+        const response = await taskApi.getUserTasks(this.currentUserId);
+        console.log('getUserTasks API 响应:', response);
+        
+        if (response.data && response.data.code === 1) {
+          this.taskData = response.data.data.map(item => ({
+            ...item,
+            isEditing: false
+          }));
+          console.log('成功加载任务数据:', this.taskData.length, '条任务');
+        } else {
+          console.error('获取任务列表失败:', response.data.msg);
+          ElMessage.error('获取任务列表失败: ' + (response.data.msg || '未知错误'));
+          this.taskData = [];
+        }
+      } catch (error) {
+        console.error('获取任务列表失败:', error);
+        ElMessage.error('获取任务列表失败');
+        this.taskData = [];
+      } finally {
         this.isLoading = false;
-      }, 500);
-    },
-
-    // 显示添加对话框
+      }
+    },// 显示添加对话框
     showAddDialog() {
       this.dialogVisible = true;
       this.newTask = {
-        uid: '',
+        uid: this.currentUserId,
         name: '',
         money: 0,
         contact: '',
         details: '',
-        status: 0,
+        status: 2, // 后端默认为未开始状态
         tag: '',
         time: null
       };
@@ -353,32 +396,29 @@ export default {
     },
 
     // 提交新任务
-    submitNewTask() {
+    async submitNewTask() {
       if (this.$refs.taskForm) {
-        this.$refs.taskForm.validate(valid => {
+        this.$refs.taskForm.validate(async (valid) => {
           if (valid) {
-            this.newTask.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/tasks', this.newTask).then(response => {
-            //   ElMessage.success('发布任务成功');
-            //   this.fetchTasks();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('发布任务失败:', error);
-            //   ElMessage.error('发布任务失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.taskData.map(item => item.tid), 0);
-            const newTask = {
-              ...this.newTask,
-              tid: maxId + 1,
-              isEditing: false
-            };
-            this.taskData.unshift(newTask);
-            ElMessage.success('发布任务成功');
-            this.dialogVisible = false;
+            try {
+              const taskData = {
+                ...this.newTask,
+                uid: this.currentUserId
+              };
+              
+              const response = await taskApi.createTask(taskData);
+              if (response.data && response.data.code === 1) {
+                ElMessage.success('发布任务成功');
+                this.fetchTasks(); // 重新获取任务列表
+                this.dialogVisible = false;
+              } else {
+                console.error('发布任务失败:', response.data.msg);
+                ElMessage.error('发布任务失败: ' + (response.data.msg || '未知错误'));
+              }
+            } catch (error) {
+              console.error('发布任务失败:', error);
+              ElMessage.error('发布任务失败');
+            }
           } else {
             return false;
           }
@@ -396,50 +436,62 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
-    saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/tasks/${row.tid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新任务成功');
-      // }).catch(error => {
-      //   console.error('更新任务失败:', error);
-      //   ElMessage.error('更新任务失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新任务成功');
-    },
-
-    // 删除行
+    },    // 保存行
+    async saveRow(row) {
+      try {
+        // 构建更新数据 - 注意后端没有直接的更新任务接口，这里需要先删除再创建
+        // 或者我们可以修改为只更新特定字段，但根据现有API，我们使用删除+创建的方式
+        const updateData = {
+          name: row.name,
+          money: row.money,
+          contact: row.contact,
+          details: row.details,
+          status: row.status,
+          tag: row.tag,
+          uid: row.uid
+        };        // 先删除原任务
+        const deleteResponse = await api.delete(`/api/task/delete-tasks-by-tid/${row.tid}`);
+        if (deleteResponse.data && deleteResponse.data.code === 1) {
+          // 创建新任务
+          const createResponse = await taskApi.createTask(updateData);
+          if (createResponse.data && createResponse.data.code === 1) {
+            row.isEditing = false;
+            ElMessage.success('更新任务成功');
+            // 重新获取任务列表以保持数据同步
+            this.fetchTasks();
+          } else {
+            ElMessage.error('更新任务失败: ' + (createResponse.data.msg || '未知错误'));
+          }
+        } else {
+          ElMessage.error('更新任务失败: ' + (deleteResponse.data.msg || '未知错误'));
+        }
+      } catch (error) {
+        console.error('更新任务失败:', error);
+        ElMessage.error('更新任务失败');
+      }
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
-      this.$confirm('此操作将永久删除该任务, 是否继续?', '提示', {
+      ElMessageBox.confirm('此操作将永久删除该任务, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/tasks/${row.tid}`).then(response => {
-        //   const index = this.taskData.findIndex(item => item.tid === row.tid);
-        //   if (index !== -1) {
-        //     this.taskData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除任务成功');
-        // }).catch(error => {
-        //   console.error('删除任务失败:', error);
-        //   ElMessage.error('删除任务失败');
-        // });
-
-        // 模拟删除
-        const index = this.taskData.findIndex(item => item.tid === row.tid);
-        if (index !== -1) {
-          this.taskData.splice(index, 1);
+        type: 'warning'      }).then(async () => {
+        try {
+          const response = await api.delete(`/api/task/delete-tasks-by-tid/${row.tid}`);
+          if (response.data && response.data.code === 1) {
+            const index = this.taskData.findIndex(item => item.tid === row.tid);
+            if (index !== -1) {
+              this.taskData.splice(index, 1);
+            }
+            ElMessage.success('删除任务成功');
+          } else {
+            console.error('删除任务失败:', response.data.msg);
+            ElMessage.error('删除任务失败: ' + (response.data.msg || '未知错误'));
+          }
+        } catch (error) {
+          console.error('删除任务失败:', error);
+          ElMessage.error('删除任务失败');
         }
-        ElMessage.success('删除任务成功');
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
@@ -471,15 +523,13 @@ export default {
         tagMap[item.value] = types[index % types.length];
       });
       return tagMap[tag] || '';
-    },
-
-    // 获取状态对应的样式
+    },    // 获取状态对应的样式
     getStatusType(status) {
       const statusMap = {
         0: 'info',    // 待接取 - 蓝色
         1: 'warning', // 进行中 - 黄色
         2: 'danger',  // 终止 - 红色
-        3: 'success'  // 完成 - 绿色
+        3: 'success'  // 已完成 - 绿色
       };
       return statusMap[status] || '';
     },
@@ -488,33 +538,53 @@ export default {
     getStatusLabel(status) {
       const statusOption = this.statusOptions.find(option => option.value === status);
       return statusOption ? statusOption.label : '未知状态';
+    },    // 获取标签列表
+    async fetchTags() {
+      try {
+        const response = await taskApi.getTaskTags();
+        if (response.data && response.data.code === 1) {
+          this.tagOptions = response.data.data.map(tag => ({
+            value: tag,
+            label: tag
+          }));
+        } else {
+          console.error('获取标签列表失败:', response.data.msg);
+          // 使用默认标签
+          this.setDefaultTags();
+        }
+      } catch (error) {
+        console.error('获取标签列表失败:', error);
+        // 使用默认标签
+        this.setDefaultTags();
+      }
     },
 
-    // 获取标签列表
-    fetchTags() {
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tags').then(response => {
-      //   this.tagOptions = response.data;
-      // }).catch(error => {
-      //   console.error('获取标签列表失败:', error);
-      //   ElMessage.error('获取标签列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.tagOptions = [
-          { value: '校园跑腿', label: '校园跑腿' },
-          { value: '学习辅导', label: '学习辅导' },
-          { value: '设计服务', label: '设计服务' },
-          { value: '生活服务', label: '生活服务' },
-          { value: '文档处理', label: '文档处理' },
-          { value: '活动帮助', label: '活动帮助' }
-        ];
-      }, 300);
+    // 设置默认标签
+    setDefaultTags() {
+      this.tagOptions = [
+        { value: '校园跑腿', label: '校园跑腿' },
+        { value: '学习辅导', label: '学习辅导' },
+        { value: '设计服务', label: '设计服务' },
+        { value: '生活服务', label: '生活服务' },
+        { value: '文档处理', label: '文档处理' },
+        { value: '活动帮助', label: '活动帮助' }
+      ];
+    }  },  async created() {
+    console.log('UserTasks 组件 created 生命周期开始');
+    
+    // 初始化用户ID
+    try {
+      await this.getCurrentUserId();
+      console.log('用户ID初始化成功:', this.currentUserId);
+    } catch (error) {
+      // 如果获取用户ID失败，设置一个默认值或者引导用户登录
+      console.error('初始化用户ID失败', error);
     }
-  },
-  created() {
+    
+    console.log('开始获取标签');
     this.fetchTags();
+    
+    console.log('开始获取任务列表');
     this.fetchTasks();
   },
 };
