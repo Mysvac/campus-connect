@@ -108,8 +108,8 @@ public class UserController {
      * @param session HttpSession
      * @return Result 登出结果
      */
-    @PostMapping("/recharge")
-    public Result recharge(@RequestBody Long amount, HttpSession session) {
+    @PostMapping("/recharge/{amount}")
+    public Result recharge(@PathVariable Long amount, HttpSession session) {
         if(session.getAttribute("uid") == null) {
             return Result.error("请先登录");
         }
