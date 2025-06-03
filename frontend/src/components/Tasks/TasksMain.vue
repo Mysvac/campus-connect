@@ -57,11 +57,10 @@
 
       <div class="detail-content">
         <!-- 任务内容 -->
-        <div class="detail-task-card">          <div class="task-header">
-            <div class="user-info">
+        <div class="detail-task-card">          <div class="task-header">            <div class="user-info">
               <img :src="getUserAvatar(selectedTask)" alt="用户头像" class="user-avatar">
               <div>
-                <h4 class="user-name">用户{{ selectedTask.uid }}</h4>
+                <h4 class="user-name">{{ selectedTask.username || `用户${selectedTask.uid}` }}</h4>
                 <span class="post-time">{{ formatTime(selectedTask.time) }}</span>
               </div>
             </div>
@@ -138,11 +137,10 @@
         <!-- 申请者管理（仅任务发布者可见） -->
         <div class="applicants-section" v-if="selectedTask && selectedTask.uid === currentUserId && selectedTask.status === 0">
           <h4>申请者列表</h4>
-          <div class="applicants-list" v-if="taskApplicants.length > 0">            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">
-              <div class="applicant-info">
+          <div class="applicants-list" v-if="taskApplicants.length > 0">            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">              <div class="applicant-info">
                 <img :src="getUserAvatar(applicant)" alt="用户头像" class="user-avatar">
                 <div class="applicant-details">
-                  <span class="applicant-name">用户{{ applicant.uid }}</span>
+                  <span class="applicant-name">{{ applicant.username || `用户${applicant.uid}` }}</span>
                   <span class="apply-time">{{ formatTime(applicant.time) }}</span>
                   <span class="apply-message" v-if="applicant.message">{{ applicant.message }}</span>
                 </div>
@@ -258,10 +256,11 @@ export default {
         { id: 5, name: '学习互助' },
         { id: 6, name: '校园兼职' },
         { id: 7, name: '活动组织' },        { id: 8, name: '其他' }
-      ],
-      taskApplicants: [], // 新增申请者列表
+      ],      taskApplicants: [], // 新增申请者列表
       userAvatarCache: {}, // 用户头像缓存
-      userAvatarPromiseCache: {} // 用户头像Promise缓存，防止并发请求
+      userAvatarPromiseCache: {}, // 用户头像Promise缓存，防止并发请求
+      usernameCache: {}, // 用户名结果缓存
+      usernamePromiseCache: {} // 用户名Promise缓存，防止并发请求
     }
   },computed: {
     filteredTasks() {
@@ -357,59 +356,57 @@ export default {
           console.error('获取任务标签出错:', error);
           console.log('使用默认任务标签数据');
         });
-    },
-
-    // 获取任务列表
-    fetchTasks() {
+    },    // 获取任务列表
+    async fetchTasks() {
       this.isLoading = true;
-      tasksApi.getTasks()
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            this.tasks = response.data.data || [];
-            // 向父组件发送任务数据
-            this.$emit('update-tasks', this.tasks);
-          } else {
-            console.error('获取任务列表失败:', response.data.msg);
-            this.error = response.data.msg || '获取任务列表失败';
-          }
-        })
-        .catch(error => {
-          console.error('获取任务列表出错:', error);
-          this.error = '网络错误，请稍后再试';
-        })
-        .finally(() => {
-          this.isLoading = false;
-        });
-    },
-
-    // 获取任务详情
-    fetchTaskDetail(taskId) {
+      try {
+        const response = await tasksApi.getTasks();
+        if (response.data && response.data.code === 1) {
+          const tasksData = response.data.data || [];
+          // 为任务数据添加用户名
+          this.tasks = await this.enrichWithUsernames(tasksData);
+          // 向父组件发送任务数据
+          this.$emit('update-tasks', this.tasks);
+        } else {
+          console.error('获取任务列表失败:', response.data.msg);
+          this.error = response.data.msg || '获取任务列表失败';
+        }
+      } catch (error) {
+        console.error('获取任务列表出错:', error);
+        this.error = '网络错误，请稍后再试';
+      } finally {
+        this.isLoading = false;
+      }
+    },    // 获取任务详情
+    async fetchTaskDetail(taskId) {
       this.isLoading = true;
-      tasksApi.getTaskDetail(taskId)
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            // 更新本地任务列表中的任务，或添加新任务
-            const index = this.tasks.findIndex(t => t.tid === taskId);
-            if (index !== -1) {
-              this.tasks.splice(index, 1, response.data.data);
-            } else {
-              this.tasks.push(response.data.data);
-            }
-            
-            // 显示任务详情
-            this.showTaskDetail(response.data.data);
+      try {
+        const response = await tasksApi.getTaskDetail(taskId);
+        if (response.data && response.data.code === 1) {
+          // 为任务详情添加用户名
+          const taskWithUsername = await this.enrichWithUsernames([response.data.data]);
+          const taskDetail = taskWithUsername[0];
+          
+          // 更新本地任务列表中的任务，或添加新任务
+          const index = this.tasks.findIndex(t => t.tid === taskId);
+          if (index !== -1) {
+            this.tasks.splice(index, 1, taskDetail);
           } else {
-            console.error('获取任务详情失败:', response.data.msg);
-            alert('获取任务详情失败: ' + (response.data.msg || '未知错误'));
+            this.tasks.push(taskDetail);
           }
-        })
-        .catch(error => {
-          console.error('获取任务详情出错:', error);
-          alert('网络错误，请稍后再试');
-        })
-        .finally(() => {
-          this.isLoading = false;
-        });
+          
+          // 显示任务详情
+          this.showTaskDetail(taskDetail);
+        } else {
+          console.error('获取任务详情失败:', response.data.msg);
+          alert('获取任务详情失败: ' + (response.data.msg || '未知错误'));
+        }
+      } catch (error) {
+        console.error('获取任务详情出错:', error);
+        alert('网络错误，请稍后再试');
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     formatTime(timestamp) {
@@ -642,23 +639,22 @@ export default {
     clearSearch() {
       // 清除搜索并通知父组件
       this.$emit('clear-search');
-    },
-
-    // 获取任务申请者列表
-    fetchTaskApplicants(taskId) {
-      tasksApi.getTaskApplicants(taskId)
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            this.taskApplicants = response.data.data || [];
-          } else {
-            console.error('获取任务申请者列表失败:', response.data.msg);
-            this.taskApplicants = [];
-          }
-        })
-        .catch(error => {
-          console.error('获取任务申请者列表出错:', error);
+    },    // 获取任务申请者列表
+    async fetchTaskApplicants(taskId) {
+      try {
+        const response = await tasksApi.getTaskApplicants(taskId);
+        if (response.data && response.data.code === 1) {
+          const applicantsData = response.data.data || [];
+          // 为申请者数据添加用户名
+          this.taskApplicants = await this.enrichWithUsernames(applicantsData);
+        } else {
+          console.error('获取任务申请者列表失败:', response.data.msg);
           this.taskApplicants = [];
-        });
+        }
+      } catch (error) {
+        console.error('获取任务申请者列表出错:', error);
+        this.taskApplicants = [];
+      }
     },
 
     // 接受申请者
@@ -705,9 +701,69 @@ export default {
         })
         .catch(error => {
           console.error('拒绝申请者出错:', error);
-          alert('网络错误，请稍后再试');
-        });
+          alert('网络错误，请稍后再试');        });
     },
+
+    // 用户名获取相关方法
+    async fetchUsername(uid) {
+      // 确保uid是字符串类型进行比较
+      const uidStr = String(uid);
+      
+      // 如果已经缓存了用户名结果，直接返回
+      if (this.usernameCache[uidStr]) {
+        return this.usernameCache[uidStr];
+      }
+
+      // 如果正在请求中，等待现有的Promise
+      if (this.usernamePromiseCache[uidStr]) {
+        return await this.usernamePromiseCache[uidStr];
+      }
+      
+      // 创建新的Promise并缓存
+      const promise = this.fetchUsernameFromAPI(uidStr);
+      this.usernamePromiseCache[uidStr] = promise;
+
+      try {
+        const username = await promise;
+        // 请求成功后，缓存结果并清除Promise缓存
+        this.usernameCache[uidStr] = username;
+        delete this.usernamePromiseCache[uidStr];
+        return username;
+      } catch (error) {
+        // 请求失败时，清除Promise缓存，但不缓存错误结果
+        delete this.usernamePromiseCache[uidStr];
+        console.error('获取用户名失败:', error);
+        return `用户${uid}`;
+      }
+    },
+
+    // 实际的用户名API请求方法
+    async fetchUsernameFromAPI(uidStr) {
+      const response = await userApi.getUsername(uidStr);
+      if (response.data && response.data.code === 1) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.msg || '获取用户名失败');
+      }
+    },
+
+    // 为任务和申请者添加用户名
+    async enrichWithUsernames(tasks) {
+      const promises = [];
+      
+      for (const task of tasks) {
+        // 获取任务发布者用户名
+        promises.push(
+          this.fetchUsername(task.uid).then(username => {
+            task.username = username;
+          })
+        );
+      }
+      
+      await Promise.all(promises);
+      return tasks;
+    },
+
     // 头像获取相关方法
     async fetchUserAvatar(uid) {
       // 检查缓存
