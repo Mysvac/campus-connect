@@ -121,6 +121,129 @@ export const MOCK_DATA = {
           content: "特别是晚上高峰期，几乎无法使用。",
           time: Date.now() - 4 * 3600000,
           praise: 18,
+          isLiked: false        }
+      ]
+    },
+    {
+      mid: 6,
+      uid: 1001,
+      title: "课程互助 - 高数习题讨论",
+      content: "第三章的习题有些不太懂，有同学可以一起讨论吗？特别是关于极限的计算。",
+      tag: "课程互助",
+      time: Date.now() - 4 * 3600000, // 4小时前
+      praise: 12,
+      isLiked: false,
+      comments: [
+        {
+          cid: 601,
+          uid: 1003,
+          content: "我也在学这个，可以一起讨论！",
+          time: Date.now() - 3 * 3600000,
+          praise: 5,
+          isLiked: false
+        }
+      ]
+    },
+    {
+      mid: 7,
+      uid: 1001,
+      title: "寻找失物 - 黑色钱包",
+      content: "昨天在图书馆丢了一个黑色钱包，里面有学生卡和一些现金。如果有人捡到请联系我，非常感谢！",
+      tag: "失物招领",
+      time: Date.now() - 18 * 3600000, // 18小时前
+      praise: 8,
+      isLiked: false,
+      comments: [
+        {
+          cid: 701,
+          uid: 1002,
+          content: "我帮你关注一下，希望能找到！",
+          time: Date.now() - 16 * 3600000,
+          praise: 3,
+          isLiked: false
+        }
+      ]
+    },
+    {
+      mid: 8,
+      uid: 1001,
+      title: "二手交易 - 出售计算机组成原理教材",
+      content: "刚考完试，出售《计算机组成原理》教材，8成新，原价68元，现价40元。有需要的同学可以联系我。",
+      tag: "二手交易",
+      time: Date.now() - 24 * 3600000, // 1天前
+      praise: 15,
+      isLiked: false,
+      comments: [
+        {
+          cid: 801,
+          uid: 1004,
+          content: "我需要这本书，可以面谈吗？",
+          time: Date.now() - 20 * 3600000,
+          praise: 2,
+          isLiked: false
+        },
+        {
+          cid: 802,
+          uid: 1005,
+          content: "书的质量怎么样？有笔记吗？",
+          time: Date.now() - 18 * 3600000,
+          praise: 1,
+          isLiked: false
+        }
+      ]
+    },
+    {
+      mid: 9,
+      uid: 1001,
+      title: "学习讨论 - 数据结构算法分享",
+      content: "最近在学习排序算法，整理了一些笔记和代码示例，愿意分享给需要的同学。包括冒泡排序、快速排序等。",
+      tag: "学习讨论",
+      time: Date.now() - 36 * 3600000, // 1.5天前
+      praise: 28,
+      isLiked: false,
+      comments: [
+        {
+          cid: 901,
+          uid: 1003,
+          content: "太棒了！我正好需要这些资料。",
+          time: Date.now() - 30 * 3600000,
+          praise: 8,
+          isLiked: false
+        },
+        {
+          cid: 902,
+          uid: 1002,
+          content: "能分享一下快排的代码吗？",
+          time: Date.now() - 28 * 3600000,
+          praise: 6,
+          isLiked: false
+        }
+      ]
+    },
+    {
+      mid: 10,
+      uid: 1001,
+      title: "校园问题 - 宿舍热水供应时间",
+      content: "最近宿舍的热水供应时间变短了，希望能够延长供应时间，特别是晚上洗澡的时候经常没有热水。",
+      tag: "校园问题",
+      time: Date.now() - 48 * 3600000, // 2天前
+      praise: 42,
+      isLiked: false,
+      comments: [
+        {
+          cid: 1001,
+          uid: 1005,
+          content: "我们宿舍也有这个问题！",
+          time: Date.now() - 40 * 3600000,
+          praise: 15,
+          isLiked: false
+        },
+        {
+          cid: 1002,
+          uid: 1004,
+          content: "建议大家一起向宿管反映。",
+          time: Date.now() - 35 * 3600000,
+          praise: 12,
           isLiked: false
         }
       ]
@@ -548,7 +671,6 @@ export const MOCK_DATA = {
     { id: 8, name: '校园活动' },
     { id: 9, name: '社团组织' }
   ],
-
   // 任务数据
   tasks: [
     {
@@ -556,22 +678,35 @@ export const MOCK_DATA = {
       uid: 101,
       name: '快速送文件到教学楼',
       details: '需要有人帮忙把一份重要文件从学生宿舍送到主教学楼，急需！',
-      tag: '快递代取',
+      tag: 1, // 快递代取
       money: 15, // 15元
       reward: 1500, // 15元
-      status: 0, // 0: 未接单, 1: 已接单, 2: 已完成
+      status: 0, // 0: 待接取, 1: 进行中, 2: 终止, 3: 已完成
       location: '从1号宿舍到主教学楼',
       contact: '13800138000',
       deadline: Date.now() + 86400000 * 1, // 1天后截止
       time: Date.now() - 3600000 * 2, // 2小时前发布
-      applicants: [] // 申请人列表
+      applicants: [
+        {
+          uid: 1002,
+          time: Date.now() - 3600000 * 1,
+          status: 0, // 0: 待同意, 1: 已接受, 2: 已拒绝
+          message: '我现在在宿舍区，可以马上帮你送文件！'
+        },
+        {
+          uid: 1003,
+          time: Date.now() - 3600000 * 0.5,
+          status: 0,
+          message: '我也可以帮忙，有经验！'
+        }
+      ]
     },
     {
       tid: 2,
       uid: 102,
       name: '帮忙带早餐',
       details: '明早8点，请帮忙从2号食堂带一份早餐到4号宿舍楼，报酬从优',
-      tag: '食品代购',
+      tag: 2, // 食品代购
       money: 8, // 8元
       reward: 800, // 8元
       status: 0,
@@ -579,14 +714,21 @@ export const MOCK_DATA = {
       contact: '13900139000',
       deadline: Date.now() + 86400000 * 0.5, // 12小时后截止
       time: Date.now() - 3600000 * 5, // 5小时前发布
-      applicants: []
+      applicants: [
+        {
+          uid: 1004,
+          time: Date.now() - 3600000 * 3,
+          status: 0,
+          message: '我住在4号宿舍楼，很方便！'
+        }
+      ]
     },
     {
       tid: 3,
       uid: 103,
       name: '寻找数学笔记',
       details: '上周在图书馆丢失了一本数学笔记，急需找回',
-      tag: '失物招领',
+      tag: 3, // 失物招领
       money: 50, // 50元
       reward: 5000, // 50元
       status: 0,
@@ -601,7 +743,7 @@ export const MOCK_DATA = {
       uid: 104,
       name: '求一起约球',
       details: '周五下午3点，找三个人一起在东区篮球场打球',
-      tag: '运动伙伴',
+      tag: 4, // 运动伙伴
       money: 0, // 无报酬
       reward: 0, // 无报酬
       status: 0,
@@ -609,27 +751,69 @@ export const MOCK_DATA = {
       contact: '13700137000',
       deadline: Date.now() + 86400000 * 2, // 2天后截止
       time: Date.now() - 3600000 * 12, // 12小时前发布
-      applicants: []
+      applicants: [
+        {
+          uid: 1005,
+          time: Date.now() - 3600000 * 8,
+          status: 0,
+          message: '我也想打球，算我一个！'
+        },
+        {
+          uid: 1006,
+          time: Date.now() - 3600000 * 6,
+          status: 0,
+          message: '我可以参加，球技还可以'
+        }
+      ]
     },
     {
       tid: 5,
       uid: 105,
       name: '复印资料代取',
       details: '需要有人帮忙去图书馆复印5份资料，大约50页',
-      tag: '学习互助',
+      tag: 5, // 学习互助
       money: 20, // 20元
       reward: 2000, // 20元
-      status: 1, // 已接单
+      status: 1, // 进行中
       location: '图书馆复印室',
       contact: '18900189000',
       deadline: Date.now() + 3600000 * 5, // 5小时后截止
       time: Date.now() - 3600000 * 8, // 8小时前发布
+      executorId: 1006, // 执行者ID
       applicants: [
         {
-          uid: 106,
+          uid: 1006,
           time: Date.now() - 3600000 * 6,
           status: 1, // 已接受
           message: '我可以帮你复印，我正好在图书馆学习'
+        }
+      ]
+    },
+    {
+      tid: 6,
+      uid: 1001, // 当前用户发的任务，用于测试申请者管理
+      name: '代取快递',
+      details: '菜鸟驿站有一个快递需要代取，比较重，需要帮忙',
+      tag: 1, // 快递代取
+      money: 10,
+      reward: 1000,
+      status: 0,
+      location: '菜鸟驿站',
+      contact: '13800138001',
+      deadline: Date.now() + 86400000 * 2,
+      time: Date.now() - 3600000 * 4,
+      applicants: [
+        {
+          uid: 1002,
+          time: Date.now() - 3600000 * 2,
+          status: 0,
+          message: '我有时间，可以帮你取快递'
+        },
+        {
+          uid: 1003,
+          time: Date.now() - 3600000 * 1,
+          status: 0,
+          message: '我正好路过菜鸟驿站，可以顺便帮你取'
         }
       ]
     }

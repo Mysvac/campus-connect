@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
+import { userApi } from '@/api'
+import { baseURL } from '@/api/index.js'
 
 const store = useStore()
 
@@ -52,6 +54,13 @@ const genderText = computed(() => {
 
 // 表单验证
 const validateForm = () => {
+  // uid 必须有值
+  if (!userForm.value.uid) {
+    alert('用户ID不能为空')
+    return false
+  }
+
+  // 手机号必须填写
   if (!userForm.value.phone) {
     alert('请输入手机号')
     return false
@@ -62,12 +71,8 @@ const validateForm = () => {
     return false
   }
 
-  if (!userForm.value.nickname) {
-    alert('请输入昵称')
-    return false
-  }
-
-  if (userForm.value.nickname.length > 20) {
+  // 其他字段的验证（如果有值才验证格式）
+  if (userForm.value.nickname && userForm.value.nickname.length > 20) {
     alert('昵称不能超过20个字符')
     return false
   }
@@ -87,10 +92,15 @@ const validateForm = () => {
     return false
   }
 
-  // 如果修改了密码，需要验证
-  if (userForm.value.password) {
+  // 如果修改了密码，需要验证两个密码字段都不为空且一致
+  if (userForm.value.password && userForm.value.password.trim() !== '') {
     if (userForm.value.password.length < 6) {
       alert('密码长度不能少于6位')
+      return false
+    }
+
+    if (!userForm.value.confirmPassword || userForm.value.confirmPassword.trim() === '') {
+      alert('请确认密码')
       return false
     }
 
@@ -98,6 +108,10 @@ const validateForm = () => {
       alert('两次输入的密码不一致')
       return false
     }
+  } else if (userForm.value.confirmPassword && userForm.value.confirmPassword.trim() !== '') {
+    // 如果只填了确认密码而没填新密码
+    alert('请先输入新密码')
+    return false
   }
 
   return true
@@ -121,25 +135,70 @@ const saveUserInfo = async () => {
 
   loading.value = true
   try {
-    // 准备提交的数据
-    const submitData = { ...userForm.value }
-
-    // 如果没有修改密码，删除密码字段
-    if (!submitData.password) {
-      delete submitData.password
+    // 准备提交的数据，uid和手机号必须填，其他字段如果为空则设为null
+    const submitData = {
+      uid: userForm.value.uid, // 必填
+      phone: userForm.value.phone, // 必填
+      permission: userForm.value.permission,
+      nickname: userForm.value.nickname || null,
+      gender: userForm.value.gender !== undefined ? userForm.value.gender : null,
+      email: userForm.value.email || null,
+      profile: userForm.value.profile || null,
+      image: userForm.value.image || null,
+      wallet: userForm.value.wallet
+    }    // 如果两个密码都为空，传null表示不修改密码；如果有密码则传递
+    if (userForm.value.password && userForm.value.password.trim() !== '') {
+      submitData.password = userForm.value.password
+    } else {
+      // 如果不修改密码，传递null
+      submitData.password = null
     }
-    delete submitData.confirmPassword
 
-    // 这里应该调用API保存用户信息
-    await new Promise(resolve => setTimeout(resolve, 1000)) // 模拟API调用
+    console.log('提交的数据:', submitData)
 
-    // 更新store中的用户信息
-    await store.dispatch('updateUserInfo', submitData)
-
-    editMode.value = false
-    userForm.value.password = ''
-    userForm.value.confirmPassword = ''
-    console.log('用户信息保存成功')
+    // 调用API保存用户信息
+    const { userApi } = await import('@/api')
+    const response = await userApi.updateUser(submitData)
+    
+    if (response.data && response.data.code === 1) {
+      // 更新store中的用户信息
+      const updatedUserData = {
+        uid: submitData.uid,
+        nickname: submitData.nickname,
+        phone: submitData.phone,
+        email: submitData.email,
+        gender: submitData.gender,
+        profile: submitData.profile,
+        image: submitData.image,
+        permission: submitData.permission,
+        wallet: userForm.value.wallet || 0
+      }
+      
+      // 更新localStorage
+      localStorage.setItem('currentUser', JSON.stringify(updatedUserData))
+      
+      // 更新store（如果有）
+      if (store.dispatch) {
+        await store.dispatch('login', updatedUserData)
+      }      editMode.value = false
+      userForm.value.password = ''
+      userForm.value.confirmPassword = ''
+        // 显示更详细的成功信息
+      let changesList = []
+      if (submitData.nickname) changesList.push('昵称')
+      if (submitData.email) changesList.push('邮箱')
+      if (submitData.profile) changesList.push('个人简介')
+      if (submitData.password !== null) changesList.push('密码')
+      
+      let successMsg = '用户信息保存成功'
+      if (changesList.length > 0) {
+        successMsg += `\n已更新：${changesList.join('、')}`
+      }
+      
+      alert(successMsg)
+    } else {
+      alert('保存失败：' + (response.data?.msg || '未知错误'))
+    }
   } catch (error) {
     console.error('保存失败:', error)
     alert('保存失败，请重试')
@@ -148,26 +207,82 @@ const saveUserInfo = async () => {
   }
 }
 
-const loadUserInfo = () => {
-  if (currentUser.value) {
-    userForm.value = {
-      ...currentUser.value,
-      password: '',
-      confirmPassword: ''
+const loadUserInfo = async () => {
+  try {
+    const { userApi } = await import('@/api')
+    
+    // 获取当前登录用户的ID
+    let currentUserId = null
+    
+    // 优先从store获取
+    if (store.getters.currentUser?.uid) {
+      currentUserId = store.getters.currentUser.uid
+    } else {
+      // 从localStorage获取
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+      if (currentUser.uid) {
+        currentUserId = currentUser.uid
+      }
     }
-  } else {
-    // 模拟用户数据
+    
+    if (!currentUserId) {
+      console.warn('无法获取当前用户ID')
+      // 使用默认数据
+      userForm.value = {
+        uid: null,
+        permission: 1,
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        nickname: '用户',
+        gender: 0,
+        email: '',
+        profile: '',
+        image: ''
+      }
+      return
+    }
+    
+    // 使用新的接口获取用户数据
+    const response = await userApi.getUserData(currentUserId)
+    
+    if (response.data && response.data.code === 1) {
+      const userData = response.data.data
+      userForm.value = {
+        ...userData,
+        password: '',
+        confirmPassword: ''
+      }
+    } else {
+      console.error('获取用户信息失败:', response.data?.msg || '未知错误')
+      // 如果获取失败，使用默认数据
+      userForm.value = {
+        uid: currentUserId,
+        permission: 1,
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        nickname: '用户',
+        gender: 0,
+        email: '',
+        profile: '',
+        image: ''
+      }
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    // 发生错误时使用默认数据
     userForm.value = {
-      uid: 10001,
+      uid: null,
       permission: 1,
-      phone: '13800138000',
+      phone: '',
       password: '',
       confirmPassword: '',
-      nickname: '智联用户',
+      nickname: '用户',
       gender: 0,
-      email: 'user@example.com',
-      profile: '这是一个热爱学习的大学生',
-      image: '/api/placeholder/120/120'
+      email: '',
+      profile: '',
+      image: ''
     }
   }
 }
@@ -175,16 +290,50 @@ const loadUserInfo = () => {
 const handleAvatarChange = (event) => {
   const file = event.target.files[0]
   if (file) {
-    if (file.size > 2 * 1024 * 1024) { // 限制2MB
+    // 文件大小验证
+    if (file.size > 2 * 1024 * 1024) {
       alert('图片大小不能超过2MB')
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userForm.value.image = e.target.result
+    // 文件类型验证
+    if (!file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+      alert('只支持JPG、JPEG、PNG格式的图片')
+      return
     }
-    reader.readAsDataURL(file)
+
+    // 创建FormData对象并添加文件
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // 显示上传中提示
+    loading.value = true
+
+    // 调用API上传图片
+    userApi.uploadImage(formData)
+      .then(response => {
+        if (response.data) {
+          // 获取服务器返回的图片相对路径
+          const imageUrl = response.data
+
+          // 拼接完整的图片URL用于显示
+          const cleanBaseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL
+          userForm.value.image = cleanBaseURL + imageUrl
+
+          // 显示成功提示
+          alert('头像上传成功')
+        } else {
+          console.error('上传头像失败:', response.data?.msg)
+          alert('上传头像失败: ' + (response.data?.msg || '未知错误'))
+        }
+      })
+      .catch(error => {
+        console.error('上传头像出错:', error)
+        alert('网络错误，请稍后再试')
+      })
+      .finally(() => {
+        loading.value = false
+      })
   }
 }
 
@@ -222,6 +371,19 @@ onMounted(() => {
             取消
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- 编辑模式提示 -->
+    <div v-if="editMode" class="edit-tips">
+      <div class="tip-icon">📝</div>
+      <div class="tip-content">
+        <strong>编辑说明：</strong>
+        <ul>
+          <li>✅ <strong>必须填写：</strong>用户ID和手机号</li>
+          <li>🔧 <strong>可选修改：</strong>其他字段留空表示不修改</li>
+          <li>🔒 <strong>密码修改：</strong>两个密码字段都留空表示不修改密码</li>
+        </ul>
       </div>
     </div>
 
@@ -303,11 +465,9 @@ onMounted(() => {
                   maxlength="11"
                   required
               />
-            </div>
-
-            <!-- 昵称 -->
+            </div>            <!-- 昵称 -->
             <div class="info-item">
-              <label class="info-label">昵称 <span class="required">*</span></label>
+              <label class="info-label">昵称</label>
               <div v-if="!editMode" class="info-value">
                 {{ userForm.nickname || '未设置' }}
               </div>
@@ -316,9 +476,9 @@ onMounted(() => {
                   v-model="userForm.nickname"
                   type="text"
                   class="info-input"
-                  placeholder="请输入昵称（最多20字符）"
+                  placeholder="留空表示不修改（最多20字符）"
                   maxlength="20"
-                  required
+              />
               />
             </div>
 
@@ -348,23 +508,23 @@ onMounted(() => {
               <label class="info-label">邮箱</label>
               <div v-if="!editMode" class="info-value">
                 {{ userForm.email || '未设置' }}
-              </div>
-              <input
+              </div>              <input
                   v-else
                   v-model="userForm.email"
                   type="email"
                   class="info-input"
-                  placeholder="请输入邮箱地址（最多32字符）"
+                  placeholder="留空表示不修改（最多32字符）"
                   maxlength="32"
               />
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 密码修改区域 (编辑模式下显示) -->
+      </div>      <!-- 密码修改区域 (编辑模式下显示) -->
       <div v-if="editMode" class="password-section">
         <div class="section-title">密码修改</div>
+        <div class="password-tip">
+          💡 如果不想修改密码，请将两个密码字段都留空
+        </div>
         <div class="password-row">
           <div class="info-item">
             <label class="info-label">新密码</label>
@@ -372,7 +532,7 @@ onMounted(() => {
                 v-model="userForm.password"
                 type="password"
                 class="info-input"
-                placeholder="留空表示不修改密码"
+                placeholder="留空表示不修改密码（最少6位）"
             />
           </div>
           <div class="info-item">
@@ -392,12 +552,11 @@ onMounted(() => {
         <label class="info-label section-title">个人简介</label>
         <div v-if="!editMode" class="profile-value">
           {{ userForm.profile || '这个人很懒，什么都没有留下...' }}
-        </div>
-        <div v-else class="profile-edit">
+        </div>        <div v-else class="profile-edit">
           <textarea
               v-model="userForm.profile"
               class="profile-textarea"
-              placeholder="请输入个人简介（最多50字符）"
+              placeholder="留空表示不修改个人简介（最多50字符）"
               maxlength="50"
               rows="4"
           ></textarea>
@@ -429,6 +588,44 @@ onMounted(() => {
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+}
+
+.edit-tips {
+  background: linear-gradient(135deg, #fff7e6 0%, #fff2e6 100%);
+  border: 1px solid #ffd591;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.1);
+}
+
+.tip-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.tip-content {
+  flex: 1;
+}
+
+.tip-content strong {
+  color: #d46b08;
+  font-weight: 600;
+}
+
+.tip-content ul {
+  margin: 8px 0 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.tip-content li {
+  margin: 5px 0;
+  color: #8c4a02;
+  font-size: 14px;
 }
 
 .page-title {
@@ -637,6 +834,19 @@ onMounted(() => {
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+}
+
+.password-tip {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .password-row {

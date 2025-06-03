@@ -170,16 +170,17 @@ export default {  // 用户登录
       const updatedUser = {
         ...MOCK_DATA.users[userIndex]
       };
-      
-      // 处理字段映射
-      if (data.nickname) updatedUser.name = data.nickname;
-      if (data.image) updatedUser.profile = data.image;
-      
-      // 其他字段直接复制
-      if (data.password) MOCK_DATA.userPasswords[phone] = data.password;
-      if (data.email) updatedUser.email = data.email;
-      if (data.gender) updatedUser.gender = data.gender;
-      if (data.profile) updatedUser.profile = data.profile;
+        // 处理字段映射和null值
+      if (data.nickname !== null) updatedUser.name = data.nickname || updatedUser.name;
+      if (data.image !== null) updatedUser.profile = data.image || updatedUser.profile;
+        // 其他字段处理null值
+      if (data.password !== null && data.password) {
+        MOCK_DATA.userPasswords[phone] = data.password;
+      }
+      if (data.email !== null) updatedUser.email = data.email || updatedUser.email;
+      if (data.gender !== null) updatedUser.gender = data.gender !== undefined ? data.gender : updatedUser.gender;
+      if (data.profile !== null) updatedUser.profile = data.profile || updatedUser.profile;
+      if (data.permission !== null) updatedUser.permission = data.permission !== undefined ? data.permission : updatedUser.permission;
       
       MOCK_DATA.users[userIndex] = updatedUser;
       
@@ -387,5 +388,20 @@ export default {  // 用户登录
     }
     
     return api.get(`/api/user/get-user-data/${uid}`);
+  },
+
+  // 上传图片
+  uploadImage: (formData) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+      console.log("DEBUG MODE: 模拟上传头像图片");
+      // 模拟返回一个图片相对路径
+      const mockImagePath = `/image/avatar-${Date.now()}.jpg`;
+      return getMockResponse(mockImagePath);
+    }
+    return api.post('/api/image/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 };

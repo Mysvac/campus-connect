@@ -143,5 +143,33 @@ export default {
             return getMockResponse({success: false});
         }
         return api.delete(`/api/good/delete-goods-by-gid/${id}`);
+    },
+
+    // 获取当前用户购买的商品订单
+    getUserOrders: () => {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 返回模拟的用户购买订单数据");
+            // 模拟返回当前用户的购买订单
+            const mockOrders = [
+                { 
+                    gid: 2001, 
+                    uid: 101, 
+                    number: 1, 
+                    time: Date.now() - 3600000, 
+                    status: 0, 
+                    sum: 2990 
+                },
+                { 
+                    gid: 2002, 
+                    uid: 101, 
+                    number: 2, 
+                    time: Date.now() - 7200000, 
+                    status: 3, 
+                    sum: 5980 
+                }
+            ];
+            return getMockResponse(mockOrders);
+        }
+        return api.get('/api/good/get-goodsbuy');
     }
 };

@@ -267,12 +267,11 @@ export default {
         time: null
       },
       currentPage: 1,
-      pageSize: 7,
-      statusOptions: [
+      pageSize: 7,      statusOptions: [
         { value: 0, label: '待接取' },
         { value: 1, label: '进行中' },
         { value: 2, label: '终止' },
-        { value: 3, label: '完成' }
+        { value: 3, label: '已完成' }
       ],
       rules: {
         uid: [
@@ -491,15 +490,13 @@ export default {
         tagMap[item.value] = types[index % types.length];
       });
       return tagMap[tag] || '';
-    },
-
-    // 获取状态对应的样式
+    },    // 获取状态对应的样式
     getStatusType(status) {
       const statusMap = {
         0: 'info',    // 待接取 - 蓝色
         1: 'warning', // 进行中 - 黄色
         2: 'danger',  // 终止 - 红色
-        3: 'success'  // 完成 - 绿色
+        3: 'success'  // 已完成 - 绿色
       };
       return statusMap[status] || '';
     },

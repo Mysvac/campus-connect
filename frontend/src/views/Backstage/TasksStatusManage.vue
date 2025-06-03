@@ -174,11 +174,11 @@ export default {
         time: null
       },
       currentPage: 1,
-      pageSize: 7,
-      statusOptions: [
-        { value: 0, label: '进行中' },
-        { value: 1, label: '完成' },
-        { value: 2, label: '失败' }
+      pageSize: 7,      statusOptions: [
+        { value: 0, label: '待同意' },
+        { value: 1, label: '进行中' },
+        { value: 2, label: '终止' },
+        { value: 3, label: '完成' }
       ],
       rules: {
         tid: [
@@ -366,14 +366,13 @@ export default {
     getStatusLabel(status) {
       const statusObj = this.statusOptions.find(item => item.value === status);
       return statusObj ? statusObj.label : '未知状态';
-    },
-
-    // 根据状态获取对应的类型样式
+    },    // 根据状态获取对应的类型样式
     getStatusType(status) {
       const statusMap = {
-        0: 'warning',  // 进行中
-        1: 'success',  // 完成
-        2: 'danger'    // 失败
+        0: 'warning',  // 待同意 - 黄色
+        1: 'info',     // 进行中 - 蓝色
+        2: 'danger',   // 终止 - 红色
+        3: 'success'   // 完成 - 绿色
       };
       return statusMap[status] || 'info';
     }
