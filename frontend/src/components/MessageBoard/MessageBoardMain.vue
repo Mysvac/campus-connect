@@ -419,6 +419,24 @@ export default {
             isLiked: message.isLiked || false // 同时确保isLiked字段存在
           }));
 
+          // 为每条留言获取评论数据，用于正确显示评论数量
+          const commentPromises = messages.map(async (message) => {
+            try {
+              const commentsResponse = await messageboardApi.getMessageComments(message.mid);
+              if (commentsResponse.data && commentsResponse.data.code === 1) {
+                message.comments = commentsResponse.data.data || [];
+              }
+            } catch (error) {
+              console.warn(`获取留言 ${message.mid} 的评论失败:`, error);
+              // 如果获取评论失败，保持为空数组，不影响整体功能
+              message.comments = [];
+            }
+            return message;
+          });
+
+          // 等待所有评论数据获取完成
+          messages = await Promise.all(commentPromises);
+
           // 获取用户名并添加到留言和评论中
           messages = await this.enrichWithUsernames(messages);
           
@@ -434,18 +452,30 @@ export default {
       } finally {
         this.isLoading = false;
       }
-    },    // 获取留言详情
+    },// 获取留言详情
     async fetchMessageDetail(id) {
       this.isLoadingDetail = true;
       try {
-        const response = await messageboardApi.getMessageDetail(id);
-        if (response.data && response.data.code === 1) {
-          // 确保详情数据中包含comments字段
+        // 同时获取留言详情和评论
+        const [messageResponse, commentsResponse] = await Promise.all([
+          messageboardApi.getMessageDetail(id),
+          messageboardApi.getMessageComments(id)
+        ]);
+
+        if (messageResponse.data && messageResponse.data.code === 1) {
+          // 构建留言详情数据
           let messageDetail = {
-            ...response.data.data,
-            comments: response.data.data.comments || [], // 如果后端没返回comments，则初始化为空数组
-            isLiked: response.data.data.isLiked || false // 确保isLiked字段存在
+            ...messageResponse.data.data,
+            isLiked: messageResponse.data.data.isLiked || false // 确保isLiked字段存在
           };
+
+          // 添加评论数据
+          if (commentsResponse.data && commentsResponse.data.code === 1) {
+            messageDetail.comments = commentsResponse.data.data || [];
+          } else {
+            messageDetail.comments = [];
+            console.warn('获取评论失败:', commentsResponse.data?.msg);
+          }
 
           // 获取用户名并添加到留言和评论中
           const enrichedMessages = await this.enrichWithUsernames([messageDetail]);
@@ -453,8 +483,8 @@ export default {
           
           this.newComment = ''; // 清空评论框
         } else {
-          console.error('获取留言详情失败:', response.data.msg);
-          this.$emit('show-toast', { type: 'error', message: response.data.msg || '获取留言详情失败' });
+          console.error('获取留言详情失败:', messageResponse.data.msg);
+          this.$emit('show-toast', { type: 'error', message: messageResponse.data.msg || '获取留言详情失败' });
         }
       } catch (error) {
         console.error('获取留言详情出错:', error);
@@ -585,11 +615,23 @@ export default {
             this.$emit('show-toast', { type: 'error', message: response.data.msg || '点赞评论失败' });
             return;
           }
-        }
-
-        // 重新获取留言详情，确保评论点赞数正确
+        }        // 重新获取评论列表，确保评论点赞数正确
         if (this.selectedMessage) {
-          await this.fetchMessageDetail(this.selectedMessage.mid);
+          const commentsResponse = await messageboardApi.getMessageComments(this.selectedMessage.mid);
+          if (commentsResponse.data && commentsResponse.data.code === 1) {
+            // 更新评论数据
+            this.selectedMessage.comments = commentsResponse.data.data || [];
+            
+            // 重新添加用户名到评论中
+            if (this.selectedMessage.comments.length > 0) {
+              const promises = this.selectedMessage.comments.map(comment => 
+                this.fetchUsername(comment.uid).then(username => {
+                  comment.username = username;
+                })
+              );
+              await Promise.all(promises);
+            }
+          }
         }
       } catch (error) {
         console.error('评论点赞操作出错:', error);
@@ -621,11 +663,23 @@ export default {
       try {
         const response = await messageboardApi.commentMessage(this.selectedMessage.mid, {
           content: this.newComment
-        });
-
-        if (response.data && response.data.code === 1) {
-          // 重新获取留言详情，更新评论列表
-          await this.fetchMessageDetail(this.selectedMessage.mid);
+        });        if (response.data && response.data.code === 1) {
+          // 重新获取评论列表
+          const commentsResponse = await messageboardApi.getMessageComments(this.selectedMessage.mid);
+          if (commentsResponse.data && commentsResponse.data.code === 1) {
+            // 更新评论数据
+            this.selectedMessage.comments = commentsResponse.data.data || [];
+            
+            // 重新添加用户名到评论中
+            if (this.selectedMessage.comments.length > 0) {
+              const promises = this.selectedMessage.comments.map(comment => 
+                this.fetchUsername(comment.uid).then(username => {
+                  comment.username = username;
+                })
+              );
+              await Promise.all(promises);
+            }
+          }
           
           // 清空评论框
           this.newComment = '';

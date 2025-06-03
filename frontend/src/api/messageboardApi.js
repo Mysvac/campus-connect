@@ -74,6 +74,16 @@ export default {
     return api.delete(`/api/message/unlike-message/${id}`);
   },
 
+  // 获取指定留言的所有评论
+  getMessageComments: (id) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+      console.log("DEBUG MODE: 返回模拟的留言评论列表数据");
+      const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
+      return getMockResponse(message ? message.comments : []);
+    }
+    return api.get(`/api/message/get-comments-by-mid/${id}`);
+  },
+
   // 评论留言
   commentMessage: (id, data) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -92,8 +102,17 @@ export default {
         return getMockResponse(newComment);
       }
       return getMockResponse({success: false});
+    }    return api.post(`/api/message/add-comment/${id}`, data);
+  },
+
+  // 获取指定留言的所有评论
+  getMessageComments: (id) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+      console.log("DEBUG MODE: 返回模拟的留言评论列表数据");
+      const message = MOCK_DATA.messages.find(m => m.mid === parseInt(id));
+      return getMockResponse(message ? message.comments : []);
     }
-    return api.post(`/api/message/add-comment/${id}`, data);
+    return api.get(`/api/message/get-comments-by-mid/${id}`);
   },
 
   // 点赞评论
@@ -112,7 +131,6 @@ export default {
     }
     return api.post(`/api/message/like-comment/${id}`);
   },
-
   // 取消点赞评论
   unlikeComment: (id) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -128,5 +146,19 @@ export default {
       return getMockResponse({success: false});
     }
     return api.delete(`/api/message/unlike-comment/${id}`);
+  },
+
+  // 删除留言
+  deleteMessage: (id) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+      console.log("DEBUG MODE: 模拟删除留言");
+      const index = MOCK_DATA.messages.findIndex(m => m.mid === parseInt(id));
+      if (index !== -1) {
+        MOCK_DATA.messages.splice(index, 1);
+        return getMockResponse({success: true});
+      }
+      return getMockResponse({success: false});
+    }
+    return api.delete(`/api/message/delete-message-by-mid/${id}`);
   }
 };
