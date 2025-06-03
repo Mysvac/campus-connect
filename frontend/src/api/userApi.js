@@ -389,7 +389,6 @@ export default {  // 用户登录
     
     return api.get(`/api/user/get-user-data/${uid}`);
   },
-
   // 上传图片
   uploadImage: (formData) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -403,5 +402,60 @@ export default {  // 用户登录
         'Content-Type': 'multipart/form-data'
       }
     });
+  },
+
+  // 充值
+  recharge: (amount) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') === 'true') {
+      console.log("DEBUG MODE: 模拟用户充值，金额:", amount);
+      
+      // 获取当前用户信息
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      if (!currentUser.uid) {
+        return Promise.resolve({
+          data: {
+            code: 0,
+            msg: "请先登录",
+            data: null
+          }
+        });
+      }
+
+      // 查找用户并更新余额
+      const userIndex = MOCK_DATA.users.findIndex(u => u.uid === currentUser.uid);
+      if (userIndex === -1) {
+        return Promise.resolve({
+          data: {
+            code: 0,
+            msg: "用户不存在",
+            data: null
+          }
+        });
+      }
+
+      // 更新用户余额
+      MOCK_DATA.users[userIndex].wallet += amount * 100; // 转换为分
+      
+      // 更新本地存储的用户数据
+      const updatedUserData = {
+        ...currentUser,
+        wallet: MOCK_DATA.users[userIndex].wallet
+      };
+      localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+
+      return Promise.resolve({
+        data: {
+          code: 1,
+          msg: "充值成功",
+          data: {
+            uid: updatedUserData.uid,
+            wallet: MOCK_DATA.users[userIndex].wallet,
+            rechargeAmount: amount
+          }
+        }
+      });
+    }
+    
+    return api.post(`/api/user/recharge/${amount * 100}`); // 后端接收分为单位
   }
 };

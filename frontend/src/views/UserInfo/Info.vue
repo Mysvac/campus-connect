@@ -10,6 +10,11 @@ const store = useStore()
 const editMode = ref(false)
 const loading = ref(false)
 
+// 充值相关
+const showRechargeDialog = ref(false)
+const rechargeAmount = ref('')
+const rechargeLoading = ref(false)
+
 // 用户信息表单数据 - 根据数据库表结构
 const userForm = ref({
   uid: null,
@@ -333,6 +338,86 @@ const handleAvatarChange = (event) => {
   }
 }
 
+// 充值相关方法
+const openRechargeDialog = () => {
+  rechargeAmount.value = ''
+  showRechargeDialog.value = true
+}
+
+const closeRechargeDialog = () => {
+  showRechargeDialog.value = false
+  rechargeAmount.value = ''
+}
+
+const validateRechargeAmount = () => {
+  const amount = parseFloat(rechargeAmount.value)
+  
+  if (!rechargeAmount.value || isNaN(amount)) {
+    alert('请输入有效的充值金额')
+    return false
+  }
+  
+  if (amount <= 0) {
+    alert('充值金额必须大于0')
+    return false
+  }
+  
+  if (amount > 10000) {
+    alert('单次充值金额不能超过10000元')
+    return false
+  }
+  
+  // 检查小数位数不超过2位
+  if ((amount * 100) % 1 !== 0) {
+    alert('充值金额最多支持2位小数')
+    return false
+  }
+  
+  return true
+}
+
+const confirmRecharge = async () => {
+  if (!validateRechargeAmount()) {
+    return
+  }
+  
+  const amount = parseFloat(rechargeAmount.value)
+  
+  rechargeLoading.value = true
+  
+  try {
+    const response = await userApi.recharge(amount)
+    
+    if (response.data && response.data.code === 1) {
+      alert('充值成功！')
+      closeRechargeDialog()
+      
+      // 更新用户信息显示
+      await loadUserInfo()
+      
+      // 更新store中的用户信息
+      const updatedUserData = response.data.data
+      if (updatedUserData && store.dispatch) {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+        const newUserData = {
+          ...currentUser,
+          wallet: updatedUserData.wallet
+        }
+        localStorage.setItem('currentUser', JSON.stringify(newUserData))
+        await store.dispatch('login', newUserData)
+      }
+    } else {
+      console.error('充值失败:', response.data?.msg)
+      alert('充值失败: ' + (response.data?.msg || '未知错误'))
+    }
+  } catch (error) {
+    console.error('充值出错:', error)
+    alert('网络错误，请稍后再试')
+  } finally {
+    rechargeLoading.value = false
+  }
+}
+
 // 生命周期
 onMounted(() => {
   loadUserInfo()
@@ -343,10 +428,10 @@ onMounted(() => {
   <div class="info-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2 class="page-title">个人信息</h2>
-      <div class="header-actions">
+      <h2 class="page-title">个人信息</h2>      <div class="header-actions">
         <button
             class="charge-btn"
+            @click="openRechargeDialog"
         >
           充值
         </button>
@@ -509,7 +594,7 @@ onMounted(() => {
             <div class="info-item">
               <label class="info-label">钱包余额</label>
               <div class="info-value">
-                {{ userForm.wallet !== undefined && userForm.wallet !== null ? userForm.wallet : '0' }} 元
+                {{ userForm.wallet !== undefined && userForm.wallet !== null ? (userForm.wallet / 100).toFixed(2) : '0.00' }} 元
               </div>
             </div>
           </div>
@@ -557,8 +642,59 @@ onMounted(() => {
           ></textarea>
           <div class="char-count">
             {{ (userForm.profile || '').length }}/50
+          </div>        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 充值对话框 -->
+  <div v-if="showRechargeDialog" class="dialog-overlay" @click="closeRechargeDialog">
+    <div class="dialog-content" @click.stop>
+      <div class="dialog-header">
+        <h3>账户充值</h3>
+        <button class="close-btn" @click="closeRechargeDialog">×</button>
+      </div>
+      
+      <div class="dialog-body">
+        <div class="current-balance">
+          <span class="balance-label">当前余额：</span>
+          <span class="balance-amount">{{ userForm.wallet !== undefined && userForm.wallet !== null ? (userForm.wallet / 100).toFixed(2) : '0.00' }} 元</span>
+        </div>
+        
+        <div class="recharge-form">
+          <label class="form-label">充值金额（元）</label>
+          <input
+            v-model="rechargeAmount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            max="10000"
+            placeholder="请输入充值金额"
+            class="amount-input"
+            :disabled="rechargeLoading"
+          />
+          <div class="amount-tips">
+            <span class="tip">• 最低充值金额：0.01元</span>
+            <span class="tip">• 最高单次充值：10000元</span>
           </div>
         </div>
+      </div>
+      
+      <div class="dialog-footer">
+        <button 
+          class="cancel-btn" 
+          @click="closeRechargeDialog"
+          :disabled="rechargeLoading"
+        >
+          取消
+        </button>
+        <button 
+          class="confirm-btn" 
+          @click="confirmRecharge"
+          :disabled="rechargeLoading"
+        >
+          {{ rechargeLoading ? '充值中...' : '确认充值' }}
+        </button>
       </div>
     </div>
   </div>
@@ -928,9 +1064,183 @@ onMounted(() => {
     flex-direction: column;
     gap: 15px;
   }
-
   .info-container {
     padding: 10px;
   }
+}
+
+/* 充值对话框样式 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #8B0000, #A52A2A);
+  color: white;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.current-balance {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-label {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.balance-amount {
+  font-size: 18px;
+  font-weight: 600;
+  color: #8B0000;
+}
+
+.recharge-form {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.amount-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.amount-input:focus {
+  outline: none;
+  border-color: #8B0000;
+}
+
+.amount-input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.amount-tips {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tip {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.dialog-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancel-btn, .confirm-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 80px;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #e9ecef;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #8B0000, #A52A2A);
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #A52A2A, #8B0000);
+  transform: translateY(-1px);
+}
+
+.cancel-btn:disabled, .confirm-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.confirm-btn:disabled {
+  transform: none;
 }
 </style>
