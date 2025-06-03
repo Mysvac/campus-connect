@@ -108,15 +108,14 @@ export default {
         }
         return api.get(`/api/good/get-goods-by-tag/${tagId}`);
     },
-    
-    // 获取用户发布的商品
+      // 获取用户发布的商品
     getUserProducts: (userId) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的用户发布商品数据");
             const products = MOCK_DATA.products.filter(p => p.uid === parseInt(userId));
             return getMockResponse(products);
         }
-        return api.get(`/api/good/get-goods-by-uid/${userId}`);
+        return api.get(`/api/good/get-all-goods-by-uid/${userId}`);
     },
     
     // 更新商品信息
@@ -132,8 +131,7 @@ export default {
         }
         return api.post('/api/good/update-good', data);
     },
-    
-    // 删除商品
+      // 删除商品
     deleteProduct: (id) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟删除商品");
@@ -144,6 +142,6 @@ export default {
             }
             return getMockResponse({success: false});
         }
-        return api.delete(`/api/good/delete-good/${id}`);
+        return api.delete(`/api/good/delete-goods-by-gid/${id}`);
     }
 };

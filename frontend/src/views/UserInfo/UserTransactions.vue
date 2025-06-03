@@ -1,6 +1,29 @@
 <template>
   <div class="goods-manage-container">
-
+    <!-- 过滤器区域 -->
+    <div class="filter-container" style="margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <span style="font-weight: bold;">筛选条件：</span>
+        <el-select
+            v-model="selectedTag"
+            placeholder="选择标签"
+            clearable
+            style="width: 150px;"
+        >
+          <el-option
+              v-for="tag in tagOptions"
+              :key="tag.value"
+              :label="tag.label"
+              :value="tag.value">
+          </el-option>
+        </el-select>        <el-button type="primary" @click="refreshData" :loading="isLoading">
+          刷新数据
+        </el-button>
+        <span class="goods-count">
+          共 {{ filteredGoodsData.length }} 件商品
+        </span>
+      </div>
+    </div>
 
     <!-- 商品信息列表 -->
     <div class="table-container">
@@ -110,10 +133,9 @@
     </div>
 
     <!-- 添加商品对话框 -->
-    <el-dialog title="添加新商品" v-model="dialogVisible" width="40%">
-      <el-form :model="newGoods" label-width="100px" :rules="rules" ref="goodsForm">
+    <el-dialog title="添加新商品" v-model="dialogVisible" width="40%">      <el-form :model="newGoods" label-width="100px" :rules="rules" ref="goodsForm">
         <el-form-item label="发布人ID" prop="uid">
-          <el-input v-model.number="newGoods.uid" type="number" placeholder="请输入发布人ID"></el-input>
+          <el-input v-model.number="newGoods.uid" type="number" placeholder="当前用户ID" disabled></el-input>
         </el-form-item>
         <el-form-item label="价格(分)" prop="price">
           <el-input v-model.number="newGoods.price" type="number" placeholder="请输入价格(分)"></el-input>
@@ -173,6 +195,7 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import goodApi from '@/api/goodApi';
 
 export default {
   name: "GoodsManage",
@@ -195,18 +218,15 @@ export default {
         timeDate: new Date()
       },
       currentPage: 1,
-      pageSize: 7,
-      tagOptions: [],
-      currentUserId: 1001, // 假设当前登录用户ID，实际应从登录状态获取
+      pageSize: 7,      tagOptions: [],
+      currentUserId: null, // 当前登录用户ID，从登录状态获取
       // 上传相关配置
       uploadUrl: '/api/upload', // 替换为实际的上传API地址
       uploadHeaders: {
         // 根据需要添加请求头，如token
         // 'Authorization': 'Bearer ' + localStorage.getItem('token')
-      },
-      rules: {
+      },      rules: {
         uid: [
-          { required: true, message: '请输入发布人ID', trigger: 'blur' },
           { type: 'number', message: '发布人ID必须为数字', trigger: 'blur' }
         ],
         price: [
@@ -235,11 +255,10 @@ export default {
         ]
       }
     };
-  },
-  computed: {
+  },  computed: {
     filteredGoodsData() {
-      // 只显示当前登录用户发布的商品
-      let result = this.goodsData.filter(item => item.uid === this.currentUserId);
+      // 数据已经是当前用户的商品，无需再次过滤用户ID
+      let result = this.goodsData;
       if (this.selectedTag) {
         result = result.filter(item => item.tag === this.selectedTag);
       }
@@ -250,75 +269,70 @@ export default {
       const end = start + this.pageSize;
       return this.filteredGoodsData.slice(start, end);
     },
-  },
-  methods: {
-    // 获取商品列表
-    fetchGoods() {
-      this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/goods').then(response => {
-      //   this.goodsData = response.data.map(item => {
-      //     return {
-      //       ...item,
-      //       isEditing: false,
-      //       timeDate: new Date(Number(item.time))
-      //     };
-      //   });
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取商品列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取商品列表失败');
-      // });
+  },  methods: {
+    // 获取当前用户ID
+    getCurrentUserId() {
+      try {
+        // 从 localStorage 获取用户信息
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+          const user = JSON.parse(currentUser);
+          this.currentUserId = user.uid;
+          return;
+        }
 
-      // 模拟数据
-      setTimeout(() => {
-        this.goodsData = [
-          {
-            gid: 1,
-            uid: 1001,
-            price: 5000,
-            name: '二手笔记本电脑',
-            image: 'https://example.com/img1.jpg',
-            tag: 1,
-            intro: '八成新笔记本电脑，性能良好',
-            quantity: 1,
-            sales: 0,
-            time: 1715006400000, // 2024-05-07 00:00:00
+        // 从 sessionStorage 获取用户信息
+        const userInfo = sessionStorage.getItem('userInfo');
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          this.currentUserId = user.uid;
+          return;
+        }
+
+        // 如果都没有，提示用户重新登录
+        console.warn('无法获取用户ID，请重新登录');
+        ElMessage.warning('请重新登录');
+        // 可以跳转到登录页面
+        // this.$router.push('/login');
+      } catch (error) {
+        console.error('获取用户ID失败:', error);
+        ElMessage.error('获取用户信息失败，请重新登录');
+      }
+    },
+
+    // 获取商品列表 - 使用API获取当前用户的商品
+    async fetchGoods() {
+      if (!this.currentUserId) {
+        console.warn('用户ID不存在，无法获取商品列表');
+        return;
+      }
+
+      this.isLoading = true;
+      try {
+        // 使用API获取指定用户的商品
+        const response = await goodApi.getUserProducts(this.currentUserId);
+        if (response.data && response.data.code === 1) {
+          this.goodsData = response.data.data.map(item => ({
+            ...item,
             isEditing: false,
-            timeDate: new Date(1715006400000)
-          },
-          {
-            gid: 2,
-            uid: 1002,
-            price: 2000,
-            name: '计算机网络教材',
-            image: 'https://example.com/img2.jpg',
-            tag: 2,
-            intro: '全新计算机网络教材，有笔记',
-            quantity: 5,
-            sales: 2,
-            time: 1714920000000, // 2024-05-06 00:00:00
-            isEditing: false,
-            timeDate: new Date(1714920000000)
-          },
-          {
-            gid: 3,
-            uid: 1003,
-            price: 3500,
-            name: '自行车',
-            image: 'https://example.com/img3.jpg',
-            tag: 3,
-            intro: '九成新自行车，适合校园代步',
-            quantity: 1,
-            sales: 0,
-            time: 1714833600000, // 2024-05-05 00:00:00
-            isEditing: false,
-            timeDate: new Date(1714833600000)
-          }
-        ];
-        this.isLoading = false;
-      }, 500);
+            timeDate: new Date(Number(item.time))
+          }));
+        } else {
+          console.error('获取商品列表失败:', response.data?.msg);
+          ElMessage.error('获取商品列表失败: ' + (response.data?.msg || '未知错误'));
+          this.goodsData = [];
+        }
+      } catch (error) {
+        console.error('获取商品列表失败:', error);
+        ElMessage.error('获取商品列表失败');
+        this.goodsData = [];
+      } finally {        this.isLoading = false;
+      }
+    },
+
+    // 刷新数据
+    async refreshData() {
+      await this.fetchGoods();
     },
 
     // 显示添加对话框
@@ -326,7 +340,7 @@ export default {
       this.dialogVisible = true;
       const now = new Date();
       this.newGoods = {
-        uid: '',
+        uid: this.currentUserId || '', // 使用当前用户ID
         price: 0,
         name: '',
         image: '',
@@ -343,30 +357,27 @@ export default {
     },
 
     // 提交新商品
-    submitNewGoods() {
+    async submitNewGoods() {
       if (this.$refs.goodsForm) {
-        this.$refs.goodsForm.validate(valid => {
+        this.$refs.goodsForm.validate(async (valid) => {
           if (valid) {
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/goods', this.newGoods).then(response => {
-            //   ElMessage.success('添加商品成功');
-            //   this.fetchGoods();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加商品失败:', error);
-            //   ElMessage.error('添加商品失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.goodsData.map(item => item.gid), 0);
-            const newGoods = {
-              ...this.newGoods,
-              gid: maxId + 1,
-              isEditing: false
-            };
-            this.goodsData.unshift(newGoods);
-            ElMessage.success('添加商品成功');
-            this.dialogVisible = false;
+            try {
+              // 确保使用当前用户ID
+              this.newGoods.uid = this.currentUserId;
+              const response = await goodApi.createProduct(this.newGoods);
+              
+              if (response.data && response.data.code === 1) {
+                ElMessage.success('添加商品成功');
+                this.dialogVisible = false;
+                // 重新获取商品列表
+                await this.fetchGoods();
+              } else {
+                ElMessage.error('添加商品失败: ' + (response.data?.msg || '未知错误'));
+              }
+            } catch (error) {
+              console.error('添加商品失败:', error);
+              ElMessage.error('添加商品失败');
+            }
           } else {
             return false;
           }
@@ -386,50 +397,70 @@ export default {
       row.timeDate = new Date(Number(row.time));
       // 保存原始数据，用于取消编辑时恢复
       row._originalData = JSON.parse(JSON.stringify(row));
-    },
+    },    // 保存行
+    async saveRow(row) {
+      try {
+        // 验证数据
+        if (!row.name || !row.price) {
+          ElMessage.error('商品名和价格不能为空');
+          return;
+        }
 
-    // 保存行
-    saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/goods/${row.gid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新商品成功');
-      // }).catch(error => {
-      //   console.error('更新商品失败:', error);
-      //   ElMessage.error('更新商品失败');
-      // });
+        // 更新时间
+        if (row.timeDate) {
+          row.time = row.timeDate.getTime();
+        }
 
-      // 模拟保存
-      row.isEditing = false;
-      delete row._originalData; // 删除原始数据
-      ElMessage.success('更新商品成功');
+        // 调用更新商品接口
+        const response = await goodApi.updateProduct({
+          gid: row.gid,
+          uid: row.uid,
+          name: row.name,
+          price: row.price,
+          image: row.image,
+          tag: row.tag,
+          intro: row.intro,
+          quantity: row.quantity,
+          sales: row.sales,
+          time: row.time
+        });
+        
+        if (response.data && (response.data.code === 1 || response.data.success)) {
+          ElMessage.success('更新商品成功');
+          row.isEditing = false;
+          delete row._originalData;
+          // 重新获取数据以确保显示最新内容
+          await this.fetchGoods();
+        } else {
+          ElMessage.error('更新商品失败: ' + (response.data?.msg || response.data?.message || '未知错误'));
+        }
+      } catch (error) {
+        console.error('更新商品失败:', error);
+        ElMessage.error('更新商品失败');
+      }
     },
 
     // 删除行
-    deleteRow(row) {
+    async deleteRow(row) {
       this.$confirm('此操作将永久删除该商品, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/goods/${row.gid}`).then(response => {
-        //   const index = this.goodsData.findIndex(item => item.gid === row.gid);
-        //   if (index !== -1) {
-        //     this.goodsData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除商品成功');
-        // }).catch(error => {
-        //   console.error('删除商品失败:', error);
-        //   ElMessage.error('删除商品失败');
-        // });
-
-        // 模拟删除
-        const index = this.goodsData.findIndex(item => item.gid === row.gid);
-        if (index !== -1) {
-          this.goodsData.splice(index, 1);
+      }).then(async () => {
+        try {
+          const response = await goodApi.deleteProduct(row.gid);
+          
+          if (response.data && (response.data.code === 1 || response.data.success)) {
+            ElMessage.success('删除商品成功');
+            // 重新获取商品列表
+            await this.fetchGoods();
+          } else {
+            ElMessage.error('删除商品失败: ' + (response.data?.msg || response.data?.message || '未知错误'));
+          }
+        } catch (error) {
+          console.error('删除商品失败:', error);
+          ElMessage.error('删除商品失败');
         }
-        ElMessage.success('删除商品成功');
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
@@ -482,20 +513,27 @@ export default {
     getTagLabel(tagValue) {
       const tag = this.tagOptions.find(t => t.value === tagValue);
       return tag ? tag.label : `标签${tagValue}`;
-    },
-
-    // 获取标签列表
-    fetchTags() {
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tags').then(response => {
-      //   this.tagOptions = response.data;
-      // }).catch(error => {
-      //   console.error('获取标签列表失败:', error);
-      //   ElMessage.error('获取标签列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
+    },    // 获取标签列表
+    async fetchTags() {
+      try {
+        const response = await goodApi.getProductTags();
+        if (response.data && response.data.code === 1) {
+          this.tagOptions = response.data.data;
+        } else {
+          console.error('获取标签列表失败:', response.data?.msg);
+          // 使用默认标签作为备选
+          this.tagOptions = [
+            {value: 1, label: '二手电子'},
+            {value: 2, label: '教材书籍'},
+            {value: 3, label: '生活用品'},
+            {value: 4, label: '服装鞋帽'},
+            {value: 5, label: '文具用品'},
+            {value: 6, label: '代步工具'}
+          ];
+        }
+      } catch (error) {
+        console.error('获取标签列表失败:', error);
+        // 使用默认标签作为备选
         this.tagOptions = [
           {value: 1, label: '二手电子'},
           {value: 2, label: '教材书籍'},
@@ -504,7 +542,7 @@ export default {
           {value: 5, label: '文具用品'},
           {value: 6, label: '代步工具'}
         ];
-      }, 300);
+      }
     },
 
     // 图片上传成功处理
@@ -542,16 +580,38 @@ export default {
         return false;
       }
       return isJPG && isLt2M;
-    },
-  },
-  created() {
-    this.fetchTags();
-    this.fetchGoods();
+    },  },
+  async created() {
+    // 首先获取当前用户ID
+    this.getCurrentUserId();
+    
+    // 获取标签列表
+    await this.fetchTags();
+    
+    // 如果有用户ID，则获取商品列表
+    if (this.currentUserId) {
+      this.fetchGoods();
+    }
   },
 };
 </script>
 
 <style scoped>
+.goods-manage-container {
+  padding: 20px;
+}
+
+.filter-container {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.goods-count {
+  color: #666;
+  font-size: 14px;
+}
 
 .el-table {
   width: 100% !important;
@@ -576,4 +636,10 @@ export default {
   display: inline-block;
 }
 
+.table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
 </style>
