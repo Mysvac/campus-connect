@@ -13,56 +13,27 @@
         <template #default="{ row }">
           <span>{{ row.uid }}</span>
         </template>
-      </el-table-column>
-
-      <el-table-column label="任务名" prop="name" width="110">
+      </el-table-column>      <el-table-column label="任务名" prop="name" width="110">
         <template #default="{ row }">
-          <el-input
-              v-if="row.isEditing"
-              v-model="row.name"
-              size="small"
-              placeholder="请输入任务名"
-          ></el-input>
-          <span v-else>{{ row.name }}</span>
+          <span>{{ row.name }}</span>
         </template>
       </el-table-column>
 
       <el-table-column label="金额" prop="money" width="70">
         <template #default="{ row }">
-          <el-input
-              v-if="row.isEditing"
-              v-model.number="row.money"
-              size="small"
-              type="number"
-              placeholder="请输入金额"
-          ></el-input>
-          <span v-else>{{ row.money }} 元</span>
+          <span>{{ row.money }} 元</span>
         </template>
       </el-table-column>
 
       <el-table-column label="联系方式" prop="contact" width="120">
         <template #default="{ row }">
-          <el-input
-              v-if="row.isEditing"
-              v-model="row.contact"
-              size="small"
-              placeholder="请输入联系方式"
-          ></el-input>
-          <span v-else>{{ row.contact }}</span>
+          <span>{{ row.contact }}</span>
         </template>
       </el-table-column>
 
       <el-table-column label="详情" prop="details" min-width="300">
         <template #default="{ row }">
-          <el-input
-              v-if="row.isEditing"
-              v-model="row.details"
-              type="textarea"
-              size="small"
-              placeholder="请输入任务详情"
-          ></el-input>
           <el-tooltip
-              v-else
               :content="row.details"
               placement="top"
               :hide-after="0"
@@ -76,21 +47,7 @@
 
       <el-table-column label="状态" prop="status" width="80">
         <template #default="{ row }">
-          <el-select
-              v-if="row.isEditing"
-              v-model="row.status"
-              size="small"
-              placeholder="请选择状态"
-          >
-            <el-option
-                v-for="status in statusOptions"
-                :key="status.value"
-                :label="status.label"
-                :value="status.value">
-            </el-option>
-          </el-select>
           <el-tag
-              v-else
               :type="getStatusType(row.status)"
               size="small"
           >
@@ -101,21 +58,7 @@
 
       <el-table-column label="标签" prop="tag" width="80">
         <template #default="{ row }">
-          <el-select
-              v-if="row.isEditing"
-              v-model="row.tag"
-              size="small"
-              placeholder="请选择标签"
-          >
-            <el-option
-                v-for="tag in tagOptions"
-                :key="tag.value"
-                :label="tag.label"
-                :value="tag.value">
-            </el-option>
-          </el-select>
           <el-tag
-              v-else
               :type="getTagType(row.tag)"
               size="small"
           >
@@ -128,26 +71,8 @@
         <template #default="{ row }">
           <span>{{ formatTime(row.time) }}</span>
         </template>
-      </el-table-column>
-
-      <el-table-column label="操作" width="140">
+      </el-table-column>      <el-table-column label="操作" width="80">
         <template #default="scope">
-          <el-button
-              type="warning"
-              size="small"
-              @click="editRow(scope.row)"
-              v-if="!scope.row.isEditing"
-          >
-            编辑
-          </el-button>
-          <el-button
-              type="success"
-              size="small"
-              @click="saveRow(scope.row)"
-              v-if="scope.row.isEditing"
-          >
-            保存
-          </el-button>
           <el-button
               type="danger"
               size="small"
@@ -357,12 +282,8 @@ export default {
         console.log('开始获取用户任务, 用户ID:', this.currentUserId);
         const response = await taskApi.getUserTasks(this.currentUserId);
         console.log('getUserTasks API 响应:', response);
-        
-        if (response.data && response.data.code === 1) {
-          this.taskData = response.data.data.map(item => ({
-            ...item,
-            isEditing: false
-          }));
+          if (response.data && response.data.code === 1) {
+          this.taskData = response.data.data;
           console.log('成功加载任务数据:', this.taskData.length, '条任务');
         } else {
           console.error('获取任务列表失败:', response.data.msg);
@@ -423,53 +344,9 @@ export default {
             return false;
           }
         });
-      }
-    },
+      }    },
 
-    // 编辑行
-    editRow(row) {
-      // 先关闭其他正在编辑的行
-      this.taskData.forEach(item => {
-        if (item.tid !== row.tid) {
-          item.isEditing = false;
-        }
-      });
-      // 设置当前行为编辑状态
-      row.isEditing = true;
-    },    // 保存行
-    async saveRow(row) {
-      try {
-        // 构建更新数据 - 注意后端没有直接的更新任务接口，这里需要先删除再创建
-        // 或者我们可以修改为只更新特定字段，但根据现有API，我们使用删除+创建的方式
-        const updateData = {
-          name: row.name,
-          money: row.money,
-          contact: row.contact,
-          details: row.details,
-          status: row.status,
-          tag: row.tag,
-          uid: row.uid
-        };        // 先删除原任务
-        const deleteResponse = await api.delete(`/api/task/delete-tasks-by-tid/${row.tid}`);
-        if (deleteResponse.data && deleteResponse.data.code === 1) {
-          // 创建新任务
-          const createResponse = await taskApi.createTask(updateData);
-          if (createResponse.data && createResponse.data.code === 1) {
-            row.isEditing = false;
-            ElMessage.success('更新任务成功');
-            // 重新获取任务列表以保持数据同步
-            this.fetchTasks();
-          } else {
-            ElMessage.error('更新任务失败: ' + (createResponse.data.msg || '未知错误'));
-          }
-        } else {
-          ElMessage.error('更新任务失败: ' + (deleteResponse.data.msg || '未知错误'));
-        }
-      } catch (error) {
-        console.error('更新任务失败:', error);
-        ElMessage.error('更新任务失败');
-      }
-    },    // 删除行
+    // 删除行
     deleteRow(row) {
       // 弹出确认框
       ElMessageBox.confirm('此操作将永久删除该任务, 是否继续?', '提示', {
