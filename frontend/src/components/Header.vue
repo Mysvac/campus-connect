@@ -33,6 +33,12 @@
             class="nav-item"
             exact-active-class="active"
         >评分</router-link>
+        <a
+            href="http://10.100.164.17"
+            class="nav-item"
+            target="_blank"
+            rel="noopener"
+        >聊天</a>
       </div>
       <div class="action-container">
         <div class="search-container">
