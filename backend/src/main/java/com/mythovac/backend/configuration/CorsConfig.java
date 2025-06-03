@@ -19,7 +19,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // 允许所有路径
-                        .allowedOriginPatterns("http://10.100.164.32:*", "http://localhost:*", "https://api.mythovac.com/*")  // 允许的源
+                        .allowedOriginPatterns("http://localhost:*", "http://campus.mythovac.com", "https://api.mythovac.com")  // 允许的源
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // 允许的方法
                         .allowedHeaders("*")  // 允许所有头
                         .allowCredentials(true)  // 是否允许发送cookie
