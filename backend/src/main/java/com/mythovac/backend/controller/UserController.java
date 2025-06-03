@@ -138,6 +138,21 @@ public class UserController {
     }
 
     /**
+     * 获取用户名资料
+     * @param uid 用户ID
+     * @return Result 用户资料
+     */
+    @GetMapping("/get-user-data/{uid}")
+    public Result getData(@PathVariable Long uid) {
+        User user = userService.getUserById(uid);
+        user.setPassword("");
+        if (user == null) {
+            return Result.error("null");
+        }
+        return Result.success(user);
+    }
+
+    /**
      * 用户更新
      * @param session HttpSession
      * @return Result 更新结果

@@ -48,6 +48,13 @@ public class TaskController {
     }
 
     /**
+     * 任务Task：
+     * 0.待接取 1.进行中 2.终止 3.完成
+     * 任务处理:TaskHandle:
+     * 0.待同意 1.进行中 2.终止 3.完成
+     */
+
+    /**
      * 领取任务
      * @param tid 任务ID
      * @param session HttpSession
@@ -60,12 +67,12 @@ public class TaskController {
 
         Long uid = (Long) session.getAttribute("uid");
         Task task = tasksService.getTaskById(tid);
-        if (task == null || task.getStatus() != 2) {
+        if (task == null || task.getStatus() != 0) {
             return Result.error("任务不存在或不可用");
         }
         TasksHandle tasksHandle = new TasksHandle();
         tasksHandle.setUid(uid);
-        tasksHandle.setStatus(3);
+        tasksHandle.setStatus(0); // 0 表示等待审核
         tasksHandle.setTime(System.currentTimeMillis());
         tasksHandle.setTid(tid);
         tasksHandleService.insertTasksHandle(tasksHandle);
@@ -78,27 +85,30 @@ public class TaskController {
      * @param session HttpSession
      * @return 用户任务列表
      */
-    @PostMapping("/complete-task/{tid}")
-    public Result completeTask(@PathVariable Long tid, HttpSession session)  {
+    @PostMapping("/complete-task/{tid}/{uid}")
+    public Result completeTask(@PathVariable Long tid, @PathVariable Long uid, HttpSession session)  {
         Result sessionCheck = UserController.checkSession(session);
         if (sessionCheck != null) return sessionCheck;
 
-        Long uid = (Long) session.getAttribute("uid");
         TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
         if (taskHandle == null) {
             return Result.error("任务不存在");
         }
-        if( taskHandle.getStatus() != 2) {
-            return Result.error("任务状态不正确，无法完成");
+        // 终止其他任务处理
+        List<TasksHandle> handles =  tasksHandleService.getAllTasksHandleByTid(tid);
+        if (!handles.isEmpty()) {
+            for( TasksHandle handle : handles ) {
+                handle.setStatus(2);
+                tasksHandleService.updateTasksHandle(handle);
+            }
         }
-        taskHandle.setStatus(1);
+        // 完成当前任务处理
+        taskHandle.setStatus(3);
         tasksHandleService.updateTasksHandle(taskHandle);
+        // 完成任务
         Task task = tasksService.getTaskById(tid);
         task.setStatus(3);
         tasksService.updateTask(task);
-        User usr = userService.getUserById(taskHandle.getUid());
-        usr.setWallet(usr.getWallet() + task.getMoney());
-        userService.updateUser(usr);
         return Result.success();
     }
 
@@ -114,15 +124,48 @@ public class TaskController {
         if (sessionCheck != null) return sessionCheck;
 
         Long uid = (Long) session.getAttribute("uid");
-        TasksHandle taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
-        if (taskHandle == null) {
+        Task task = tasksService.getTaskById(tid);
+        if( task == null ) {
             return Result.error("任务不存在");
         }
+        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
+            return Result.error("权限不足");
+        }
+
+        task.setStatus(2);
+        tasksService.updateTask(task);
+        List<TasksHandle> handles =  tasksHandleService.getAllTasksHandleByTid(tid);
+        if (!handles.isEmpty()) {
+            for( TasksHandle handle : handles ) {
+                handle.setStatus(2);
+                tasksHandleService.updateTasksHandle(handle);
+            }
+        }
+        return Result.success();
+    }
+
+    /**
+     * 取消自己的单个任务处理
+     * @param tid 任务ID
+     * @param session HttpSession
+     * @return 用户任务列表
+     */
+    @PostMapping("/terminate-taskhandle/{tid}/{uid}")
+    public Result terminateTaskHandle(@PathVariable Long tid, @PathVariable Long uid, HttpSession session)  {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+
+        Task task = tasksService.getTaskById(tid);
+        if (task == null) {
+            return Result.error("任务不存在");
+        }
+        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
+            return Result.error("权限不足");
+        }
+        var taskHandle = tasksHandleService.getTasksHandleById(tid, uid);
         taskHandle.setStatus(2);
         tasksHandleService.updateTasksHandle(taskHandle);
-        Task task = tasksService.getTaskById(tid);
-        task.setStatus(0);
-        tasksService.updateTask(task);
         return Result.success();
     }
 
@@ -143,7 +186,7 @@ public class TaskController {
         taskHandle.setStatus(0);
         tasksHandleService.updateTasksHandle(taskHandle);
         Task task = tasksService.getTaskById(tid);
-        task.setStatus(1);
+        task.setStatus(1); //
         tasksService.updateTask(task);
         return Result.success();
     }
