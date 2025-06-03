@@ -24,27 +24,70 @@ export default {
         }
         return api.get(`/api/message/get-message-by-mid/${id}`);
     },
-    
-    // 发布新留言
+      // 发布新留言或更新现有留言
     createMessage: (data) => {
-        // 调试模式下且没有JWT令牌，模拟创建留言
+        // 调试模式下且没有JWT令牌，模拟创建或更新留言
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
-            console.log("DEBUG MODE: 模拟创建新留言");
-            const newMessage = {
-                mid: MOCK_DATA.messages.length + 1,
-                uid: 1001, // 模拟用户ID
-                title: data.title,
-                content: data.content,
-                tag: data.tag,
-                time: Date.now(),
-                praise: 0,
-                isLiked: false,
-                comments: []
-            };
-            MOCK_DATA.messages.unshift(newMessage);
-            return getMockResponse(newMessage);
+            if (data.mid) {
+                // 更新现有留言
+                console.log("DEBUG MODE: 模拟更新留言");
+                const messageIndex = MOCK_DATA.messages.findIndex(m => m.mid === parseInt(data.mid));
+                if (messageIndex !== -1) {
+                    // 保留原有的时间戳、点赞数和评论
+                    const originalMessage = MOCK_DATA.messages[messageIndex];
+                    MOCK_DATA.messages[messageIndex] = {
+                        ...originalMessage,
+                        title: data.title,
+                        content: data.content,
+                        tag: data.tag
+                        // 保留 mid, uid, time, praise, comments 等原有数据
+                    };
+                    return getMockResponse(MOCK_DATA.messages[messageIndex]);
+                } else {
+                    return getMockResponse({success: false, msg: "留言不存在"});
+                }
+            } else {
+                // 创建新留言
+                console.log("DEBUG MODE: 模拟创建新留言");
+                const newMessage = {
+                    mid: Math.max(...MOCK_DATA.messages.map(m => m.mid || 0)) + 1,
+                    uid: 1001, // 模拟用户ID
+                    title: data.title,
+                    content: data.content,
+                    tag: data.tag,
+                    time: Date.now(),
+                    praise: 0,
+                    isLiked: false,
+                    comments: []
+                };
+                MOCK_DATA.messages.unshift(newMessage);
+                return getMockResponse(newMessage);
+            }
+        }        return api.post('/api/message/add-message', data);
+    },
+
+    // 更新留言 - 使用新的update-message接口
+    updateMessage: (data) => {
+        // 调试模式下且没有JWT令牌，模拟更新留言
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟更新留言");
+            const messageIndex = MOCK_DATA.messages.findIndex(m => m.mid === parseInt(data.mid));
+            if (messageIndex !== -1) {
+                // 保留原有的时间戳、点赞数和评论
+                const originalMessage = MOCK_DATA.messages[messageIndex];
+                MOCK_DATA.messages[messageIndex] = {
+                    ...originalMessage,
+                    title: data.title,
+                    content: data.content,
+                    tag: data.tag
+                    // 保留 mid, uid, time, praise, comments 等原有数据
+                };
+                return getMockResponse(MOCK_DATA.messages[messageIndex]);
+            } else {
+                return getMockResponse({success: false, msg: "留言不存在"});
+            }
         }
-        return api.post('/api/message/add-message', data);
+        return api.post('/api/message/update-message', data);
     },
     
     // 点赞留言

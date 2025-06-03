@@ -326,7 +326,6 @@ export default {  // 用户登录
     
     return api.post('/api/user/admin-login', data);
   },
-
   // 获取用户名
   getUsername: (uid) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -346,5 +345,47 @@ export default {  // 用户登录
     }
     
     return api.get(`/api/user/get-username/${uid}`);
+  },
+
+  // 获取用户数据 - 使用新的后端接口
+  getUserData: (uid) => {
+    if (DEBUG_MODE && localStorage.getItem('isAuthenticated') === 'true') {
+      console.log("DEBUG MODE: 获取用户数据");
+      
+      // 如果没有提供uid，从当前用户获取
+      if (!uid) {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        uid = currentUser.uid;
+      }
+      
+      if (uid) {
+        const user = MOCK_DATA.users.find(u => u.uid === parseInt(uid));
+        if (user) {
+          // 转换为后端格式，不包含密码
+          const userData = {
+            uid: user.uid,
+            permission: user.permission,
+            phone: user.phone,
+            wallet: user.wallet,
+            nickname: user.name,
+            gender: user.gender,
+            email: user.email,
+            profile: user.profile,
+            image: user.profile
+          };
+          return getMockResponse(userData);
+        }
+      }
+      
+      return Promise.resolve({
+        data: {
+          code: 0,
+          msg: "用户不存在",
+          data: null
+        }
+      });
+    }
+    
+    return api.get(`/api/user/get-user-data/${uid}`);
   }
 };

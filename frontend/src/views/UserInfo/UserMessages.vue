@@ -101,33 +101,40 @@
         <template #default="{ row }">
           <span>{{ formatTime(row.time) }}</span>
         </template>
-      </el-table-column>
-
-      <el-table-column label="操作" width="160">
+      </el-table-column>      <el-table-column label="操作" width="200">
         <template #default="scope">
-          <el-button
-              type="warning"
-              size="small"
-              @click="editRow(scope.row)"
-              v-if="!scope.row.isEditing"
-          >
-            编辑
-          </el-button>
-          <el-button
-              type="success"
-              size="small"
-              @click="saveRow(scope.row)"
-              v-if="scope.row.isEditing"
-          >
-            保存
-          </el-button>
-          <el-button
-              type="danger"
-              size="small"
-              @click="deleteRow(scope.row)"
-          >
-            删除
-          </el-button>
+          <div v-if="!scope.row.isEditing" style="display: flex; gap: 5px;">
+            <el-button
+                type="warning"
+                size="small"
+                @click="editRow(scope.row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+                type="danger"
+                size="small"
+                @click="deleteRow(scope.row)"
+            >
+              删除
+            </el-button>
+          </div>
+          <div v-else style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <el-button
+                type="success"
+                size="small"
+                @click="saveRow(scope.row)"
+            >
+              保存
+            </el-button>
+            <el-button
+                type="info"
+                size="small"
+                @click="cancelEdit(scope.row)"
+            >
+              取消
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -251,43 +258,45 @@ export default {
           item.isEditing = false;
         }
       });
-      row.isEditing = true;
-    },    // 保存行
+      row.isEditing = true;    },    // 保存行
     async saveRow(row) {
       try {
-        // 由于后端没有提供更新留言的REST端点，我们使用删除+重新创建的方式
-        // 保存原始数据
-        const originalData = {
-          title: row.title,
-          content: row.content,
-          tag: row.tag,
-          uid: row.uid,
-          mid: row.mid,
-          time: row.time,
-          praise: row.praise
-        };
+        // 验证数据
+        if (!row.title || !row.content) {
+          ElMessage.error('标题和内容不能为空');
+          return;
+        }
 
-        // 由于API限制，这里暂时只在前端更新
-        // 实际项目中建议后端添加 PUT /api/message/update-message 端点
-        row.isEditing = false;
-        ElMessage.success('更新留言成功');
+        // 调用新的update-message接口，传递所有数据实现更新
+        const response = await messageApi.updateMessage({
+          mid: row.mid,        // 传递留言ID
+          title: row.title,    // 新标题
+          content: row.content, // 新内容
+          tag: row.tag         // 新标签
+        });
         
-        // TODO: 如果后端添加了更新接口，可以使用以下代码：
-        // const response = await messageApi.updateMessage(row.mid, {
-        //   title: row.title,
-        //   content: row.content,
-        //   tag: row.tag
-        // });
-        // if (response.data && response.data.code === 1) {
-        //   ElMessage.success('更新留言成功');
-        // } else {
-        //   ElMessage.error('更新留言失败: ' + (response.data.msg || '未知错误'));
-        // }
+        if (response.data && response.data.code === 1) {
+          ElMessage.success('留言更新成功');
+          row.isEditing = false;
+          // 重新获取数据以确保显示最新内容
+          await this.fetchMessages();
+        } else {
+          ElMessage.error('更新留言失败: ' + (response.data?.msg || '未知错误'));
+        }
       } catch (error) {
         console.error('更新留言失败:', error);
         ElMessage.error('更新留言失败');
       }
-    },    // 删除行
+    },
+
+    // 取消编辑
+    cancelEdit(row) {
+      row.isEditing = false;
+      // 重新获取数据以恢复原始内容
+      this.fetchMessages();
+    },
+
+    // 删除行
     async deleteRow(row) {
       this.$confirm('此操作将永久删除该留言, 是否继续?', '提示', {
         confirmButtonText: '确定',
@@ -354,10 +363,14 @@ export default {
       return tagMap[tag] || '';
     },    // 获取标签列表
     setDefaultTags() {
-      // 设置标准留言标签
+      // 设置标准留言标签，与mockData中的实际标签保持一致
       this.tagOptions = [
+        { value: '活动', label: '校园活动' },
+        { value: '生活', label: '校园生活' },
+        { value: '学习', label: '学习交流' },
+        { value: '失物', label: '失物信息' },
+        { value: '吐槽', label: '意见反馈' },
         { value: '课程互助', label: '课程互助' },
-        { value: '校园活动', label: '校园活动' },
         { value: '失物招领', label: '失物招领' },
         { value: '二手交易', label: '二手交易' },
         { value: '学习讨论', label: '学习讨论' },
