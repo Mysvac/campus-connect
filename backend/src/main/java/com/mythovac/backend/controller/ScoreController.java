@@ -1,6 +1,7 @@
 package com.mythovac.backend.controller;
 
 
+import com.mythovac.backend.entity.MessagesComment;
 import com.mythovac.backend.entity.Result;
 import com.mythovac.backend.entity.Score;
 import com.mythovac.backend.entity.ScoresComment;
@@ -44,6 +45,16 @@ public class ScoreController {
     public Result getAllScores() {
         List<Score> res = scoreService.getAllScores();
         return Result.success(res);
+    }
+
+    /**
+     * 获取所有留言评论
+     * @return 留言列表
+     */
+    @GetMapping("get-all-comments")
+    public Result getAllComments() {
+        List<ScoresComment> res = scoresCommentService.getScoresComment();
+        return res == null ? Result.error("留言不存在") : Result.success(res);
     }
 
     /**
