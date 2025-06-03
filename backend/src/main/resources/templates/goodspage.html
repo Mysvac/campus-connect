@@ -525,7 +525,7 @@
         }
 
         try {
-            const response = await api.post(`purchase/${product.gid}`);
+            const response = await api.post(`good/purchase/${product.gid}`);
 
             if (!response || response.code !== 1) {
                 throw new Error(response?.msg || '购买失败');
