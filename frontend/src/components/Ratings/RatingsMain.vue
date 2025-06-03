@@ -432,25 +432,59 @@ export default {
         .finally(() => {
           this.isLoading = false;
         });
+    },    // 获取评分评论
+    async fetchRatingComments(id) {
+      try {
+        const response = await ratingsApi.getRatingComments(id);
+        if (response.data && response.data.code === 1) {
+          // 找到对应的评分并更新其评论
+          const rating = this.ratings.find(r => r.sid === id);
+          if (rating) {
+            const comments = response.data.data || [];
+            
+            // 为每个评论获取用户名和头像
+            if (comments.length > 0) {
+              const enrichedComments = await this.enrichCommentsWithUserInfo(comments);
+              rating.comments = enrichedComments;
+            } else {
+              rating.comments = comments;
+            }
+          }
+        } else {
+          console.error('获取评分评论失败:', response.data?.msg);
+        }
+      } catch (error) {
+        console.error('获取评分评论出错:', error);
+      }
     },
 
-    // 获取评分评论
-    fetchRatingComments(id) {
-      ratingsApi.getRatingComments(id)
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            // 找到对应的评分并更新其评论
-            const rating = this.ratings.find(r => r.sid === id);
-            if (rating) {
-              rating.comments = response.data.data || [];
-            }
+    // 为评论添加用户信息（用户名和头像）
+    async enrichCommentsWithUserInfo(comments) {
+      const { userApi } = await import('@/api');
+      
+      const promises = comments.map(async comment => {
+        try {
+          // 获取用户名
+          const userResponse = await userApi.getUsername(comment.uid);
+          if (userResponse.data && userResponse.data.code === 1) {
+            comment.userName = userResponse.data.data;
           } else {
-            console.error('获取评分评论失败:', response.data?.msg);
+            comment.userName = `用户${comment.uid}`;
           }
-        })
-        .catch(error => {
-          console.error('获取评分评论出错:', error);
-        });
+          
+          // 设置默认头像
+          comment.userAvatar = `https://via.placeholder.com/48?text=U${comment.uid}`;
+          
+          return comment;
+        } catch (error) {
+          console.error(`获取用户${comment.uid}信息失败:`, error);
+          comment.userName = `用户${comment.uid}`;
+          comment.userAvatar = `https://via.placeholder.com/48?text=U${comment.uid}`;
+          return comment;
+        }
+      });
+      
+      return await Promise.all(promises);
     },
 
     setSortBy(sortType) {
@@ -478,7 +512,7 @@ export default {
       this.hasRated = false;
       this.userRating = 0;
       this.userComment = '';
-    },      submitRating() {
+    },    async submitRating() {
       if (this.userRating === 0) {
         alert('请先给出您的评分');
         return;
@@ -493,31 +527,29 @@ export default {
 
       this.isSubmitting = true;
       
-      ratingsApi.commentRating(this.currentRatingId, ratingData)
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            this.hasRated = true;
-            
-            // 重新获取评分详情和评论
-            this.fetchRatingDetail(this.currentRatingId);
-            
-            // 清空评论
-            this.userComment = '';
-            
-            // 通知用户
-            alert('评价提交成功！');
-          } else {
-            console.error('提交评分失败:', response.data.msg);
-            alert('提交评分失败: ' + (response.data.msg || '未知错误'));
-          }
-        })
-        .catch(error => {
-          console.error('提交评分出错:', error);
-          alert('网络错误，请稍后再试');
-        })
-        .finally(() => {
-          this.isSubmitting = false;
-        });
+      try {
+        const response = await ratingsApi.commentRating(this.currentRatingId, ratingData);
+        if (response.data && response.data.code === 1) {
+          this.hasRated = true;
+          
+          // 重新获取评分详情和评论（包含用户信息）
+          await this.fetchRatingDetail(this.currentRatingId);
+          
+          // 清空评论
+          this.userComment = '';
+          
+          // 通知用户
+          alert('评价提交成功！');
+        } else {
+          console.error('提交评分失败:', response.data.msg);
+          alert('提交评分失败: ' + (response.data.msg || '未知错误'));
+        }
+      } catch (error) {
+        console.error('提交评分出错:', error);
+        alert('网络错误，请稍后再试');
+      } finally {
+        this.isSubmitting = false;
+      }
     },
     
     formatTime(timestamp) {
