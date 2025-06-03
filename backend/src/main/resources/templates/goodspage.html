@@ -80,28 +80,6 @@
             border-top: 1px solid #eee;
         }
 
-        .quantity-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .quantity-selector button {
-            width: 30px;
-            height: 30px;
-            border: 1px solid #ddd;
-            background: #fff;
-            cursor: pointer;
-        }
-
-        .quantity-selector input {
-            width: 60px;
-            height: 30px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-
         .purchase-btn {
             padding: 10px 40px;
             background: #ff6b6b;
@@ -304,12 +282,6 @@
         </div>
 
     <div class="purchase-section">
-        <div class="quantity-selector">
-        
-            <p>购买数量：<input type="number" id="quantity" value="1" min="1" th:max="${product.quantity}"></p>
-            
-        </div>
-
         <div class="purchase-actions">
             <button class="purchase-btn" type="button" onclick="handlePurchase()">
                 立即购买
@@ -348,70 +320,96 @@
 </div>
 
 <script th:inline="javascript">
-    const product = /*[[${product}]]*/ {};
-    const baseURL = 'https://api.mythovac.com/api/';
-    const DEBUG_MODE = true; // Enable debug mode
+    // 确保product对象正确初始化
+    const product = /*[[${product}]]*/ null;
+    const baseURL = '/api/'; // 使用相对路径
+    const DEBUG_MODE = false; // 生产环境禁用调试模式
     
-    // Mock helpers
+    // API请求超时时间（毫秒）
+    const REQUEST_TIMEOUT = 10000;
+    
+    // Mock helpers（仅在DEBUG模式下使用）
     const MOCK_DATA = { products: [] };
     const getMockResponse = data => Promise.resolve(data);
+    
+    // 改进的API调用工具
     const api = {
-        post: (url, data) => fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(data)
-        }).then(res => res.json())
+        post: async (url, data) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+                
+                const response = await fetch(baseURL + url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('请求超时，请稍后重试');
+                }
+                throw error;
+            }
+        }
     };
 
-    const quantity = document.getElementById('quantity');
     let isLoggedIn = false;
     let currentUser = null;
 
-    // 初始化时检查登录状态
+    // 初始化时检查登录状态和商品信息
     window.onload = function() {
         checkLoginStatus();
+        validateProductData();
     };
+
+    // 验证商品数据
+    function validateProductData() {
+        if (!product || !product.id) {
+            console.error('商品信息未正确加载');
+            alert('商品信息加载失败，请刷新页面重试');
+            return false;
+        }
+        return true;
+    }
 
     // 检查登录状态
     function checkLoginStatus() {
-        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-        const userData = localStorage.getItem('currentUser');
+        try {
+            const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+            const userData = localStorage.getItem('currentUser');
 
-        if (isAuthenticated && userData) {
-            isLoggedIn = true;
-            currentUser = JSON.parse(userData);
-            console.log('用户已登录:', currentUser);
-        }
-    }
-
-    // 数量减少
-    function decreaseQuantity() {
-        const currentValue = parseInt(quantity.value) || 1;
-        if (currentValue > 1) {
-            quantity.value = currentValue - 1;
-        }
-    }
-
-    // 增加调试
-    console.log('Product data:', product);
-
-    // 数量增加
-    function increaseQuantity() {
-        const currentValue = parseInt(quantity.value) || 1;
-        const maxQuantity = product.quantity;
-        if (currentValue < maxQuantity) {
-            quantity.value = currentValue + 1;
+            if (isAuthenticated && userData) {
+                isLoggedIn = true;
+                currentUser = JSON.parse(userData);
+                console.log('用户已登录:', currentUser);
+            }
+        } catch (error) {
+            console.error('检查登录状态失败:', error);
+            // 清除可能损坏的数据
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('currentUser');
         }
     }
 
     // 处理购买按钮点击
     function handlePurchase() {
+        if (!validateProductData()) {
+            return;
+        }
+
         if (!isLoggedIn) {
-            // 未登录，显示登录弹窗
             showLoginModal();
         } else {
-            // 已登录，执行购买逻辑
             purchaseProduct();
         }
     }
@@ -419,14 +417,12 @@
     // 显示登录弹窗
     function showLoginModal() {
         document.getElementById('loginModal').style.display = 'block';
-        // 清空之前的错误信息
         clearMessages();
     }
 
     // 关闭登录弹窗
     function closeLoginModal() {
         document.getElementById('loginModal').style.display = 'none';
-        // 清空表单
         document.getElementById('phone').value = '';
         document.getElementById('password').value = '';
         clearMessages();
@@ -434,15 +430,7 @@
 
     // 清空消息
     function clearMessages() {
-        const errorElements = document.querySelectorAll('.error-message');
-        const successElements = document.querySelectorAll('.success-message');
-
-        errorElements.forEach(el => {
-            el.style.display = 'none';
-            el.textContent = '';
-        });
-
-        successElements.forEach(el => {
+        document.querySelectorAll('.error-message, .success-message').forEach(el => {
             el.style.display = 'none';
             el.textContent = '';
         });
@@ -451,15 +439,19 @@
     // 显示错误信息
     function showError(elementId, message) {
         const errorElement = document.getElementById(elementId);
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
     }
 
     // 显示成功信息
     function showSuccess(elementId, message) {
         const successElement = document.getElementById(elementId);
-        successElement.textContent = message;
-        successElement.style.display = 'block';
+        if (successElement) {
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+        }
     }
 
     // 处理登录
@@ -470,60 +462,50 @@
         const password = document.getElementById('password').value.trim();
         const loginBtn = document.getElementById('loginBtn');
 
-        // 清空之前的错误信息
+        // 表单验证
+        if (!phone || !password) {
+            showError('loginError', '请填写完整的登录信息');
+            return;
+        }
+
         clearMessages();
 
-    
-
         try {
-            // 设置加载状态
             loginBtn.disabled = true;
             loginBtn.textContent = '登录中...';
             loginBtn.classList.add('loading');
 
-            // 调用真实的登录API
-            const response = await fetch(baseURL + 'user/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // 等同于 withCredentials: true
-                body: JSON.stringify({
-                    phone: phone,
-                    password: password
-                })
+            const response = await api.post('user/login', {
+                phone: phone,
+                password: password
             });
 
-            const responseData = await response.json();
-            const { code, msg, data } = responseData;
+            const { code, msg, data } = response;
 
-            if (code === 1) {
-                // 登录成功
+            if (code === 1 && data) {
                 showSuccess('loginSuccess', '登录成功！');
 
-                // 存储登录状态
+                // 安全地存储用户状态
                 isLoggedIn = true;
                 currentUser = data;
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('currentUser', JSON.stringify(data));
+                try {
+                    localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('currentUser', JSON.stringify(data));
+                } catch (error) {
+                    console.error('存储用户数据失败:', error);
+                }
 
-                // 延迟关闭弹窗并执行购买
                 setTimeout(() => {
                     closeLoginModal();
                     purchaseProduct();
                 }, 1000);
-
             } else {
                 showError('loginError', msg || '登录失败，请检查账号密码');
             }
-
         } catch (error) {
             console.error('登录失败:', error);
-            
-            // 显示网络错误信息
-            showError('loginError', '登录请求失败，请检查网络连接');
+            showError('loginError', error.message || '登录请求失败，请检查网络连接');
         } finally {
-            // 恢复按钮状态
             loginBtn.disabled = false;
             loginBtn.textContent = '登录';
             loginBtn.classList.remove('loading');
@@ -532,64 +514,47 @@
 
     // 实际的购买逻辑
     async function purchaseProduct() {
-        const purchaseQuantity = parseInt(quantity.value) || 0;
-        const maxQuantity = product.quantity || 0;
-
-        console.log('Purchase check:', {
-            purchaseQuantity,
-            maxQuantity,
-            valid: purchaseQuantity > 0 && purchaseQuantity <= maxQuantity
-        });
-
-        if (purchaseQuantity <= 0) {
-            alert('请选择购买数量');
+        if (!validateProductData()) {
             return;
         }
 
-        if (purchaseQuantity > maxQuantity) {
-            alert('购买数量不能超过库存数量');
+        if (product.quantity <= 0) {
+            alert('商品已售罄');
             return;
         }
 
         try {
-            const response = await (function() {
-                if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
-                    console.log("DEBUG MODE: 模拟购买商品");
-                    if (product) {
-                        if (product.quantity >= purchaseQuantity) {
-                            product.quantity -= purchaseQuantity;
-                            product.sales += purchaseQuantity;
-                            return getMockResponse({
-                                oid: Date.now(),
-                                gid: product.id,
-                                uid: 101,
-                                quantity: purchaseQuantity,
-                                total: product.price * purchaseQuantity,
-                                status: 0,
-                                time: Date.now()
-                            });
-                        }
-                        return getMockResponse({ success: false, message: '商品库存不足' });
-                    }
-                    return getMockResponse({ success: false, message: '商品不存在' });
-                }
-                return api.post(`good/purchase/${product.id}`, { quantity: purchaseQuantity });
-            })();
+            const response = await api.post(`purchase/${product.id}`);
 
-            if (response && !response.success) {
-                alert(response.message || '购买失败');
-                return;
+            if (!response || response.code !== 1) {
+                throw new Error(response?.msg || '购买失败');
             }
 
             // 更新页面显示
-            document.querySelector('.product-quantity').textContent = '剩余数量: ' + (product.quantity - purchaseQuantity);
-            document.querySelector('.product-sales').textContent = '已售: ' + (product.sales + purchaseQuantity);
+            const quantityElement = document.querySelector('.product-quantity');
+            const salesElement = document.querySelector('.product-sales');
+            
+            if (quantityElement) {
+                quantityElement.textContent = '剩余数量: ' + (product.quantity - 1);
+            }
+            if (salesElement) {
+                salesElement.textContent = '已售: ' + ((product.sales || 0) + 1);
+            }
 
-            alert(`购买成功！\n商品：${product.name}\n数量：${purchaseQuantity}\n总价：￥${(product.price * purchaseQuantity / 100).toFixed(2)}`);
+            alert(`购买成功！\n商品：${product.name}\n数量：1\n总价：￥${(product.price / 100).toFixed(2)}`);
+            
+            // 更新本地商品数据
+            product.quantity -= 1;
+            product.sales = (product.sales || 0) + 1;
 
         } catch (error) {
             console.error('购买失败:', error);
-            alert('购买请求失败，请检查网络连接');
+            const errorMsg = error.message || '购买请求失败，请检查网络连接';
+            if (errorMsg.includes('余额不足')) {
+                alert('您的余额不足，请充值后再试');
+            } else {
+                alert(errorMsg);
+            }
         }
     }
 
