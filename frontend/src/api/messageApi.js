@@ -143,9 +143,7 @@ export default {
             return getMockResponse({success: false});
         }
         return api.delete(`/api/message/unlike-comment/${id}`);
-    },
-
-    // 删除留言
+    },    // 删除留言
     deleteMessage: (id) => {
         // 调试模式下且没有JWT令牌，模拟删除留言
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -158,5 +156,27 @@ export default {
             return getMockResponse({success: false});
         }
         return api.delete(`/api/message/delete-message-by-mid/${id}`);
+    },
+
+    // 获取指定用户的所有留言
+    getMessagesByUid: (uid) => {
+        // 调试模式下且没有JWT令牌，返回模拟数据
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 返回模拟的用户留言列表数据");
+            const userMessages = MOCK_DATA.messages.filter(m => m.uid === parseInt(uid));
+            return getMockResponse(userMessages);
+        }
+        return api.get(`/api/message/get-messages-by-uid/${uid}`);
+    },
+
+    // 获取指定标签的所有留言
+    getMessagesByTag: (tag) => {
+        // 调试模式下且没有JWT令牌，返回模拟数据
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 返回模拟的标签留言列表数据");
+            const tagMessages = MOCK_DATA.messages.filter(m => m.tag === tag);
+            return getMockResponse(tagMessages);
+        }
+        return api.get(`/api/message/get-messages-by-tag/${tag}`);
     }
 };
