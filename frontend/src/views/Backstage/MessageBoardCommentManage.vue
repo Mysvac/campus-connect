@@ -152,6 +152,8 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: "CommentManagement",
@@ -202,34 +204,40 @@ export default {
       return this.filteredCommentData.slice(start, end);
     },
   },
-  methods: {
-    // 获取评论列表
+  methods: {    // 获取评论列表
     fetchComments() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/comments').then(response => {
-      //   this.commentData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取评论列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取评论列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.commentData = [
-          { cid: 1, mid: 1, uid: 201, content: '这个资料太有用了，谢谢分享！', praise: 5, time: Date.now() - 36000000, isEditing: false },
-          { cid: 2, mid: 1, uid: 202, content: '请问能发一份到我邮箱吗？', praise: 2, time: Date.now() - 46800000, isEditing: false },
-          { cid: 3, mid: 2, uid: 203, content: '我很期待这次活动，一定会去的！', praise: 7, time: Date.now() - 57600000, isEditing: false },
-          { cid: 4, mid: 2, uid: 204, content: '请问需要提前报名吗？', praise: 3, time: Date.now() - 68400000, isEditing: false },
-          { cid: 5, mid: 3, uid: 205, content: '我好像在食堂看到了一张学生卡，等我确认一下是不是你的。', praise: 6, time: Date.now() - 79200000, isEditing: false },
-          { cid: 6, mid: 4, uid: 206, content: '自行车还在吗？可以私聊一下价格吗？', praise: 1, time: Date.now() - 90000000, isEditing: false },
-          { cid: 7, mid: 5, uid: 207, content: '我想加入学习小组，请问有具体的时间安排吗？', praise: 4, time: Date.now() - 100800000, isEditing: false },
-          { cid: 8, mid: 5, uid: 208, content: '我是Python老手，可以来帮忙指导大家。', praise: 9, time: Date.now() - 111600000, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+        // 使用adminApi获取所有留言评论
+      let apiCall;
+      
+      if (this.midFilter) {
+        apiCall = adminApi.getMessageCommentsByMid(this.midFilter);
+      } else {
+        apiCall = adminApi.getAllMessageComments();
+      }
+      
+      apiCall
+        .then(response => {
+          console.log('获取留言评论数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.commentData = response.data.data.map(item => ({...item, isEditing: false}));
+          } else {
+            // 处理错误响应
+            console.error('获取留言评论数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取留言评论列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.commentData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取留言评论列表接口调用出错:', error);
+          ElMessage.error('获取留言评论列表失败，请稍后重试');
+          this.commentData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -246,35 +254,32 @@ export default {
       if (this.$refs.commentForm) {
         this.$refs.commentForm.resetFields();
       }
-    },
-
-    // 提交新评论
+    },    // 提交新评论
     submitNewComment() {
       if (this.$refs.commentForm) {
         this.$refs.commentForm.validate(valid => {
           if (valid) {
             this.newComment.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/comments', this.newComment).then(response => {
-            //   ElMessage.success('添加评论成功');
-            //   this.fetchComments();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加评论失败:', error);
-            //   ElMessage.error('添加评论失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.commentData.map(item => item.cid), 0);
-            const newComment = {
-              ...this.newComment,
-              cid: maxId + 1,
-              isEditing: false
-            };
-            this.commentData.unshift(newComment);
-            ElMessage.success('添加评论成功');
-            this.dialogVisible = false;
+            this.isLoading = true;
+            
+            // 使用adminApi创建留言评论
+            adminApi.createMessageComment(this.newComment)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('添加评论成功');
+                  this.fetchComments(); // 重新获取评论列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('添加评论失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('添加评论失败:', error);
+                ElMessage.error('添加评论失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -292,25 +297,28 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/comments/${row.cid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新评论成功');
-      // }).catch(error => {
-      //   console.error('更新评论失败:', error);
-      //   ElMessage.error('更新评论失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新评论成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新留言评论
+      adminApi.updateMessageComment(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新评论成功');
+          } else {
+            ElMessage.error('更新评论失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新评论失败:', error);
+          ElMessage.error('更新评论失败，请稍后重试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
       this.$confirm('此操作将永久删除该评论, 是否继续?', '提示', {
@@ -318,24 +326,27 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/comments/${row.cid}`).then(response => {
-        //   const index = this.commentData.findIndex(item => item.cid === row.cid);
-        //   if (index !== -1) {
-        //     this.commentData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除评论成功');
-        // }).catch(error => {
-        //   console.error('删除评论失败:', error);
-        //   ElMessage.error('删除评论失败');
-        // });
-
-        // 模拟删除
-        const index = this.commentData.findIndex(item => item.cid === row.cid);
-        if (index !== -1) {
-          this.commentData.splice(index, 1);
-        }
-        ElMessage.success('删除评论成功');
+        this.isLoading = true;
+        // 使用adminApi删除留言评论
+        adminApi.deleteMessageComment(row.cid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              const index = this.commentData.findIndex(item => item.cid === row.cid);
+              if (index !== -1) {
+                this.commentData.splice(index, 1);
+              }
+              ElMessage.success('删除评论成功');
+            } else {
+              ElMessage.error('删除评论失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除评论失败:', error);
+            ElMessage.error('删除评论失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });

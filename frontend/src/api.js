@@ -4,6 +4,7 @@ import goodApi from './api/goodApi';
 import scoreApi from './api/scoreApi';
 import taskApi from './api/taskApi';
 import userApiModule from './api/userApi';
+import adminApiModule from './api/adminApi';
 import { DEBUG_MODE } from './api/index';
 
 // 导出调试模式标志
@@ -18,3 +19,4 @@ export const transactionsApi = goodApi;
 export const ratingsApi = scoreApi;
 export const tasksApi = taskApi;
 export const userApi = userApiModule;
+export const adminApi = adminApiModule;

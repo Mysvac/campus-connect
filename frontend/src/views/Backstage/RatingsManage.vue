@@ -150,10 +150,11 @@
 
 <script>
 import { ElMessage } from 'element-plus';
-import { getImageUrl } from '@/utils/imageUtils';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
-  name: "RatingsManage",
+  name: "RatingsManagement",
   data() {
     return {
       selectedTag: "",
@@ -169,10 +170,9 @@ export default {
         score: 0
       },
       currentPage: 1,
-      pageSize: 7,
-      tagOptions: [],
+      pageSize: 7,      tagOptions: [],
       // 上传相关配置
-      uploadUrl: '/api/upload', // 替换为实际的上传API地址
+      uploadUrl: baseURL + 'api/upload', // 使用正确的baseURL
       uploadHeaders: {
         // 根据需要添加请求头，如token
         // 'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -214,29 +214,35 @@ export default {
       return this.filteredRatingData.slice(start, end);
     },
   },
-  methods: {
-    // 获取评分列表
+  methods: {    // 获取评分列表
     fetchRatings() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/ratings').then(response => {
-      //   this.ratingData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取评分列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取评分列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.ratingData = [
-          { sid: 1, tag: '课程互助', num: 25, goal: '高数', intro: '高数互助评分', image: 'https://example.com/img1.jpg', score: 4.5, isEditing: false },
-          { sid: 2, tag: '校园活动', num: 100, goal: '歌手大赛', intro: '歌手大赛评分', image: 'https://example.com/img2.jpg', score: 4.8, isEditing: false },
-          { sid: 3, tag: '失物招领', num: 10, goal: '学生卡', intro: '失物招领评分', image: 'https://example.com/img3.jpg', score: 4.2, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+      // 使用adminApi获取所有评分
+      adminApi.getAllRatings()
+        .then(response => {
+          console.log('获取评分数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.ratingData = response.data.data.map(item => ({...item, isEditing: false}));
+            
+            // 构建标签选项
+            this.buildTagOptions();
+          } else {
+            // 处理错误响应
+            console.error('获取评分数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取评分列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.ratingData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取评分列表接口调用出错:', error);
+          ElMessage.error('获取评分列表失败，请稍后重试');
+          this.ratingData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -253,33 +259,30 @@ export default {
       if (this.$refs.ratingForm) {
         this.$refs.ratingForm.resetFields();
       }
-    },
-
-    // 提交新评分
+    },    // 提交新评分
     submitNewRating() {
       if (this.$refs.ratingForm) {
         this.$refs.ratingForm.validate(valid => {
           if (valid) {
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/ratings', this.newRating).then(response => {
-            //   ElMessage.success('添加评分成功');
-            //   this.fetchRatings();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加评分失败:', error);
-            //   ElMessage.error('添加评分失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.ratingData.map(item => item.sid), 0);
-            const newRating = {
-              ...this.newRating,
-              sid: maxId + 1,
-              isEditing: false
-            };
-            this.ratingData.unshift(newRating);
-            ElMessage.success('添加评分成功');
-            this.dialogVisible = false;
+            this.isLoading = true;
+            // 使用adminApi创建评分
+            adminApi.createRating(this.newRating)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('添加评分成功');
+                  this.fetchRatings(); // 重新获取评分列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('添加评分失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('添加评分失败:', error);
+                ElMessage.error('添加评分失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -297,50 +300,55 @@ export default {
       row.isEditing = true;
       // 保存原始数据，用于取消编辑时恢复
       row._originalData = JSON.parse(JSON.stringify(row));
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/ratings/${row.sid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新评分成功');
-      // }).catch(error => {
-      //   console.error('更新评分失败:', error);
-      //   ElMessage.error('更新评分失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      delete row._originalData; // 删除原始数据
-      ElMessage.success('更新评分成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新评分
+      adminApi.updateRating(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新评分成功');
+          } else {
+            ElMessage.error('更新评分失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新评分失败:', error);
+          ElMessage.error('更新评分失败，请稍后重试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       this.$confirm('此操作将永久删除该评分, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/ratings/${row.sid}`).then(response => {
-        //   const index = this.ratingData.findIndex(item => item.sid === row.sid);
-        //   if (index !== -1) {
-        //     this.ratingData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除评分成功');
-        // }).catch(error => {
-        //   console.error('删除评分失败:', error);
-        //   ElMessage.error('删除评分失败');
-        // });
-
-        // 模拟删除
-        const index = this.ratingData.findIndex(item => item.sid === row.sid);
-        if (index !== -1) {
-          this.ratingData.splice(index, 1);
-        }
-        ElMessage.success('删除评分成功');
+        this.isLoading = true;
+        // 使用adminApi删除评分
+        adminApi.deleteRating(row.sid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              const index = this.ratingData.findIndex(item => item.sid === row.sid);
+              if (index !== -1) {
+                this.ratingData.splice(index, 1);
+              }
+              ElMessage.success('删除评分成功');
+            } else {
+              ElMessage.error('删除评分失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除评分失败:', error);
+            ElMessage.error('删除评分失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
@@ -355,9 +363,7 @@ export default {
     // 处理当前页变化
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-
-    // 根据标签获取对应的类型样式
+    },    // 根据标签获取对应的类型样式
     getTagType(tag) {
       const tagMap = {};
       this.tagOptions.forEach((item, index) => {
@@ -366,28 +372,45 @@ export default {
       });
       return tagMap[tag] || '';
     },
-
-    // 获取标签列表
+    
+    // 获取图片完整URL
+    getImageUrl(imagePath) {
+      if (!imagePath) return '';
+      if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+        return imagePath;
+      }
+      return baseURL + imagePath;
+    },    // 获取标签列表
     fetchTags() {
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tags').then(response => {
-      //   this.tagOptions = response.data;
-      // }).catch(error => {
-      //   console.error('获取标签列表失败:', error);
-      //   ElMessage.error('获取标签列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.tagOptions = [
-          { value: '课程互助', label: '课程互助' },
-          { value: '校园活动', label: '校园活动' },
-          { value: '失物招领', label: '失物招领' },
-          { value: '二手交易', label: '二手交易' },
-          { value: '学习讨论', label: '学习讨论' },
-          { value: '校园问题', label: '校园问题' }
-        ];
-      }, 300);
+      // 从scoreApi获取评分标签
+      adminApi.getRatingTags()
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            const tagsData = response.data.data;
+            this.tagOptions = tagsData.map(tag => ({ value: tag, label: tag }));
+          } else {
+            console.error('获取标签列表失败:', response.data?.msg);
+            // 设置默认标签
+            this.setDefaultTags();
+          }
+        })
+        .catch(error => {
+          console.error('获取标签列表失败:', error);
+          // 使用默认标签
+          this.setDefaultTags();
+        });
+    },
+    
+    // 设置默认标签
+    setDefaultTags() {
+      this.tagOptions = [
+        { value: '课程互助', label: '课程互助' },
+        { value: '校园活动', label: '校园活动' },
+        { value: '失物招领', label: '失物招领' },
+        { value: '二手交易', label: '二手交易' },
+        { value: '学习讨论', label: '学习讨论' },
+        { value: '校园问题', label: '校园问题' }
+      ];
     },
 
     // 图片上传成功处理
@@ -411,9 +434,7 @@ export default {
         }
       }
       ElMessage.success('图片上传成功');
-    },
-
-    // 图片上传前验证
+    },    // 图片上传前验证
     beforeImageUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
       const isLt2M = file.size / 1024 / 1024 < 2;
@@ -427,6 +448,14 @@ export default {
         return false;
       }
       return isJPG && isLt2M;
+    },
+    
+    // 构建标签选项
+    buildTagOptions() {
+      const uniqueTags = [...new Set(this.ratingData.map(item => item.tag))];
+      this.tagOptions = uniqueTags
+        .filter(tag => tag) // 过滤掉空标签
+        .map(tag => ({ value: tag, label: tag }));
     },
   },
   created() {

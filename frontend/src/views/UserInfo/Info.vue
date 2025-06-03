@@ -521,9 +521,7 @@ onMounted(() => {
                   {{ option.label }}
                 </option>
               </select>
-            </div>
-
-            <!-- 手机号 -->
+            </div>            <!-- 手机号 -->
             <div class="info-item">
               <label class="info-label">手机号 <span class="required">*</span></label>
               <div v-if="!editMode" class="info-value">
@@ -533,12 +531,13 @@ onMounted(() => {
                   v-else
                   v-model="userForm.phone"
                   type="tel"
-                  class="info-input"
-                  placeholder="请输入11位手机号"
+                  class="info-input readonly-input"
+                  placeholder="手机号不可修改"
                   maxlength="11"
-                  required
+                  readonly
+                  disabled
               />
-            </div>            <!-- 昵称 -->
+            </div><!-- 昵称 -->
             <div class="info-item">
               <label class="info-label">昵称</label>
               <div v-if="!editMode" class="info-value">
@@ -958,6 +957,18 @@ onMounted(() => {
   outline: none;
   border-color: #8B0000;
   box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.readonly-input {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #dee2e6 !important;
+}
+
+.readonly-input:focus {
+  border-color: #dee2e6 !important;
+  box-shadow: none !important;
 }
 
 .password-section {

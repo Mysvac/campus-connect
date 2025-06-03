@@ -181,6 +181,8 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: "UserManage",
@@ -215,7 +217,7 @@ export default {
         { value: 2, label: '女' }
       ],
       // 上传相关配置
-      uploadUrl: '/api/upload', // 替换为实际的上传API地址
+      uploadUrl: baseURL + 'api/image/upload', // 使用正确的上传API地址
       uploadHeaders: {
         // 根据需要添加请求头，如token
         // 'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -226,7 +228,7 @@ export default {
         ],
         phone: [
           { required: true, message: '请输入手机号', trigger: 'blur' },
-          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+          { pattern: /^\d{11}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
@@ -264,83 +266,40 @@ export default {
       return this.filteredUsersData.slice(start, end);
     },
   },
-  methods: {
-    // 获取用户列表
+  methods: {    // 获取用户列表
     fetchUsers() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/users').then(response => {
-      //   this.usersData = response.data.map(item => {
-      //     return {
-      //       ...item,
-      //       isEditing: false
-      //     };
-      //   });
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取用户列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取用户列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.usersData = [
-          {
-            uid: 1001,
-            permission: 1,
-            phone: '13812345678',
-            password: 'e10adc3949ba59abbe56e057f20f883e', // md5加密的123456
-            wallet: 10000,
-            nickname: '校园小助手',
-            gender: 1,
-            email: 'helper@campus.com',
-            profile: '我是校园互助平台的小助手',
-            image: 'https://example.com/avatar1.jpg',
-            isEditing: false
-          },
-          {
-            uid: 1002,
-            permission: 2,
-            phone: '13987654321',
-            password: 'e10adc3949ba59abbe56e057f20f883e',
-            wallet: 50000,
-            nickname: '二手书店',
-            gender: 0,
-            email: 'bookstore@campus.com',
-            profile: '专注二手教材交易',
-            image: 'https://example.com/avatar2.jpg',
-            isEditing: false
-          },
-          {
-            uid: 1003,
-            permission: 3,
-            phone: '13700001111',
-            password: 'e10adc3949ba59abbe56e057f20f883e',
-            wallet: 0,
-            nickname: '系统管理员',
-            gender: 1,
-            email: 'admin@campus.com',
-            profile: '平台系统管理员',
-            image: 'https://example.com/avatar3.jpg',
-            isEditing: false
-          },
-          {
-            uid: 1004,
-            permission: 0,
-            phone: '13900001234',
-            password: 'e10adc3949ba59abbe56e057f20f883e',
-            wallet: 5000,
-            nickname: '已封禁用户',
-            gender: 2,
-            email: 'banned@campus.com',
-            profile: '违规用户，已被封禁',
-            image: 'https://example.com/avatar4.jpg',
-            isEditing: false
+      // 使用adminApi获取所有用户
+      adminApi.getAllUsers()
+        .then(response => {
+          console.log('获取用户数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应，添加isEditing属性
+            this.usersData = response.data.data.map(item => {
+              // 对于密码，设置为占位符，避免显示真实密码
+              return {
+                ...item,
+                password: '••••••••',
+                isEditing: false
+              };
+            });
+          } else {
+            // 处理错误响应
+            console.error('获取用户数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取用户列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            // 使用空数组
+            this.usersData = [];
           }
-        ];
-        this.isLoading = false;
-      }, 500);
+        })
+        .catch(error => {
+          console.error('获取用户列表接口调用出错:', error);
+          ElMessage.error('获取用户列表失败，请稍后重试');
+          this.usersData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -361,33 +320,31 @@ export default {
       if (this.$refs.userForm) {
         this.$refs.userForm.resetFields();
       }
-    },
-
-    // 提交新用户
+    },    // 提交新用户
     submitNewUser() {
       if (this.$refs.userForm) {
         this.$refs.userForm.validate(valid => {
           if (valid) {
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/users', this.newUser).then(response => {
-            //   ElMessage.success('添加用户成功');
-            //   this.fetchUsers();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加用户失败:', error);
-            //   ElMessage.error('添加用户失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.usersData.map(item => item.uid), 0);
-            const newUser = {
-              ...this.newUser,
-              uid: maxId + 1,
-              isEditing: false
-            };
-            this.usersData.unshift(newUser);
-            ElMessage.success('添加用户成功');
-            this.dialogVisible = false;
+            this.isLoading = true;
+            // 使用adminApi创建用户
+            adminApi.createUser(this.newUser)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('添加用户成功');
+                  this.fetchUsers(); // 重新加载用户列表
+                  this.dialogVisible = false;
+                } else {
+                  // 处理错误响应
+                  ElMessage.error('添加用户失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('添加用户失败:', error);
+                ElMessage.error('添加用户失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -405,50 +362,66 @@ export default {
       row.isEditing = true;
       // 保存原始数据，用于取消编辑时恢复
       row._originalData = JSON.parse(JSON.stringify(row));
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/users/${row.uid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新用户成功');
-      // }).catch(error => {
-      //   console.error('更新用户失败:', error);
-      //   ElMessage.error('更新用户失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      delete row._originalData; // 删除原始数据
-      ElMessage.success('更新用户成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新用户
+      adminApi.updateUser(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新用户成功');
+          } else {
+            // 如果更新失败，回滚到原始数据
+            if (row._originalData) {
+              Object.assign(row, row._originalData);
+            }
+            ElMessage.error('更新用户失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新用户失败:', error);
+          // 如果更新失败，回滚到原始数据
+          if (row._originalData) {
+            Object.assign(row, row._originalData);
+          }
+          ElMessage.error('更新用户失败，请稍后重试');
+        })
+        .finally(() => {
+          row.isEditing = false;
+          delete row._originalData;
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/users/${row.uid}`).then(response => {
-        //   const index = this.usersData.findIndex(item => item.uid === row.uid);
-        //   if (index !== -1) {
-        //     this.usersData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除用户成功');
-        // }).catch(error => {
-        //   console.error('删除用户失败:', error);
-        //   ElMessage.error('删除用户失败');
-        // });
-
-        // 模拟删除
-        const index = this.usersData.findIndex(item => item.uid === row.uid);
-        if (index !== -1) {
-          this.usersData.splice(index, 1);
-        }
-        ElMessage.success('删除用户成功');
+        this.isLoading = true;
+        // 使用adminApi删除用户
+        adminApi.deleteUser(row.uid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              // 从列表中移除该用户
+              const index = this.usersData.findIndex(item => item.uid === row.uid);
+              if (index !== -1) {
+                this.usersData.splice(index, 1);
+              }
+              ElMessage.success('删除用户成功');
+            } else {
+              ElMessage.error('删除用户失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除用户失败:', error);
+            ElMessage.error('删除用户失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });

@@ -50,6 +50,9 @@
 
 <script>
 import { ref, onMounted } from 'vue'
+import { adminApi } from '@/api'
+import { baseURL } from '@/api/index.js'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'UserProfile',
@@ -58,25 +61,39 @@ export default {
     const loading = ref(true)
     const error = ref(null)
 
-    // 模拟获取用户数据
+    // 获取当前登录的管理员数据
     onMounted(() => {
-      // 实际应用中可替换为API调用
-      setTimeout(() => {
-        // 模拟数据
-        userInfo.value = {
-          uid: 10001,
-          permission: 3,
-          phone: '13800138000',
-          password: '******',
-          wallet: 10000,
-          nickname: '管理员',
-          gender: 1,
-          email: 'admin@example.com',
-          profile: '热爱工作，积极向上。',
-          image: ''
-        }
+      // 从localStorage获取当前用户ID
+      const currentUserId = localStorage.getItem('userId')
+      
+      if (!currentUserId) {
+        error.value = '无法获取当前用户信息，请重新登录'
         loading.value = false
-      }, 1000)
+        return
+      }
+      
+      // 调用API获取用户信息
+      adminApi.getUserById(currentUserId)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            userInfo.value = response.data.data
+            
+            // 处理图片URL
+            if (userInfo.value.image && !userInfo.value.image.startsWith('http') && !userInfo.value.image.startsWith('data:')) {
+              userInfo.value.image = baseURL + userInfo.value.image
+            }
+            
+            loading.value = false
+          } else {
+            error.value = '获取用户信息失败：' + (response.data?.msg || '未知错误')
+            loading.value = false
+          }
+        })
+        .catch(err => {
+          console.error('获取用户信息出错:', err)
+          error.value = '获取用户信息失败，请稍后重试'
+          loading.value = false
+        })
     })
 
     // 获取权限组文本

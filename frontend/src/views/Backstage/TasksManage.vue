@@ -2,11 +2,10 @@
   <div>
     <!-- 筛选条件和增加按钮容器 -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <!-- 筛选条件 -->
-      <div style="display: flex; gap: 10px; align-items: center;">
+      <!-- 筛选条件 -->      <div style="display: flex; gap: 10px; align-items: center;">
         <el-select v-model="selectedTag" placeholder="按标签筛选" clearable size="small">
           <el-option label="全部" value=""></el-option>
-          <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
+          <el-option v-for="tag in tagOptionsList" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
         </el-select>
         <el-select v-model="selectedStatus" placeholder="按状态筛选" clearable size="small">
           <el-option label="全部" value=""></el-option>
@@ -222,11 +221,10 @@
                 :value="status.value">
             </el-option>
           </el-select>
-        </el-form-item>
-        <el-form-item label="标签" prop="tag">
+        </el-form-item>        <el-form-item label="标签" prop="tag">
           <el-select v-model="newTask.tag" placeholder="请选择标签">
             <el-option
-                v-for="tag in tagOptions"
+                v-for="tag in tagOptionsList"
                 :key="tag.value"
                 :label="tag.label"
                 :value="tag.value">
@@ -246,10 +244,11 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
-  name: "TaskManagement",
-  data() {
+  name: "TaskManagement",  data() {
     return {
       selectedTag: "",
       selectedStatus: "",
@@ -267,7 +266,9 @@ export default {
         time: null
       },
       currentPage: 1,
-      pageSize: 7,      statusOptions: [
+      pageSize: 7,
+      tagOptionsList: [], // 用于存储从API获取的标签列表
+      statusOptions: [
         { value: 0, label: '待接取' },
         { value: 1, label: '进行中' },
         { value: 2, label: '终止' },
@@ -324,32 +325,44 @@ export default {
       const end = start + this.pageSize;
       return this.filteredTaskData.slice(start, end);
     },
+    tagOptions() {
+      // 从任务数据中提取唯一的标签值
+      const uniqueTags = [...new Set(this.taskData.map(item => item.tag))];
+      return uniqueTags.map(tag => ({ value: tag, label: tag }));
+    }
   },
-  methods: {
-    // 获取任务列表
+  methods: {    // 获取任务列表
     fetchTasks() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tasks').then(response => {
-      //   this.taskData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取任务列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取任务列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.taskData = [
-          { tid: 1, uid: 101, name: '快递代取', money: 10, contact: '微信: wx123456', details: '帮我去学校快递站取一个快递，送到宿舍楼下即可。', status: 0, tag: '校园跑腿', time: Date.now() - 86400000, isEditing: false },
-          { tid: 2, uid: 102, name: '数学辅导', money: 80, contact: 'QQ: 987654321', details: '需要一名数学好的同学辅导高数，两小时，地点图书馆。', status: 1, tag: '学习辅导', time: Date.now() - 172800000, isEditing: false },
-          { tid: 3, uid: 103, name: '海报设计', money: 50, contact: '电话: 13812345678', details: '为社团活动设计一张海报，要求简洁大方，有创意。', status: 2, tag: '设计服务', time: Date.now() - 259200000, isEditing: false },
-          { tid: 4, uid: 104, name: '宿舍打扫', money: 30, contact: '微信: clean888', details: '帮忙打扫宿舍，包括拖地，整理物品等，约1小时工作量。', status: 3, tag: '生活服务', time: Date.now() - 345600000, isEditing: false },
-          { tid: 5, uid: 105, name: '资料整理', money: 45, contact: '邮箱: student@edu.cn', details: '帮忙整理一些学习资料，需要用Word排版，大约20页左右。', status: 0, tag: '文档处理', time: Date.now() - 432000000, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+      // 使用adminApi获取所有任务
+      adminApi.getAllTasks()
+        .then(response => {
+          console.log('获取任务数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.taskData = response.data.data.map(item => ({
+              ...item,
+              isEditing: false
+            }));
+            
+            // 构建标签选项
+            this.buildTagOptions();
+          } else {
+            // 处理错误响应
+            console.error('获取任务数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取任务列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.taskData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取任务列表接口调用出错:', error);
+          ElMessage.error('获取任务列表失败，请稍后重试');
+          this.taskData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -369,35 +382,32 @@ export default {
       if (this.$refs.taskForm) {
         this.$refs.taskForm.resetFields();
       }
-    },
-
-    // 提交新任务
+    },    // 提交新任务
     submitNewTask() {
       if (this.$refs.taskForm) {
         this.$refs.taskForm.validate(valid => {
           if (valid) {
             this.newTask.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/tasks', this.newTask).then(response => {
-            //   ElMessage.success('发布任务成功');
-            //   this.fetchTasks();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('发布任务失败:', error);
-            //   ElMessage.error('发布任务失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.taskData.map(item => item.tid), 0);
-            const newTask = {
-              ...this.newTask,
-              tid: maxId + 1,
-              isEditing: false
-            };
-            this.taskData.unshift(newTask);
-            ElMessage.success('发布任务成功');
-            this.dialogVisible = false;
+            this.isLoading = true;
+            
+            // 使用api添加任务
+            adminApi.createTask(this.newTask)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('发布任务成功');
+                  this.fetchTasks(); // 重新获取任务列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('发布任务失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('发布任务失败:', error);
+                ElMessage.error('发布任务失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -415,25 +425,28 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/tasks/${row.tid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新任务成功');
-      // }).catch(error => {
-      //   console.error('更新任务失败:', error);
-      //   ElMessage.error('更新任务失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新任务成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新任务
+      adminApi.updateTask(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            ElMessage.success('更新任务成功');
+          } else {
+            ElMessage.error('更新任务失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新任务失败:', error);
+          ElMessage.error('更新任务失败，请稍后重试');
+        })
+        .finally(() => {
+          row.isEditing = false;
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
       this.$confirm('此操作将永久删除该任务, 是否继续?', '提示', {
@@ -441,24 +454,28 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/tasks/${row.tid}`).then(response => {
-        //   const index = this.taskData.findIndex(item => item.tid === row.tid);
-        //   if (index !== -1) {
-        //     this.taskData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除任务成功');
-        // }).catch(error => {
-        //   console.error('删除任务失败:', error);
-        //   ElMessage.error('删除任务失败');
-        // });
-
-        // 模拟删除
-        const index = this.taskData.findIndex(item => item.tid === row.tid);
-        if (index !== -1) {
-          this.taskData.splice(index, 1);
-        }
-        ElMessage.success('删除任务成功');
+        this.isLoading = true;
+        // 使用adminApi删除任务
+        adminApi.deleteTask(row.tid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              // 从列表中删除该任务
+              const index = this.taskData.findIndex(item => item.tid === row.tid);
+              if (index !== -1) {
+                this.taskData.splice(index, 1);
+              }
+              ElMessage.success('删除任务成功');
+            } else {
+              ElMessage.error('删除任务失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除任务失败:', error);
+            ElMessage.error('删除任务失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
@@ -473,6 +490,24 @@ export default {
     // 处理当前页变化
     handleCurrentChange(page) {
       this.currentPage = page;
+    },
+
+    // 构建标签选项
+    buildTagOptions() {
+      const uniqueTags = [...new Set(this.taskData.map(item => item.tag))];
+      this.tagOptionsList = uniqueTags.map(tag => ({ value: tag, label: tag }));
+    },
+    
+    // 根据权限值获取权限名称
+    getPermissionNameByValue(value) {
+      const permissionMap = {
+        1: '查看',
+        2: '编辑',
+        3: '删除',
+        4: '发布',
+        5: '管理'
+      };
+      return permissionMap[value] || '未知权限';
     },
 
     // 格式化时间戳

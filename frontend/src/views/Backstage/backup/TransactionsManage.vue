@@ -3,15 +3,10 @@
     <!-- 筛选条件和增加按钮容器 -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <!-- 筛选条件 -->
-      <div style="display: flex; gap: 10px; align-items: center;">        <el-select v-model="selectedTag" placeholder="按标签筛选" clearable size="small">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <el-select v-model="selectedTag" placeholder="按标签筛选" clearable size="small">
           <el-option label="全部" value=""></el-option>
-          <el-option 
-            v-for="tag in tagOptions" 
-            :key="tag.value" 
-            :label="tag.label" 
-            :value="tag.value"
-            v-if="tag && tag.value !== undefined && tag.label !== undefined"
-          ></el-option>
+          <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
         </el-select>
       </div>
       <!-- 增加按钮 -->
@@ -44,7 +39,8 @@
             <span v-else>{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="图片" prop="image" width="100">          <template #default="{ row }">
+        <el-table-column label="图片" prop="image" width="100">
+          <template #default="{ row }">
             <div v-if="row.isEditing">
               <el-upload
                   class="upload-demo"
@@ -57,25 +53,20 @@
                 <el-button size="small" type="primary">上传图片</el-button>
               </el-upload>
               <div v-if="row.image" style="margin-top: 8px;">
-                <img :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+                <img :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
                 <el-button type="text" @click="row.image = ''" style="margin-left: 5px;">删除</el-button>
               </div>
             </div>
             <div v-else>
-              <img v-if="row.image" :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+              <img v-if="row.image" :src="row.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
               <span v-else>无</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="标签" prop="tag" width="100">
-          <template #default="{ row }">            <el-select v-if="row.isEditing" v-model="row.tag" size="small" placeholder="请选择标签">
-              <el-option 
-                v-for="tag in tagOptions" 
-                :key="tag.value" 
-                :label="tag.label" 
-                :value="tag.value"
-                v-if="tag && tag.value !== undefined && tag.label !== undefined"
-              ></el-option>
+          <template #default="{ row }">
+            <el-select v-if="row.isEditing" v-model="row.tag" size="small" placeholder="请选择标签">
+              <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
             </el-select>
             <el-tag v-else :type="getTagType(row.tag)" size="small">{{ getTagLabel(row.tag) }}</el-tag>
           </template>
@@ -158,19 +149,15 @@
               :before-upload="beforeImageUpload"
           >
             <el-button size="small" type="primary">上传图片</el-button>
-          </el-upload>          <div v-if="newGoods.image" style="margin-top: 8px;">
-            <img :src="getImageUrl(newGoods.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
+          </el-upload>
+          <div v-if="newGoods.image" style="margin-top: 8px;">
+            <img :src="newGoods.image" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
             <el-button type="text" @click="newGoods.image = ''" style="margin-left: 5px;">删除</el-button>
           </div>
         </el-form-item>
-        <el-form-item label="标签" prop="tag">          <el-select v-model="newGoods.tag" placeholder="请选择标签">
-            <el-option 
-              v-for="tag in tagOptions" 
-              :key="tag.value" 
-              :label="tag.label" 
-              :value="tag.value"
-              v-if="tag && tag.value !== undefined && tag.label !== undefined"
-            ></el-option>
+        <el-form-item label="标签" prop="tag">
+          <el-select v-model="newGoods.tag" placeholder="请选择标签">
+            <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="简介" prop="intro">
@@ -229,8 +216,9 @@ export default {
       },
       currentPage: 1,
       pageSize: 7,
-      tagOptions: [],      // 上传相关配置
-      uploadUrl: `${baseURL}/api/upload`, // 使用baseURL确保路径正确
+      tagOptions: [],
+      // 上传相关配置
+      uploadUrl: '/api/upload', // 替换为实际的上传API地址
       uploadHeaders: {
         // 根据需要添加请求头，如token
         // 'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -296,6 +284,9 @@ export default {
                 timeDate: new Date(Number(item.time))
               };
             });
+            
+            // 构建标签选项
+            this.buildTagOptions();
           } else {
             // 处理错误响应
             console.error('获取商品数据失败:', response.data?.msg || '未知错误');
@@ -313,7 +304,7 @@ export default {
           this.isLoading = false;
         });
     },
-    
+    },
 
     // 显示添加对话框
     showAddDialog() {
@@ -334,53 +325,33 @@ export default {
       if (this.$refs.goodsForm) {
         this.$refs.goodsForm.resetFields();
       }
-    },    // 提交新商品
+    },
+
+    // 提交新商品
     submitNewGoods() {
       if (this.$refs.goodsForm) {
         this.$refs.goodsForm.validate(valid => {
           if (valid) {
-            this.isLoading = true;
+            // 这里替换为实际的API调用
+            // this.$axios.post('/api/goods', this.newGoods).then(response => {
+            //   ElMessage.success('添加商品成功');
+            //   this.fetchGoods();
+            //   this.dialogVisible = false;
+            // }).catch(error => {
+            //   console.error('添加商品失败:', error);
+            //   ElMessage.error('添加商品失败');
+            // });
 
-            // 确保图片URL格式正确
-            let imageUrl = this.newGoods.image;
-            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:') && !imageUrl.startsWith('/')) {
-              imageUrl = '/' + imageUrl;
-            }
-
-            // 准备要提交的数据
-            const productData = {
-              uid: this.newGoods.uid,
-              price: this.newGoods.price,
-              name: this.newGoods.name,
-              image: imageUrl,
-              tag: this.newGoods.tag,
-              intro: this.newGoods.intro,
-              quantity: this.newGoods.quantity,
-              sales: this.newGoods.sales,
-              time: this.newGoods.time
+            // 模拟添加
+            const maxId = Math.max(...this.goodsData.map(item => item.gid), 0);
+            const newGoods = {
+              ...this.newGoods,
+              gid: maxId + 1,
+              isEditing: false
             };
-
-            // 使用adminApi创建商品
-            adminApi.createProduct(productData)
-              .then(response => {
-                if (response.data && response.data.code === 1) {
-                  // 处理成功的响应
-                  ElMessage.success('添加商品成功');
-                  this.fetchGoods(); // 重新加载商品列表
-                  this.dialogVisible = false;
-                } else {
-                  // 处理错误响应
-                  console.error('添加商品失败:', response.data?.msg || '未知错误');
-                  ElMessage.error('添加商品失败: ' + (response.data?.msg || '未知错误'));
-                }
-              })
-              .catch(error => {
-                console.error('添加商品接口调用出错:', error);
-                ElMessage.error('添加商品失败，请稍后重试');
-              })
-              .finally(() => {
-                this.isLoading = false;
-              });
+            this.goodsData.unshift(newGoods);
+            ElMessage.success('添加商品成功');
+            this.dialogVisible = false;
           } else {
             return false;
           }
@@ -400,94 +371,50 @@ export default {
       row.timeDate = new Date(Number(row.time));
       // 保存原始数据，用于取消编辑时恢复
       row._originalData = JSON.parse(JSON.stringify(row));
-    },    // 保存行
+    },
+
+    // 保存行
     saveRow(row) {
-      this.isLoading = true;
+      // 这里替换为实际的API调用
+      // this.$axios.put(`/api/goods/${row.gid}`, row).then(response => {
+      //   row.isEditing = false;
+      //   ElMessage.success('更新商品成功');
+      // }).catch(error => {
+      //   console.error('更新商品失败:', error);
+      //   ElMessage.error('更新商品失败');
+      // });
 
-      // 确保图片URL格式正确
-      let imageUrl = row.image;
-      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:') && !imageUrl.startsWith('/')) {
-        imageUrl = '/' + imageUrl;
-      }
+      // 模拟保存
+      row.isEditing = false;
+      delete row._originalData; // 删除原始数据
+      ElMessage.success('更新商品成功');
+    },
 
-      // 准备要提交的数据
-      const productData = {
-        gid: row.gid,
-        uid: row.uid,
-        price: row.price,
-        name: row.name,
-        image: imageUrl,
-        tag: row.tag,
-        intro: row.intro,
-        quantity: row.quantity,
-        sales: row.sales,
-        time: row.time
-      };
-
-      // 使用adminApi更新商品
-      adminApi.updateProduct(productData)
-        .then(response => {
-          if (response.data && response.data.code === 1) {
-            // 处理成功的响应
-            row.isEditing = false;
-            delete row._originalData; // 删除原始数据
-            ElMessage.success('更新商品成功');
-          } else {
-            // 处理错误响应
-            console.error('更新商品失败:', response.data?.msg || '未知错误');
-            ElMessage.error('更新商品失败: ' + (response.data?.msg || '未知错误'));
-            
-            // 如果有原始数据，则还原
-            if (row._originalData) {
-              Object.assign(row, row._originalData);
-            }
-          }
-        })
-        .catch(error => {
-          console.error('更新商品接口调用出错:', error);
-          ElMessage.error('更新商品失败，请稍后重试');
-          
-          // 如果有原始数据，则还原
-          if (row._originalData) {
-            Object.assign(row, row._originalData);
-          }
-        })
-        .finally(() => {
-          this.isLoading = false;
-          row.isEditing = false;
-        });
-    },    // 删除行
+    // 删除行
     deleteRow(row) {
       this.$confirm('此操作将永久删除该商品, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.isLoading = true;
-        
-        // 使用adminApi删除商品
-        adminApi.deleteProduct(row.gid)
-          .then(response => {
-            if (response.data && response.data.code === 1) {
-              // 处理成功的响应
-              const index = this.goodsData.findIndex(item => item.gid === row.gid);
-              if (index !== -1) {
-                this.goodsData.splice(index, 1);
-              }
-              ElMessage.success('删除商品成功');
-            } else {
-              // 处理错误响应
-              console.error('删除商品失败:', response.data?.msg || '未知错误');
-              ElMessage.error('删除商品失败: ' + (response.data?.msg || '未知错误'));
-            }
-          })
-          .catch(error => {
-            console.error('删除商品接口调用出错:', error);
-            ElMessage.error('删除商品失败，请稍后重试');
-          })
-          .finally(() => {
-            this.isLoading = false;
-          });
+        // 这里替换为实际的API调用
+        // this.$axios.delete(`/api/goods/${row.gid}`).then(response => {
+        //   const index = this.goodsData.findIndex(item => item.gid === row.gid);
+        //   if (index !== -1) {
+        //     this.goodsData.splice(index, 1);
+        //   }
+        //   ElMessage.success('删除商品成功');
+        // }).catch(error => {
+        //   console.error('删除商品失败:', error);
+        //   ElMessage.error('删除商品失败');
+        // });
+
+        // 模拟删除
+        const index = this.goodsData.findIndex(item => item.gid === row.gid);
+        if (index !== -1) {
+          this.goodsData.splice(index, 1);
+        }
+        ElMessage.success('删除商品成功');
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
@@ -534,84 +461,58 @@ export default {
     getTagType(tag) {
       const types = ['', 'success', 'warning', 'info', 'danger'];
       return types[tag % types.length] || '';
-    },    // 根据标签值获取标签名称
+    },
+
+    // 根据标签值获取标签名称
     getTagLabel(tagValue) {
-      if (!this.tagOptions || this.tagOptions.length === 0) {
-        return `标签${tagValue}`;
-      }
-      const tag = this.tagOptions.find(t => t && t.value === tagValue);
+      const tag = this.tagOptions.find(t => t.value === tagValue);
       return tag ? tag.label : `标签${tagValue}`;
-    },// 获取标签列表
+    },
+
+    // 获取标签列表
     fetchTags() {
-      // 使用adminApi获取商品标签
-      adminApi.getProductTags()
-        .then(response => {
-          console.log('获取商品标签成功:', response);
-          if (response.data && response.data.code === 1) {
-            // 处理成功的响应
-            const tags = response.data.data;
-            // 确保每个标签都有value和label属性
-            this.tagOptions = tags.filter(tag => tag && tag.value !== undefined && tag.label !== undefined);
-          } else {
-            // 处理错误响应
-            console.error('获取商品标签失败:', response.data?.msg || '未知错误');
-            ElMessage.error('获取商品标签失败: ' + (response.data?.msg || '未知错误'));
-            
-            // 使用默认标签数据作为备选方案
-            this.tagOptions = [
-              {value: 1, label: '二手电子'},
-              {value: 2, label: '教材书籍'},
-              {value: 3, label: '生活用品'},
-              {value: 4, label: '服装鞋帽'},
-              {value: 5, label: '文具用品'},
-              {value: 6, label: '代步工具'}
-            ];
-          }
-        })
-        .catch(error => {
-          console.error('获取商品标签接口调用出错:', error);
-          ElMessage.error('获取商品标签失败，请稍后重试');
-          
-          // 使用默认标签数据作为备选方案
-          this.tagOptions = [
-            {value: 1, label: '二手电子'},
-            {value: 2, label: '教材书籍'},
-            {value: 3, label: '生活用品'},
-            {value: 4, label: '服装鞋帽'},
-            {value: 5, label: '文具用品'},
-            {value: 6, label: '代步工具'}
-          ];
-        });
-    },// 图片上传成功处理
+      // 这里替换为实际的API调用
+      // this.$axios.get('/api/tags').then(response => {
+      //   this.tagOptions = response.data;
+      // }).catch(error => {
+      //   console.error('获取标签列表失败:', error);
+      //   ElMessage.error('获取标签列表失败');
+      // });
+
+      // 模拟数据
+      setTimeout(() => {
+        this.tagOptions = [
+          {value: 1, label: '二手电子'},
+          {value: 2, label: '教材书籍'},
+          {value: 3, label: '生活用品'},
+          {value: 4, label: '服装鞋帽'},
+          {value: 5, label: '文具用品'},
+          {value: 6, label: '代步工具'}
+        ];
+      }, 300);
+    },
+
+    // 图片上传成功处理
     handleImageSuccess(response, file, target) {
       // 正常情况下，后端会返回图片URL
-      if (response && response.data && response.data.code === 1) {
-        const imageUrl = response.data.data;
-        target.image = this.getImageUrl(imageUrl);
-        ElMessage.success('图片上传成功');
-      } else if (response && response.url) {
-        // 直接返回URL的情况
-        target.image = this.getImageUrl(response.url);
-        ElMessage.success('图片上传成功');
+      if (response && response.url) {
+        target.image = response.url;
       } else {
-        // 创建一个本地URL用于预览（临时显示）
+        // 模拟情况：创建一个本地URL用于预览
+        // 注意：在实际生产环境中，这应该由服务器返回真实URL
         const URL = window.URL || window.webkitURL;
         if (URL && file) {
           target.image = URL.createObjectURL(file.raw);
-          ElMessage.warning('图片已临时预览，但上传可能未成功');
-        } else {
-          ElMessage.error('图片上传失败');
+
+          // 在实际应用中应该移除此模拟代码，使用服务器返回的URL
+          // 以下仅为演示
+          setTimeout(() => {
+            // 模拟服务器处理完毕
+            target.image = `https://example.com/uploads/${file.name}`;
+          }, 1000);
         }
       }
-    },
-    
-    // 获取正确的图片URL
-    getImageUrl(imagePath) {
-      if (!imagePath) return '';
-      if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
-        return imagePath;
-      }
-      return baseURL + imagePath;
+      ElMessage.success('图片上传成功');
     },
 
     // 图片上传前验证

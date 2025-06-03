@@ -155,6 +155,8 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: "ScoreCommentManagement",
@@ -205,34 +207,41 @@ export default {
       return this.filteredScoreCommentData.slice(start, end);
     },
   },
-  methods: {
-    // 获取评分评论列表
+  methods: {    // 获取评分评论列表
     fetchScoreComments() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/score-comments').then(response => {
-      //   this.scoreCommentData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取评分评论列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取评分评论列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.scoreCommentData = [
-          { sid: 101, uid: 201, score: 5, comment: '服务非常好，很满意这次帮助', time: Date.now() - 36000000, isEditing: false },
-          { sid: 101, uid: 202, score: 4, comment: '整体满意，但时间有点长', time: Date.now() - 46800000, isEditing: false },
-          { sid: 102, uid: 203, score: 5, comment: '解答非常及时，问题解决得很好', time: Date.now() - 57600000, isEditing: false },
-          { sid: 102, uid: 204, score: 3, comment: '基本满足需求，但解释不够详细', time: Date.now() - 68400000, isEditing: false },
-          { sid: 103, uid: 205, score: 4, comment: '态度非常好，知识点掌握得不错', time: Date.now() - 79200000, isEditing: false },
-          { sid: 104, uid: 206, score: 5, comment: '材料清晰实用，非常感谢分享', time: Date.now() - 90000000, isEditing: false },
-          { sid: 105, uid: 207, score: 2, comment: '回应时间太长，且说明不够清楚', time: Date.now() - 100800000, isEditing: false },
-          { sid: 105, uid: 208, score: 5, comment: '很专业，解决了我的所有问题', time: Date.now() - 111600000, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+      
+      // 使用adminApi获取所有评分评论
+      let apiCall;
+      
+      if (this.sidFilter) {
+        apiCall = adminApi.getRatingCommentsBySid(this.sidFilter);
+      } else {
+        apiCall = adminApi.getAllRatingComments();
+      }
+      
+      apiCall
+        .then(response => {
+          console.log('获取评分评论数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.scoreCommentData = response.data.data.map(item => ({...item, isEditing: false}));
+          } else {
+            // 处理错误响应
+            console.error('获取评分评论数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取评分评论列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.scoreCommentData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取评分评论列表接口调用出错:', error);
+          ElMessage.error('获取评分评论列表失败，请稍后重试');
+          this.scoreCommentData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -249,33 +258,41 @@ export default {
       if (this.$refs.scoreCommentForm) {
         this.$refs.scoreCommentForm.resetFields();
       }
-    },
-
-    // 提交新评分评论
+    },    // 提交新评分评论
     submitNewScoreComment() {
       if (this.$refs.scoreCommentForm) {
         this.$refs.scoreCommentForm.validate(valid => {
           if (valid) {
             this.newScoreComment.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/score-comments', this.newScoreComment).then(response => {
-            //   ElMessage.success('添加评分评论成功');
-            //   this.fetchScoreComments();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加评分评论失败:', error);
-            //   ElMessage.error('添加评分评论失败');
-            // });
-
-            // 模拟添加
-            const newScoreComment = {
-              ...this.newScoreComment,
-              isEditing: false
+            this.isLoading = true;
+            
+            // 转换为API字段格式
+            const apiData = {
+              sid: this.newScoreComment.sid,
+              uid: this.newScoreComment.uid,
+              content: this.newScoreComment.comment,
+              score: this.newScoreComment.score,
+              time: this.newScoreComment.time
             };
-            this.scoreCommentData.unshift(newScoreComment);
-            ElMessage.success('添加评分评论成功');
-            this.dialogVisible = false;
+            
+            // 使用adminApi创建评分评论
+            adminApi.createRatingComment(apiData)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('添加评分评论成功');
+                  this.fetchScoreComments(); // 重新获取评论列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('添加评分评论失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('添加评分评论失败:', error);
+                ElMessage.error('添加评分评论失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -293,25 +310,39 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/score-comments/${row.sid}/${row.uid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新评分评论成功');
-      // }).catch(error => {
-      //   console.error('更新评分评论失败:', error);
-      //   ElMessage.error('更新评分评论失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新评分评论成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      
+      // 转换为API字段格式
+      const apiData = {
+        cid: row.cid || 0, // 评论ID
+        sid: row.sid,
+        uid: row.uid,
+        content: row.comment,
+        score: row.score,
+        time: row.time
+      };
+      
+      // 使用adminApi更新评分评论
+      adminApi.updateRatingComment(apiData)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新评分评论成功');
+          } else {
+            ElMessage.error('更新评分评论失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新评分评论失败:', error);
+          ElMessage.error('更新评分评论失败，请稍后重试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
       this.$confirm('此操作将永久删除该评分评论, 是否继续?', '提示', {
@@ -319,24 +350,27 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/score-comments/${row.sid}/${row.uid}`).then(response => {
-        //   const index = this.scoreCommentData.findIndex(item => item.sid === row.sid && item.uid === row.uid);
-        //   if (index !== -1) {
-        //     this.scoreCommentData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除评分评论成功');
-        // }).catch(error => {
-        //   console.error('删除评分评论失败:', error);
-        //   ElMessage.error('删除评分评论失败');
-        // });
-
-        // 模拟删除
-        const index = this.scoreCommentData.findIndex(item => item.sid === row.sid && item.uid === row.uid);
-        if (index !== -1) {
-          this.scoreCommentData.splice(index, 1);
-        }
-        ElMessage.success('删除评分评论成功');
+        this.isLoading = true;
+        // 使用adminApi删除评分评论
+        adminApi.deleteRatingComment(row.cid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              const index = this.scoreCommentData.findIndex(item => item.cid === row.cid);
+              if (index !== -1) {
+                this.scoreCommentData.splice(index, 1);
+              }
+              ElMessage.success('删除评分评论成功');
+            } else {
+              ElMessage.error('删除评分评论失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除评分评论失败:', error);
+            ElMessage.error('删除评分评论失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });

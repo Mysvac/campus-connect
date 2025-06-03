@@ -157,6 +157,8 @@
 
 <script>
 import { ElMessage } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: "TaskProcessingManagement",
@@ -211,31 +213,32 @@ export default {
       return this.filteredTaskData.slice(start, end);
     },
   },
-  methods: {
-    // 获取任务处理列表
+  methods: {    // 获取任务处理列表
     fetchTasks() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tasks/processing').then(response => {
-      //   this.taskData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取任务处理列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取任务处理列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.taskData = [
-          { tid: 1001, uid: 101, status: 0, notes: '正在收集资料，预计明天完成', time: Date.now() - 86400000, isEditing: false },
-          { tid: 1002, uid: 102, status: 1, notes: '已完成资料整理并提交', time: Date.now() - 172800000, isEditing: false },
-          { tid: 1003, uid: 103, status: 2, notes: '无法完成任务，原因：资源不足', time: Date.now() - 259200000, isEditing: false },
-          { tid: 1004, uid: 104, status: 0, notes: '正在进行中，预计周五前完成', time: Date.now() - 345600000, isEditing: false },
-          { tid: 1005, uid: 105, status: 1, notes: '任务已按要求完成', time: Date.now() - 432000000, isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+      // 使用adminApi获取所有任务状态
+      adminApi.getAllTasksStatus()
+        .then(response => {
+          console.log('获取任务状态数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.taskData = response.data.data.map(item => ({...item, isEditing: false}));
+          } else {
+            // 处理错误响应
+            console.error('获取任务状态数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取任务状态列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.taskData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取任务状态列表接口调用出错:', error);
+          ElMessage.error('获取任务状态列表失败，请稍后重试');
+          this.taskData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 显示添加对话框
@@ -252,33 +255,32 @@ export default {
       if (this.$refs.taskForm) {
         this.$refs.taskForm.resetFields();
       }
-    },
-
-    // 提交新任务处理
+    },    // 提交新任务处理
     submitNewTask() {
       if (this.$refs.taskForm) {
         this.$refs.taskForm.validate(valid => {
           if (valid) {
             this.newTask.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/tasks/processing', this.newTask).then(response => {
-            //   ElMessage.success('添加任务处理成功');
-            //   this.fetchTasks();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加任务处理失败:', error);
-            //   ElMessage.error('添加任务处理失败');
-            // });
-
-            // 模拟添加
-            const newTask = {
-              ...this.newTask,
-              isEditing: false
-            };
-            this.taskData.unshift(newTask);
-            ElMessage.success('分配任务成功');
-            this.dialogVisible = false;
+            this.isLoading = true;
+            
+            // 使用adminApi分配任务
+            adminApi.assignTask(this.newTask)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('分配任务成功');
+                  this.fetchTasks(); // 重新获取任务列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('分配任务失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('分配任务失败:', error);
+                ElMessage.error('分配任务失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -296,25 +298,28 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/tasks/processing/${row.tid}/${row.uid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新任务处理成功');
-      // }).catch(error => {
-      //   console.error('更新任务处理失败:', error);
-      //   ElMessage.error('更新任务处理失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新任务处理成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新任务状态
+      adminApi.updateTaskStatus(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新任务处理成功');
+          } else {
+            ElMessage.error('更新任务处理失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新任务处理失败:', error);
+          ElMessage.error('更新任务处理失败，请稍后重试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
       this.$confirm('此操作将永久删除该任务处理记录, 是否继续?', '提示', {
@@ -322,24 +327,27 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/tasks/processing/${row.tid}/${row.uid}`).then(response => {
-        //   const index = this.taskData.findIndex(item => item.tid === row.tid && item.uid === row.uid);
-        //   if (index !== -1) {
-        //     this.taskData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除任务处理成功');
-        // }).catch(error => {
-        //   console.error('删除任务处理失败:', error);
-        //   ElMessage.error('删除任务处理失败');
-        // });
-
-        // 模拟删除
-        const index = this.taskData.findIndex(item => item.tid === row.tid && item.uid === row.uid);
-        if (index !== -1) {
-          this.taskData.splice(index, 1);
-        }
-        ElMessage.success('删除任务处理成功');
+        this.isLoading = true;
+        // 使用adminApi删除任务状态记录
+        adminApi.deleteTaskStatus(row.tid, row.uid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              const index = this.taskData.findIndex(item => item.tid === row.tid && item.uid === row.uid);
+              if (index !== -1) {
+                this.taskData.splice(index, 1);
+              }
+              ElMessage.success('删除任务处理成功');
+            } else {
+              ElMessage.error('删除任务处理失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除任务处理失败:', error);
+            ElMessage.error('删除任务处理失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });

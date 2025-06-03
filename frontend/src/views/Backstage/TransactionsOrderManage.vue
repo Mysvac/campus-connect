@@ -208,6 +208,8 @@
 
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { adminApi } from '@/api';
+import { baseURL } from '@/api/index.js';
 
 export default {
   name: "OrderManagement",
@@ -287,34 +289,36 @@ export default {
       }
     }
   },
-  methods: {
-    // 获取订单列表
+  methods: {    // 获取订单列表
     fetchOrders() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/orders').then(response => {
-      //   this.orderData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取订单列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取订单列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.orderData = [
-          { oid: 10001, uid: 1001, gid: 2001, time: Date.now() - 3600000, sum: 2990, number: 1, status: 3, notes: '已完成配送', isEditing: false },
-          { oid: 10002, uid: 1002, gid: 2002, time: Date.now() - 7200000, sum: 5980, number: 2, status: 0, notes: '请尽快发货', isEditing: false },
-          { oid: 10003, uid: 1003, gid: 2003, time: Date.now() - 10800000, sum: 1500, number: 3, status: 2, notes: '商品有质量问题，需要退换', isEditing: false },
-          { oid: 10004, uid: 1001, gid: 2004, time: Date.now() - 14400000, sum: 9900, number: 1, status: 1, notes: '用户取消订单', isEditing: false },
-          { oid: 10005, uid: 1004, gid: 2005, time: Date.now() - 18000000, sum: 3500, number: 1, status: 0, notes: '请安排校内配送', isEditing: false },
-          { oid: 10006, uid: 1005, gid: 2006, time: Date.now() - 21600000, sum: 7800, number: 1, status: 3, notes: '用户已确认收货', isEditing: false },
-          { oid: 10007, uid: 1002, gid: 2007, time: Date.now() - 25200000, sum: 12000, number: 4, status: 0, notes: '', isEditing: false },
-          { oid: 10008, uid: 1006, gid: 2008, time: Date.now() - 28800000, sum: 2500, number: 5, status: 3, notes: '批量购买，已完成', isEditing: false }
-        ];
-        this.isLoading = false;
-      }, 500);
+      // 使用adminApi获取所有订单
+      adminApi.getAllOrders()
+        .then(response => {
+          console.log('获取订单数据成功:', response);
+          if (response.data && response.data.code === 1) {
+            // 处理成功的响应
+            this.orderData = response.data.data.map(item => ({
+              ...item, 
+              isEditing: false,
+              sumDisplay: (item.sum / 100).toFixed(2) // 将分转为元，并保留两位小数
+            }));
+          } else {
+            // 处理错误响应
+            console.error('获取订单数据失败:', response.data?.msg || '未知错误');
+            ElMessage.error('获取订单列表失败: ' + (response.data?.msg || '未知错误'));
+            
+            this.orderData = [];
+          }
+        })
+        .catch(error => {
+          console.error('获取订单列表接口调用出错:', error);
+          ElMessage.error('获取订单列表失败，请稍后重试');
+          this.orderData = [];
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
     // 获取状态文本
@@ -356,35 +360,43 @@ export default {
       if (this.$refs.orderForm) {
         this.$refs.orderForm.resetFields();
       }
-    },
-
-    // 提交新订单
+    },    // 提交新订单
     submitNewOrder() {
       if (this.$refs.orderForm) {
         this.$refs.orderForm.validate(valid => {
           if (valid) {
             this.newOrder.time = Date.now();
-
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/orders', this.newOrder).then(response => {
-            //   ElMessage.success('添加订单成功');
-            //   this.fetchOrders();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加订单失败:', error);
-            //   ElMessage.error('添加订单失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.orderData.map(item => item.oid), 10000);
-            const newOrder = {
-              ...this.newOrder,
-              oid: maxId + 1,
-              isEditing: false
+            this.isLoading = true;
+            
+            // 准备要提交的数据
+            const orderData = {
+              uid: this.newOrder.uid,
+              gid: this.newOrder.gid,
+              sum: this.newOrder.sum,
+              number: this.newOrder.number,
+              status: this.newOrder.status,
+              notes: this.newOrder.notes,
+              time: this.newOrder.time
             };
-            this.orderData.unshift(newOrder);
-            ElMessage.success('添加订单成功');
-            this.dialogVisible = false;
+            
+            // 使用adminApi创建订单
+            adminApi.createOrder(orderData)
+              .then(response => {
+                if (response.data && response.data.code === 1) {
+                  ElMessage.success('添加订单成功');
+                  this.fetchOrders(); // 重新获取订单列表
+                  this.dialogVisible = false;
+                } else {
+                  ElMessage.error('添加订单失败: ' + (response.data?.msg || '未知错误'));
+                }
+              })
+              .catch(error => {
+                console.error('添加订单失败:', error);
+                ElMessage.error('添加订单失败，请稍后重试');
+              })
+              .finally(() => {
+                this.isLoading = false;
+              });
           } else {
             return false;
           }
@@ -402,25 +414,28 @@ export default {
       });
       // 设置当前行为编辑状态
       row.isEditing = true;
-    },
-
-    // 保存行
+    },    // 保存行
     saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/orders/${row.oid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新订单成功');
-      // }).catch(error => {
-      //   console.error('更新订单失败:', error);
-      //   ElMessage.error('更新订单失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      ElMessage.success('更新订单成功');
-    },
-
-    // 删除行
+      this.isLoading = true;
+      // 使用adminApi更新订单
+      adminApi.updateOrder(row)
+        .then(response => {
+          if (response.data && response.data.code === 1) {
+            row.isEditing = false;
+            delete row._originalData; // 删除原始数据
+            ElMessage.success('更新订单成功');
+          } else {
+            ElMessage.error('更新订单失败: ' + (response.data?.msg || '未知错误'));
+          }
+        })
+        .catch(error => {
+          console.error('更新订单失败:', error);
+          ElMessage.error('更新订单失败，请稍后重试');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },    // 删除行
     deleteRow(row) {
       // 弹出确认框
       ElMessageBox.confirm('此操作将永久删除该订单, 是否继续?', '提示', {
@@ -428,24 +443,27 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/orders/${row.oid}`).then(response => {
-        //   const index = this.orderData.findIndex(item => item.oid === row.oid);
-        //   if (index !== -1) {
-        //     this.orderData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除订单成功');
-        // }).catch(error => {
-        //   console.error('删除订单失败:', error);
-        //   ElMessage.error('删除订单失败');
-        // });
-
-        // 模拟删除
-        const index = this.orderData.findIndex(item => item.oid === row.oid);
-        if (index !== -1) {
-          this.orderData.splice(index, 1);
-        }
-        ElMessage.success('删除订单成功');
+        this.isLoading = true;
+        // 使用adminApi删除订单
+        adminApi.deleteOrder(row.oid)
+          .then(response => {
+            if (response.data && response.data.code === 1) {
+              const index = this.orderData.findIndex(item => item.oid === row.oid);
+              if (index !== -1) {
+                this.orderData.splice(index, 1);
+              }
+              ElMessage.success('删除订单成功');
+            } else {
+              ElMessage.error('删除订单失败: ' + (response.data?.msg || '未知错误'));
+            }
+          })
+          .catch(error => {
+            console.error('删除订单失败:', error);
+            ElMessage.error('删除订单失败，请稍后重试');
+          })
+          .finally(() => {
+            this.isLoading = false;
+          });
       }).catch(() => {
         ElMessage.info('已取消删除');
       });
