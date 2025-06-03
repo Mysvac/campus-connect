@@ -56,10 +56,10 @@ import { userApi } from '@/api';
 
 // 轮播图数据
 const carouselItems = ref([
-  { id: 1, imageUrl: '', altText: 'Image 1' },
-  { id: 2, imageUrl: '', altText: 'Image 2' },
-  { id: 3, imageUrl: '', altText: 'Image 3' },
-  { id: 4, imageUrl: '', altText: 'Image 4' },
+  { id: 1, imageUrl: 'https://ts1.tc.mm.bing.net/th/id/R-C.ab91ffceed972a815ca91d9829569ec5?rik=cqynigX8%2fWcKow&riu=http%3a%2f%2fwww.jdxzz.com%2fuploads%2fallimg%2f200306%2f4-200306140956.jpg&ehk=xFCVJsoAD47wFKGFm4bddcvuP8Q8N38f68VvQ%2foaPuI%3d&risl=&pid=ImgRaw&r=0', altText: 'Image 1' },
+  { id: 2, imageUrl: 'https://th.bing.com/th/id/R.4749c7cd4b6c4d572898d66924b2c136?rik=xusw0kwpp0Lykw&riu=http%3a%2f%2fusst.yanzhaowang.com%2fupload%2fimages%2fschool%2f10252%2f5b3b152df740e377951349c636ca4a7a.jpg&ehk=XhCuJHKb%2bJ7ZlYhwnEhVnCHcDrlOFbUCrjwf9SHZpWc%3d&risl=&pid=ImgRaw&r=0', altText: 'Image 2' },
+  { id: 3, imageUrl: 'https://ts1.tc.mm.bing.net/th/id/R-C.d2f07b320b1426b76f36d2301496d97b?rik=BPvyIltsn60Vsg&riu=http%3a%2f%2fdocs.kaoyan.com%2fjpg%2f07%2f120642dbf4e8fe9b.jpg&ehk=PoL5mR%2bWcedhRw35MxE%2f7duEQJtCXSFkjJ%2btSE1rOJw%3d&risl=&pid=ImgRaw&r=0&sres=1&sresct=1', altText: 'Image 3' },
+  { id: 4, imageUrl: 'https://www.mbachina.com/uploads/yxk/201611/07/1478481902732907.jpg', altText: 'Image 4' },
 ]);
 
 // 表单数据

@@ -66,10 +66,6 @@ const validateForm = () => {
     return false
   }
 
-  if (!/^1[3-9]\d{9}$/.test(userForm.value.phone)) {
-    alert('请输入正确的手机号格式')
-    return false
-  }
 
   // 其他字段的验证（如果有值才验证格式）
   if (userForm.value.nickname && userForm.value.nickname.length > 20) {
@@ -195,7 +191,7 @@ const saveUserInfo = async () => {
         successMsg += `\n已更新：${changesList.join('、')}`
       }
       
-      alert(successMsg)
+      //alert(successMsg)
     } else {
       alert('保存失败：' + (response.data?.msg || '未知错误'))
     }
@@ -350,6 +346,11 @@ onMounted(() => {
       <h2 class="page-title">个人信息</h2>
       <div class="header-actions">
         <button
+            class="charge-btn"
+        >
+          充值
+        </button>
+        <button
             v-if="!editMode"
             @click="toggleEditMode"
             class="edit-btn"
@@ -371,19 +372,6 @@ onMounted(() => {
             取消
           </button>
         </div>
-      </div>
-    </div>
-
-    <!-- 编辑模式提示 -->
-    <div v-if="editMode" class="edit-tips">
-      <div class="tip-icon">📝</div>
-      <div class="tip-content">
-        <strong>编辑说明：</strong>
-        <ul>
-          <li>✅ <strong>必须填写：</strong>用户ID和手机号</li>
-          <li>🔧 <strong>可选修改：</strong>其他字段留空表示不修改</li>
-          <li>🔒 <strong>密码修改：</strong>两个密码字段都留空表示不修改密码</li>
-        </ul>
       </div>
     </div>
 
@@ -479,7 +467,6 @@ onMounted(() => {
                   placeholder="留空表示不修改（最多20字符）"
                   maxlength="20"
               />
-              />
             </div>
 
             <!-- 性别 -->
@@ -516,6 +503,14 @@ onMounted(() => {
                   placeholder="留空表示不修改（最多32字符）"
                   maxlength="32"
               />
+            </div>
+
+            <!-- 钱包余额 -->
+            <div class="info-item">
+              <label class="info-label">钱包余额</label>
+              <div class="info-value">
+                {{ userForm.wallet !== undefined && userForm.wallet !== null ? userForm.wallet : '0' }} 元
+              </div>
             </div>
           </div>
         </div>
@@ -640,7 +635,7 @@ onMounted(() => {
   gap: 10px;
 }
 
-.edit-btn, .save-btn, .cancel-btn {
+.edit-btn,.charge-btn ,.save-btn, .cancel-btn {
   padding: 10px 25px;
   border: none;
   border-radius: 20px;
