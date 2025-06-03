@@ -17,7 +17,7 @@ public interface MessagesCommentMapper {
     MessagesComment getMessagesCommentByCid(Long cid);
 
     @Insert("INSERT INTO messages_comment (mid, uid, content, praise, time) " +
-            "VALUES (#{mid}, #{uid}, #{content}, #{time})")
+            "VALUES (#{mid}, #{uid}, #{content}, #{praise}, #{time})")
     void insertMessagesComment(MessagesComment messagesComment);
 
     @Update("UPDATE messages_comment SET mid = #{mid}, uid = #{uid}, content = #{content}, " +

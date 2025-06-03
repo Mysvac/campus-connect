@@ -179,6 +179,8 @@ public class MessageController {
         if (messageService.getMessageById(messagesComment.getMid()) == null) {
             return Result.error("留言不存在");
         }
+        if(messagesComment.getPraise() == null) messagesComment.setPraise(0);
+        if(messagesComment.getTime() == null) messagesComment.setTime(System.currentTimeMillis());
 
         Long uid = (Long) session.getAttribute("uid");
         messagesComment.setUid(uid);
