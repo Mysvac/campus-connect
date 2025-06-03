@@ -118,8 +118,11 @@ public class ScoreController {
         if (scoreService.getScoreBySid(scoresComment.getSid()) == null) {
             return Result.error("评分不存在");
         }
+        if (scoresComment.getScore() == null) {
+            return Result.error("评分分数不能为空");
+        }
+
         scoresComment.setUid((Long) session.getAttribute("uid"));
-        scoresCommentService.insertScoresComment(scoresComment);
         ScoresComment sc = scoresCommentService.getScoresCommentBySidAndUid(scoresComment.getSid(), scoresComment.getUid());
         if (sc == null) {
             scoresCommentService.insertScoresComment(scoresComment);

@@ -56,12 +56,12 @@ public class MessageController {
 
     /**
      * 获取指定留言评论记录
-     * @return 单个留言评论
+     * @return 单个评论
      */
     @GetMapping("/get-comment-by-cid/{cid}")
     public Result getComment(@PathVariable Long cid) {
         MessagesComment res = messagesCommentService.getMessagesCommentByCid(cid);
-        return res == null ? Result.error("留言不存在") : Result.success(res);
+        return res == null ? Result.error("评论不存在") : Result.success(res);
     }
 
     /**
@@ -230,6 +230,29 @@ public class MessageController {
 
         messagesCommentService.deleteMessagesCommentByMid(mid);
         messageService.deleteMessageByMid(mid);
+        return Result.success();
+    }
+
+    /**
+     * 删除评论
+     * @param cid 评论id
+     * @param session HTTP会话
+     * @return 操作结果
+     */
+    @DeleteMapping("/delete-comment-by-cid/{cid}")
+    public Result deleteComment(@PathVariable Long cid, HttpSession session) {
+        Result sessionCheck = UserController.checkSession(session);
+        if (sessionCheck != null) return sessionCheck;
+
+        Long uid = (Long)(session.getAttribute("uid"));
+        Integer permission = (Integer)(session.getAttribute("permission"));
+        MessagesComment mc = messagesCommentService.getMessagesCommentByCid(cid);
+        if (mc == null) return Result.error("评论不存在");
+        if (!Objects.equals(mc.getUid(), uid) && permission != 3) {
+            return Result.error("用户不可用");
+        }
+
+        messagesCommentService.deleteMessagesCommentByCid(cid);
         return Result.success();
     }
 
