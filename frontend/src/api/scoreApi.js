@@ -49,9 +49,7 @@ export default {    // 获取评分标签
                 'Content-Type': 'multipart/form-data'
             }
         });
-    },
-
-    // 添加新评分
+    },    // 添加新评分
     createRating: (data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新评分");
@@ -61,10 +59,9 @@ export default {    // 获取评分标签
                 uid: 101, // 模拟用户ID
                 goal: data.goal,
                 tag: data.tag,
-                intro: data.intro,
-                image: data.image,
+                intro: data.intro,                image: data.image,
                 score: data.score,
-                num: 1,
+                num: 0, // 初始参与人数为0
                 status: 0,
                 time: Date.now(),
                 likes: 0,
@@ -72,6 +69,7 @@ export default {    // 获取评分标签
                 comments: []
             };
             MOCK_DATA.ratings.unshift(newRating);
+            // 确保返回的数据包含新创建的评分信息，特别是sid
             return getMockResponse(newRating);
         }
         return api.post('/api/score/add-score', data);
@@ -115,30 +113,44 @@ export default {    // 获取评分标签
             return getMockResponse({success: false});
         }
         return api.delete(`/api/score/unlike-score/${id}`);
-    },
-      // 添加评分评论
+    },    // 添加评分评论
     commentRating: (id, data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
-            console.log("DEBUG MODE: 模拟评论评分");
+            console.log("DEBUG MODE: 模拟评论评分", { id, data });
             const rating = MOCK_DATA.ratings.find(r => r.rid === parseInt(id) || r.sid === parseInt(id));
             if (rating) {
                 const newComment = {
                     cid: Date.now(),
                     uid: 101, // 模拟用户ID
                     sid: rating.sid || rating.rid,
-                    content: data.content,
-                    comment: data.content,
+                    content: data.comment || data.content,
+                    comment: data.comment || data.content,
                     score: data.score || 5.0,
-                    time: Date.now(),
+                    time: data.time || Date.now(),
                     likes: 0,
-                    isLiked: false
+                    isLiked: false,
+                    userName: '当前用户', // 模拟用户名
+                    userAvatar: 'https://via.placeholder.com/48?text=U101' // 模拟头像
                 };
                 rating.comments.push(newComment);
+                console.log("DEBUG MODE: 评论已添加到模拟数据", newComment);
                 return getMockResponse(newComment);
             }
+            console.log("DEBUG MODE: 未找到对应的评分", id);
             return getMockResponse({success: false});
         }
-        return api.post(`/api/score/add-comment`, { ...data, sid: id });
+        
+        // 构造符合后端 ScoresComment 实体的数据结构
+        const commentData = {
+            sid: parseInt(id), // 确保是数字类型
+            score: data.score || 0,
+            comment: data.comment,
+            time: data.time || Date.now()
+            // uid 会由后端从 session 中获取，不需要前端传递
+        };
+        
+        console.log("API调用 add-comment，数据:", commentData);
+        return api.post(`/api/score/add-comment`, commentData);
     },
       // 获取评分的评论
     getRatingComments: (id) => {

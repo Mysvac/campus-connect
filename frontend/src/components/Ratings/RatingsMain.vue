@@ -32,10 +32,8 @@
           <label for="rating-image">封面图片</label>
           <input type="file" id="rating-image" @change="handleImageUpload">
           <p class="help-text">*支持jpg, png格式，建议尺寸600×400px</p>
-        </div>
-
-        <div class="form-group">
-          <label>您的评分</label>
+        </div>        <div class="form-group">
+          <label>您的评分 <span class="optional-text">(可选)</span></label>
           <div class="rating-input">
             <div class="star-rating">
               <span
@@ -46,19 +44,19 @@
                   @click="newRating.score = n"
               >★</span>
             </div>
-            <span class="rating-value">{{ newRating.score }}</span>
+            <span class="rating-value">{{ newRating.score ? `${newRating.score}分` : '未评分' }}</span>
+            <button type="button" class="reset-rating-btn" @click="newRating.score = 0">清除评分</button>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label for="rating-comment">评价内容</label>
+          <p class="help-text">*可以先创建评分对象，稍后再进行评分</p>
+        </div><div class="form-group">
+          <label for="rating-comment">评价内容 <span class="optional-text">(可选)</span></label>
           <textarea
               id="rating-comment"
               v-model="newRating.comment"
-              required
-              placeholder="分享您的体验和评价"
+              placeholder="分享您的体验和评价（可选，创建评分后会自动添加为评论）"
               rows="5"
           ></textarea>
+          <p class="help-text">*如果填写，将在创建评分后自动添加为您的评论</p>
         </div>
 
         <div class="form-actions">
@@ -590,37 +588,71 @@ export default {
             alert('网络错误，请稍后再试');
           });
       }
-    },
-      submitNewRating() {
-      if (this.newRating.score === 0) {
-        alert('请先给出您的评分');
-        return;
-      }
-
+    },      submitNewRating() {
       // 检查是否已上传图片
       if (!this.newRating.image || this.newRating.image === '/images/default.jpg') {
         alert('请先上传评分图片');
         return;
-      }      // 使用后端Score实体的字段名
+      }
+
+      // 使用后端Score实体的字段名
       const ratingData = {
         tag: this.newRating.tag,
         goal: this.newRating.goal,
         intro: this.newRating.intro,
         image: this.newRating.image,
-        score: this.newRating.score,
-        num: 1, // 提交时只有一个人评分
+        score: this.newRating.score || 0, // 允许分数为0，表示还未评分
+        num: 0, // 初始参与人数为0
         status: 0 // 新创建的评分状态为0
       };
 
       this.isSubmitting = true;
-      
-      ratingsApi.createRating(ratingData)
-        .then(response => {
+        ratingsApi.createRating(ratingData)
+        .then(async response => {
           if (response.data && response.data.code === 1) {
+            // 从API响应中获取新创建的评分对象
+            const newRating = response.data.data;            // 如果有评价内容，创建评论（无论评分多少）
+            if (this.newRating.comment && this.newRating.comment.trim() && newRating?.sid) {
+              try {
+                console.log('准备创建评论，sid:', newRating.sid);
+                const commentData = {
+                  sid: newRating.sid,
+                  score: this.newRating.score || 0, // 允许评分为0
+                  comment: this.newRating.comment.trim(),
+                  time: Date.now()
+                };
+                
+                console.log('评论数据:', commentData);
+                console.log('调用 add-comment API...');
+                
+                const commentResponse = await ratingsApi.commentRating(newRating.sid, commentData);
+                console.log('评论API响应:', commentResponse);
+                
+                if (commentResponse.data && commentResponse.data.code === 1) {
+                  console.log('评论创建成功');
+                } else {
+                  console.error('评论创建失败:', commentResponse.data?.msg);
+                }
+              } catch (commentError) {
+                console.error('创建评论出错:', commentError);
+                // 即使评论创建失败，也不影响评分的创建成功
+              }
+            } else {
+              console.log('跳过评论创建，原因:', {
+                hasComment: !!this.newRating.comment,
+                commentTrimmed: this.newRating.comment?.trim(),
+                hasSid: !!newRating?.sid,
+                sid: newRating?.sid
+              });
+            }
+            
+            // 重新获取评分列表以显示新创建的评分和评论
+            await this.fetchRatings();
+            
             // 重置表单
             this.resetNewRatingForm();
             
-            // 重新获取评分列表
+            // 重新获取评分列表（确保包含新创建的评论）
             this.fetchRatings();
             
             // 隐藏表单
@@ -1199,6 +1231,12 @@ export default {
   font-weight: 500;
   margin-bottom: 8px;
   font-size: 1rem;
+}
+
+.optional-text {
+  color: #6c757d;
+  font-weight: 400;
+  font-size: 0.85rem;
 }
 
 .form-group input[type="text"],
