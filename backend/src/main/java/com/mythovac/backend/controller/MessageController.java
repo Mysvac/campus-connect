@@ -55,6 +55,16 @@ public class MessageController {
     }
 
     /**
+     * 获取所有留言评论
+     * @return 留言列表
+     */
+    @GetMapping("get-all-comments")
+    public Result getAllComments() {
+        List<MessagesComment> res = messagesCommentService.getAllMessagesComment();
+        return res == null ? Result.error("留言不存在") : Result.success(res);
+    }
+
+    /**
      * 获取指定留言评论记录
      * @return 单个评论
      */
