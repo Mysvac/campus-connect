@@ -73,7 +73,7 @@ public class TableManager  implements CommandLineRunner {
                 CREATE TABLE IF NOT EXISTS users (
                 uid BIGINT AUTO_INCREMENT PRIMARY KEY,
                 permission INT NOT NULL CHECK( permission IN ( 0, 1, 2, 3 ) ),
-                phone CHAR(11) NOT NULL,
+                phone CHAR(11) NOT NULL UNIQUE,
                 password CHAR(64) NOT NULL,
                 wallet BIGINT NOT NULL,
                 nickname CHAR(20) NOT NULL,

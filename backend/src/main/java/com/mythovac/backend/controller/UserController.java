@@ -55,6 +55,9 @@ public class UserController {
         if(phone == null || phone.length() != 11) {
             return Result.error("手机号无效");
         }
+        if(userService.getUserByPhone(phone) != null) {
+            return Result.error("用户已存在");
+        }
         if(user.getPassword() == null || user.getPassword().length() < 6) {
             return Result.error("密码无效");
         }
@@ -167,16 +170,33 @@ public class UserController {
         Long uid = (Long)(session.getAttribute("uid"));
         Integer permission = (Integer)(session.getAttribute("permission"));
 
-        User oldUser = userService.getUserByPhone(user.getPhone());
+        User oldUser;
+        if( user.getUid() == null && user.getPhone() == null ) {
+            return Result.error("用户ID或手机号至少一项不为空");
+        }
+        if(user.getUid() == null) {
+            oldUser = userService.getUserByPhone(user.getPhone());
+        } else {
+            oldUser = userService.getUserById(user.getUid());
+        }
+
         if (oldUser == null) return Result.error("用户不存在");
+        if(user.getPhone() != null && !Objects.equals(oldUser.getPhone(), user.getPhone())){
+            return Result.error("用户ID与手机号不匹配");
+        }
+        if( user.getPhone() == null) user.setPhone(oldUser.getPhone());
+        if( user.getUid() == null) user.setUid(oldUser.getUid());
 
         if(!Objects.equals(user.getUid(), uid) && (permission == null || permission != 3)){
             return Result.error("权限不足");
         }
+
         if(user.getPermission() == null) user.setPermission( permission );
         if(permission != 3 && !Objects.equals(user.getPermission(), permission)) {
             return Result.error("你无法修改权限");
         }
+
+        if(user.getWallet() == null) user.setWallet(oldUser.getWallet());
         if( permission !=3 && !Objects.equals(user.getWallet(), oldUser.getWallet()) ) {
             return Result.error("你无法修改钱包余额");
         }
@@ -200,6 +220,7 @@ public class UserController {
         if (user.getGender() == null) user.setGender(oldUser.getGender());
 
         userService.updateUser(user);
+        user.setPassword("");
         return Result.success(user);
     }
 
