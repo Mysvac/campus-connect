@@ -154,6 +154,8 @@ public class GoodController {
 
         Long uid = (Long) session.getAttribute("uid");
         good.setUid(uid);
+        good.setSales(0);
+        good.setQuantity(good.getQuantity() == null ? 0 : good.getQuantity());
         good.setTime(System.currentTimeMillis());
 
         goodsService.insertGoods(good);
