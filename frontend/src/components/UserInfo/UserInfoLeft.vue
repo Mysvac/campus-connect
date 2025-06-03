@@ -10,7 +10,7 @@ export default {
         { id: 'mytransactions', name: '我的订单', active: false },
         { id: 'tasks', name: '任务管理', active: false },
         { id: 'mytasks', name: '我的任务', active: false },
-        { id: 'ratings', name: '评分管理', active: false }
+        { id: 'ratings', name: '我的评分', active: false }
       ]
     };
   },

@@ -1,74 +1,64 @@
 <template>
   <div class="ratings-manage-container">
-
-    <!-- 评分信息列表 -->
+    <!-- 我的评分留言列表 -->
     <div class="table-container">
       <el-table :data="paginatedRatingData" style="width: 100%;" stripe v-loading="isLoading">
-        <el-table-column label="评分编号" prop="sid" width="80">
+        <el-table-column label="评分编号" prop="sid" width="100">
           <template #default="{ row }">
             <span>{{ row.sid }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="标签板块" prop="tag" width="100">
+        
+        <el-table-column label="评分对象" prop="scoreGoal" width="120">
           <template #default="{ row }">
-            <el-select v-if="row.isEditing" v-model="row.tag" size="small" placeholder="请选择标签">
-              <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
-            </el-select>
-            <el-tag v-else :type="getTagType(row.tag)" size="small">{{ row.tag }}</el-tag>
+            <span>{{ row.scoreGoal || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="参与人数" prop="num" width="90">
+        
+        <el-table-column label="评分标签" prop="scoreTag" width="100">
           <template #default="{ row }">
-            <span>{{ row.num }}</span>
+            <el-tag v-if="row.scoreTag" :type="getTagType(row.scoreTag)" size="small">{{ row.scoreTag }}</el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="对象" prop="goal" width="100">
+        
+        <el-table-column label="我的评分" prop="score" width="80">
           <template #default="{ row }">
-            <el-input v-if="row.isEditing" v-model="row.goal" size="small" placeholder="对象"></el-input>
-            <span v-else>{{ row.goal }}</span>
+            <el-rate
+              v-model="row.score"
+              :max="5"
+              show-score
+              disabled
+              score-template="{value}"
+            ></el-rate>
           </template>
         </el-table-column>
-        <el-table-column label="介绍" prop="intro" min-width="180">
+        
+        <el-table-column label="我的评论" prop="comment" min-width="200">
           <template #default="{ row }">
-            <el-input v-if="row.isEditing" v-model="row.intro" size="small" placeholder="介绍"></el-input>
-            <span v-else>{{ row.intro }}</span>
+            <el-tooltip
+              v-if="row.comment"
+              :content="row.comment"
+              placement="top"
+              :hide-after="0"
+              :enterable="false"
+              :disabled="row.comment.length < 50"
+            >
+              <span>{{ row.comment.length > 50 ? row.comment.substring(0, 50) + '...' : row.comment }}</span>
+            </el-tooltip>
+            <span v-else class="text-muted">无评论</span>
           </template>
         </el-table-column>
-        <el-table-column label="图片" prop="image" width="150">
+        
+        <el-table-column label="评论时间" prop="time" width="180">
           <template #default="{ row }">
-            <div v-if="row.isEditing">
-              <el-upload
-                  class="upload-demo"
-                  :action="uploadUrl"
-                  :headers="uploadHeaders"
-                  :show-file-list="false"
-                  :on-success="(res, file) => handleImageSuccess(res, file, row)"
-                  :before-upload="beforeImageUpload"
-              >
-                <el-button size="small" type="primary">上传图片</el-button>
-              </el-upload>
-              <div v-if="row.image" style="margin-top: 8px;">
-                <img :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
-                <el-button type="text" @click="row.image = ''" style="margin-left: 5px;">删除</el-button>
-              </div>
-            </div>
-            <div v-else>
-              <img v-if="row.image" :src="getImageUrl(row.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
-              <span v-else>无</span>
-            </div>
+            <span>{{ formatTime(row.time) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="分数" prop="score" width="80">
-          <template #default="{ row }">
-            <el-input v-if="row.isEditing" v-model.number="row.score" size="small" type="number" placeholder="分数"></el-input>
-            <span v-else>{{ row.score }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="160">
+        
+        <el-table-column label="操作" width="120">
           <template #default="scope">
-            <el-button type="warning" size="small" @click="editRow(scope.row)" v-if="!scope.row.isEditing">编辑</el-button>
-            <el-button type="success" size="small" @click="saveRow(scope.row)" v-if="scope.row.isEditing">保存</el-button>
-            <el-button type="danger" size="small" @click="deleteRow(scope.row)">删除</el-button>
+            <el-button type="primary" size="small" @click="viewScoreDetail(scope.row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -77,260 +67,174 @@
     <!-- 分页组件 -->
     <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
       <el-pagination
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          :current-page="currentPage"
-          :page-sizes="[10, 20, 50, 100]"
-          :page-size="pageSize"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="filteredRatingData.length"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="currentPage"
+        :page-sizes="[10, 20, 50, 100]"
+        :page-size="pageSize"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="ratingData.length"
       >
       </el-pagination>
     </div>
 
-    <!-- 添加评分对话框 -->
-    <el-dialog title="添加新评分" v-model="dialogVisible" width="40%">
-      <el-form :model="newRating" label-width="100px" :rules="rules" ref="ratingForm">
-        <el-form-item label="标签板块" prop="tag">
-          <el-select v-model="newRating.tag" placeholder="请选择标签">
-            <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="参与人数" prop="num">
-          <el-input v-model.number="newRating.num" type="number" placeholder="请输入参与人数"></el-input>
-        </el-form-item>
-        <el-form-item label="对象" prop="goal">
-          <el-input v-model="newRating.goal" placeholder="请输入对象"></el-input>
-        </el-form-item>
-        <el-form-item label="介绍" prop="intro">
-          <el-input v-model="newRating.intro" placeholder="请输入介绍"></el-input>
-        </el-form-item>
-        <el-form-item label="图片" prop="image">
-          <el-upload
-              class="upload-demo"
-              :action="uploadUrl"
-              :headers="uploadHeaders"
-              :show-file-list="false"
-              :on-success="(res, file) => handleImageSuccess(res, file, newRating)"
-              :before-upload="beforeImageUpload"
-          >
-            <el-button size="small" type="primary">上传图片</el-button>
-          </el-upload>          <div v-if="newRating.image" style="margin-top: 8px;">
-            <img :src="getImageUrl(newRating.image)" alt="图片" style="width: 60px; height: 60px; object-fit: cover;" />
-            <el-button type="text" @click="newRating.image = ''" style="margin-left: 5px;">删除</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="分数" prop="score">
-          <el-input v-model.number="newRating.score" type="number" placeholder="请输入分数"></el-input>
-        </el-form-item>
-      </el-form>
+    <!-- 评分详情对话框 -->
+    <el-dialog title="评分详情" v-model="detailDialogVisible" width="50%">
+      <div v-if="selectedScore">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="评分编号">{{ selectedScore.sid }}</el-descriptions-item>
+          <el-descriptions-item label="评分对象">{{ selectedScore.scoreGoal || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="标签">
+            <el-tag v-if="selectedScore.scoreTag" :type="getTagType(selectedScore.scoreTag)" size="small">
+              {{ selectedScore.scoreTag }}
+            </el-tag>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="我的评分">
+            <el-rate
+              v-model="selectedScore.score"
+              :max="5"
+              show-score
+              disabled
+              score-template="{value} 分"
+            ></el-rate>
+          </el-descriptions-item>
+          <el-descriptions-item label="评论时间" :span="2">{{ formatTime(selectedScore.time) }}</el-descriptions-item>
+          <el-descriptions-item label="我的评论" :span="2">
+            <div style="max-height: 200px; overflow-y: auto;">
+              {{ selectedScore.comment || '无评论' }}
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitNewRating">确定</el-button>
+          <el-button @click="detailDialogVisible = false">关闭</el-button>
         </span>
       </template>
     </el-dialog>
   </div>
 </template>
-
-<script>
+        <script>
 import { ElMessage } from 'element-plus';
-import { getImageUrl } from '@/utils/imageUtils';
+import api from '@/api';
 
 export default {
-  name: "RatingsManage",
+  name: "MyRatingsComments",
   data() {
     return {
-      selectedTag: "",
       ratingData: [],
       isLoading: false,
-      dialogVisible: false,
-      newRating: {
-        tag: '',
-        num: 0,
-        goal: '',
-        intro: '',
-        image: '',
-        score: 0
-      },
+      detailDialogVisible: false,
+      selectedScore: null,
       currentPage: 1,
-      pageSize: 7,
-      tagOptions: [],
-      // 上传相关配置
-      uploadUrl: '/api/upload', // 替换为实际的上传API地址
-      uploadHeaders: {
-        // 根据需要添加请求头，如token
-        // 'Authorization': 'Bearer ' + localStorage.getItem('token')
-      },
-      rules: {
-        tag: [
-          { required: true, message: '请选择标签', trigger: 'change' },
-          { max: 30, message: '标签长度不能超过30个字符', trigger: 'blur' }
-        ],
-        num: [
-          { required: true, message: '请输入参与人数', trigger: 'blur' },
-          { type: 'number', message: '参与人数必须为数字', trigger: 'blur' }
-        ],
-        goal: [
-          { required: true, message: '请输入对象', trigger: 'blur' },
-          { max: 30, message: '对象长度不能超过30个字符', trigger: 'blur' }
-        ],
-        intro: [
-          { required: true, message: '请输入介绍', trigger: 'blur' },
-          { max: 100, message: '介绍不能超过100个字符', trigger: 'blur' }
-        ],
-        score: [
-          { required: true, message: '请输入分数', trigger: 'blur' },
-          { type: 'number', message: '分数必须为数字', trigger: 'blur' }
-        ]
-      },
-      currentUserId: 101, // 假设当前登录用户ID，实际应从登录状态获取
+      pageSize: 10,
+      currentUserId: null, // 当前登录用户的ID，从登录信息中获取
     };
   },
   computed: {
-    filteredRatingData() {
-      // 只显示当前登录人id发布的评分
-      let result = this.ratingData.filter(item => item.uid === this.currentUserId);
-      if (!this.selectedTag) {
-        return result;
-      }
-      return result.filter(item => item.tag === this.selectedTag);
-    },
     paginatedRatingData() {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
-      return this.filteredRatingData.slice(start, end);
+      return this.ratingData.slice(start, end);
     },
   },
   methods: {
-    // 获取评分列表
-    fetchRatings() {
+    // 获取当前用户ID
+    async getCurrentUserId() {
+      try {
+        // 检查用户是否已认证
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+          console.log('[DEBUG] User not authenticated');
+          return null;
+        }
+        
+        // 优先从localStorage获取当前用户信息
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser.uid) {
+          console.log('[DEBUG] Got user ID from localStorage:', currentUser.uid);
+          this.currentUserId = currentUser.uid;
+          return currentUser.uid;
+        }
+        
+        console.log('[DEBUG] No user ID found in localStorage');
+        return null;
+      } catch (error) {
+        console.error('[DEBUG] Error getting current user ID:', error);
+        return null;
+      }
+    },
+
+    // 获取用户的评分留言列表
+    async fetchRatingComments() {
       this.isLoading = true;
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/ratings').then(response => {
-      //   this.ratingData = response.data.map(item => ({...item, isEditing: false}));
-      //   this.isLoading = false;
-      // }).catch(error => {
-      //   console.error('获取评分列表失败:', error);
-      //   this.isLoading = false;
-      //   ElMessage.error('获取评分列表失败');
-      // });      // 模拟数据
-      setTimeout(() => {
-        this.ratingData = [
-          { sid: 1, tag: '课程互助', num: 25, goal: '高数', intro: '高数互助评分', image: '/image/mock-course-123.jpg', score: 4.5, isEditing: false, uid: 101 },
-          { sid: 2, tag: '校园活动', num: 100, goal: '歌手大赛', intro: '歌手大赛评分', image: '/image/mock-activity-456.jpg', score: 4.8, isEditing: false, uid: 101 },
-          { sid: 3, tag: '失物招领', num: 10, goal: '学生卡', intro: '失物招领评分', image: '/image/mock-lost-789.jpg', score: 4.2, isEditing: false, uid: 101 }
-        ];
+      
+      // 如果没有用户ID，先获取当前用户信息
+      if (!this.currentUserId) {
+        try {
+          await this.getCurrentUserId();
+        } catch (error) {
+          this.isLoading = false;
+          return;
+        }
+      }
+
+      try {
+        console.log('[DEBUG] Fetching rating comments for user:', this.currentUserId);
+        const response = await api.get(`/api/score/get-scores-comment-by-uid/${this.currentUserId}`);
+        console.log('[DEBUG] Rating comments response:', response);
+        
+        if (response.data && response.data.code === 1) {
+          const commentsData = response.data.data;
+          console.log('[DEBUG] Got rating comments data:', commentsData);
+          
+          // 获取评论后，需要获取对应的评分信息来补充评分详情
+          this.ratingData = await Promise.all(commentsData.map(async (item) => {
+            try {
+              const scoreResponse = await api.get(`/api/score/get-score-by-sid/${item.sid}`);
+              let scoreGoal = '未知评分';
+              let scoreTag = '';
+              
+              if (scoreResponse.data && scoreResponse.data.code === 1) {
+                const scoreData = scoreResponse.data.data;
+                scoreGoal = scoreData.goal;
+                scoreTag = scoreData.tag;
+              }
+              
+              return {
+                ...item,
+                scoreGoal: scoreGoal,
+                scoreTag: scoreTag,
+                time: item.time || Date.now()
+              };
+            } catch (error) {
+              console.error(`获取评分${item.sid}详情失败:`, error);
+              return {
+                ...item,
+                scoreGoal: '获取失败',
+                scoreTag: '',
+                time: item.time || Date.now()
+              };
+            }
+          }));
+          console.log('[DEBUG] Final rating comments data:', this.ratingData);
+        } else {
+          console.log('没有找到评分留言或获取失败:', response.data?.msg);
+          this.ratingData = [];
+        }
+      } catch (error) {
+        console.error('获取评分留言失败:', error);
+        ElMessage.error('获取评分留言失败');
+        this.ratingData = [];
+      } finally {
         this.isLoading = false;
-      }, 500);
-    },
-
-    // 显示添加对话框
-    showAddDialog() {
-      this.dialogVisible = true;
-      this.newRating = {
-        tag: '',
-        num: 0,
-        goal: '',
-        intro: '',
-        image: '',
-        score: 0
-      };
-      if (this.$refs.ratingForm) {
-        this.$refs.ratingForm.resetFields();
       }
     },
 
-    // 提交新评分
-    submitNewRating() {
-      if (this.$refs.ratingForm) {
-        this.$refs.ratingForm.validate(valid => {
-          if (valid) {
-            // 这里替换为实际的API调用
-            // this.$axios.post('/api/ratings', this.newRating).then(response => {
-            //   ElMessage.success('添加评分成功');
-            //   this.fetchRatings();
-            //   this.dialogVisible = false;
-            // }).catch(error => {
-            //   console.error('添加评分失败:', error);
-            //   ElMessage.error('添加评分失败');
-            // });
-
-            // 模拟添加
-            const maxId = Math.max(...this.ratingData.map(item => item.sid), 0);
-            const newRating = {
-              ...this.newRating,
-              sid: maxId + 1,
-              isEditing: false
-            };
-            this.ratingData.unshift(newRating);
-            ElMessage.success('添加评分成功');
-            this.dialogVisible = false;
-          } else {
-            return false;
-          }
-        });
-      }
-    },
-
-    // 编辑行
-    editRow(row) {
-      this.ratingData.forEach(item => {
-        if (item.sid !== row.sid) {
-          item.isEditing = false;
-        }
-      });
-      row.isEditing = true;
-      // 保存原始数据，用于取消编辑时恢复
-      row._originalData = JSON.parse(JSON.stringify(row));
-    },
-
-    // 保存行
-    saveRow(row) {
-      // 这里替换为实际的API调用
-      // this.$axios.put(`/api/ratings/${row.sid}`, row).then(response => {
-      //   row.isEditing = false;
-      //   ElMessage.success('更新评分成功');
-      // }).catch(error => {
-      //   console.error('更新评分失败:', error);
-      //   ElMessage.error('更新评分失败');
-      // });
-
-      // 模拟保存
-      row.isEditing = false;
-      delete row._originalData; // 删除原始数据
-      ElMessage.success('更新评分成功');
-    },
-
-    // 删除行
-    deleteRow(row) {
-      this.$confirm('此操作将永久删除该评分, 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 这里替换为实际的API调用
-        // this.$axios.delete(`/api/ratings/${row.sid}`).then(response => {
-        //   const index = this.ratingData.findIndex(item => item.sid === row.sid);
-        //   if (index !== -1) {
-        //     this.ratingData.splice(index, 1);
-        //   }
-        //   ElMessage.success('删除评分成功');
-        // }).catch(error => {
-        //   console.error('删除评分失败:', error);
-        //   ElMessage.error('删除评分失败');
-        // });
-
-        // 模拟删除
-        const index = this.ratingData.findIndex(item => item.sid === row.sid);
-        if (index !== -1) {
-          this.ratingData.splice(index, 1);
-        }
-        ElMessage.success('删除评分成功');
-      }).catch(() => {
-        ElMessage.info('已取消删除');
-      });
+    // 查看评分详情
+    viewScoreDetail(row) {
+      this.selectedScore = row;
+      this.detailDialogVisible = true;
     },
 
     // 处理分页大小变化
@@ -344,119 +248,70 @@ export default {
       this.currentPage = page;
     },
 
+    // 格式化时间戳
+    formatTime(timestamp) {
+      if (!timestamp) return '-';
+      const date = new Date(timestamp);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+    },
+
     // 根据标签获取对应的类型样式
     getTagType(tag) {
-      const tagMap = {};
-      this.tagOptions.forEach((item, index) => {
-        const types = ['', 'success', 'warning', 'info', 'danger'];
-        tagMap[item.value] = types[index % types.length];
-      });
+      const tagMap = {
+        '课程互助': 'success',
+        '校园活动': 'warning',
+        '失物招领': 'info',
+        '二手交易': 'danger',
+        '学习讨论': '',
+        '校园问题': 'info'
+      };
       return tagMap[tag] || '';
-    },
-
-    // 获取标签列表
-    fetchTags() {
-      // 这里替换为实际的API调用
-      // this.$axios.get('/api/tags').then(response => {
-      //   this.tagOptions = response.data;
-      // }).catch(error => {
-      //   console.error('获取标签列表失败:', error);
-      //   ElMessage.error('获取标签列表失败');
-      // });
-
-      // 模拟数据
-      setTimeout(() => {
-        this.tagOptions = [
-          { value: '课程互助', label: '课程互助' },
-          { value: '校园活动', label: '校园活动' },
-          { value: '失物招领', label: '失物招领' },
-          { value: '二手交易', label: '二手交易' },
-          { value: '学习讨论', label: '学习讨论' },
-          { value: '校园问题', label: '校园问题' }
-        ];
-      }, 300);
-    },    // 图片上传成功处理
-    handleImageSuccess(response, file, target) {
-      // 优先使用服务器返回的相对路径
-      if (response && response.relativePath) {
-        target.image = response.relativePath;
-      } else if (response && response.url) {
-        // 如果返回的是完整URL，提取相对路径部分
-        const url = response.url;
-        if (url.includes('/image/')) {
-          target.image = url.substring(url.indexOf('/image/'));
-        } else {
-          target.image = url;
-        }
-      } else if (file && file.response && file.response.relativePath) {
-        target.image = file.response.relativePath;
-      } else if (file && file.response && file.response.url) {
-        const url = file.response.url;
-        if (url.includes('/image/')) {
-          target.image = url.substring(url.indexOf('/image/'));
-        } else {
-          target.image = url;
-        }
-      } else if (file && file.url) {
-        target.image = file.url;
-      } else if (file && file.raw) {
-        // 对于本地预览，生成一个临时的相对路径
-        const timestamp = Date.now();
-        target.image = `/image/temp-${timestamp}.jpg`;
-      }
-      this.$nextTick(() => {
-        ElMessage.success('图片上传成功');
-      });
-    },// 图片上传前验证
-    beforeImageUpload(file) {
-      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
-      const isLt2M = file.size / 1024 / 1024 < 2;
-
-      if (!isJPG) {
-        ElMessage.error('上传图片只能是 JPG/PNG 格式!');
-        return false;
-      }
-      if (!isLt2M) {
-        ElMessage.error('上传图片大小不能超过 2MB!');
-        return false;
-      }
-      return isJPG && isLt2M;
-    },
-    
-    // 获取完整的图片URL
-    getImageUrl(imagePath) {
-      return getImageUrl(imagePath);
     }
   },
-  created() {
-    this.fetchTags();
-    this.fetchRatings();
+  async created() {
+    // 初始化用户ID
+    try {
+      await this.getCurrentUserId();
+    } catch (error) {
+      console.error('初始化用户ID失败');
+    }
+    
+    this.fetchRatingComments();
   },
 };
 </script>
+      <style scoped>
+.ratings-manage-container {
+  padding: 20px;
+}
 
-<style scoped>
+.table-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
 .el-table {
   width: 100% !important;
   table-layout: fixed;
 }
 
-.el-select {
-  width: 120px;
-  margin-right: 10px;
-}
-
-.el-button {
-  height: 36px;
-}
-
 .pagination-container {
   margin-top: 20px;
-  text-align: right;
+  text-align: center;
 }
 
-.upload-demo {
-  display: inline-block;
+.text-muted {
+  color: #909399;
+  font-style: italic;
 }
 
+.el-descriptions {
+  margin-top: 20px;
+}
+
+.el-rate {
+  line-height: 1;
+}
 </style>
