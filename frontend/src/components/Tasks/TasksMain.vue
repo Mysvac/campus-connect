@@ -810,10 +810,12 @@ export default {
             return imagePath;
           }
         }
-        throw new Error('用户头像数据不存在');
+        // 如果没有头像数据，返回默认头像
+        return `https://via.placeholder.com/40?text=U${uid}`;
       } catch (error) {
         console.error('从API获取用户头像失败:', error);
-        throw error;
+        // 发生错误时也返回默认头像
+        return `https://via.placeholder.com/40?text=U${uid}`;
       }
     },
 

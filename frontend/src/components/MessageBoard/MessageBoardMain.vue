@@ -380,9 +380,7 @@ export default {
         }
       }      await Promise.all(promises);
       return messages;
-    },
-
-    // 获取用户头像
+    },    // 获取用户头像
     async fetchUserAvatar(uid) {
       const uidStr = String(uid);
       
@@ -407,14 +405,14 @@ export default {
         delete this.userAvatarPromiseCache[uidStr];
         return avatarUrl;
       } catch (error) {
-        // 请求失败时，清除Promise缓存，返回默认头像
+        // 请求失败时，清除Promise缓存，缓存默认头像
         delete this.userAvatarPromiseCache[uidStr];
         console.error('获取用户头像失败:', error);
         const defaultAvatar = `https://via.placeholder.com/40?text=U${uid}`;
         this.userAvatarCache[uidStr] = defaultAvatar;
         return defaultAvatar;
       }
-    },    // 实际的用户头像API请求方法    
+    },// 实际的用户头像API请求方法    
     async fetchUserAvatarFromAPI(uidStr) {
       try {
         const response = await userApi.getUserData(uidStr);
@@ -432,14 +430,14 @@ export default {
             return imagePath;
           }
         }
-        // throw new Error('用户头像数据不存在');
+        // 如果没有头像数据，返回默认头像而不是抛出错误
+        return `https://via.placeholder.com/40?text=U${uidStr}`;
       } catch (error) {
         console.error('从API获取用户头像失败:', error);
-        throw error;
+        // 发生错误时也返回默认头像
+        return `https://via.placeholder.com/40?text=U${uidStr}`;
       }
-    },
-
-    // 获取用户头像的辅助方法
+    },    // 获取用户头像的辅助方法
     getUserAvatar(userObj) {
       if (!userObj || !userObj.uid) {
         return 'https://via.placeholder.com/40?text=?';
@@ -451,10 +449,17 @@ export default {
         return this.userAvatarCache[uidStr];
       }
 
-      // 异步获取头像，同时返回默认头像
+      // 如果正在请求中，返回默认头像，避免重复请求
+      if (this.userAvatarPromiseCache[uidStr]) {
+        return `https://via.placeholder.com/40?text=U${userObj.uid}`;
+      }      // 异步获取头像，完成后更新缓存并触发局部更新
       this.fetchUserAvatar(userObj.uid).then(avatarUrl => {
-        // 触发响应式更新
-        this.$forceUpdate();
+        // 在Vue 3中直接赋值即可，不需要$set
+        this.userAvatarCache[uidStr] = avatarUrl;
+      }).catch(error => {
+        console.error('获取用户头像失败:', error);
+        // 即使失败也要设置默认头像，避免重复请求
+        this.userAvatarCache[uidStr] = `https://via.placeholder.com/40?text=U${userObj.uid}`;
       });
 
       // 返回默认头像
