@@ -144,9 +144,9 @@ public class TaskController {
         if( task == null ) {
             return Result.error("任务不存在");
         }
-        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
-            return Result.error("权限不足");
-        }
+//        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
+//            return Result.error("权限不足");
+//        }
 
         task.setStatus(2);
         tasksService.updateTask(task);
@@ -301,7 +301,7 @@ public class TaskController {
         }
         usr.setWallet(usr.getWallet() - task.getMoney());
         userService.updateUser(usr);
-        task.setStatus(2); // 默认状态为未开始
+        task.setStatus(0); // 默认状态为未开始
         tasksService.insertTask(task);
         return Result.success("添加成功");
     }
