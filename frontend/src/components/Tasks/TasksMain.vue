@@ -93,20 +93,37 @@
               <span>联系方式: 接取任务后可见</span>
             </div>
           </div>          <div class="task-actions" v-if="selectedTask.status === 0">
-            <button class="action-btn accept" @click="acceptTask(selectedTask)">
+            <!-- 只有当不是我发布的任务且没有申请过时才显示申请按钮 -->
+            <button v-if="!isTaskPublisher(selectedTask) && !hasUserApplied(selectedTask)" 
+                    class="action-btn accept" 
+                    @click="acceptTask(selectedTask)">
               <i class="icon">✓</i>
               <span>申请任务</span>
             </button>
-          </div>
-          <div class="task-actions" v-else-if="selectedTask.status === 1">
-            <button class="action-btn complete" @click="completeTask(selectedTask)">
+            
+            <!-- 如果已经申请过，显示状态信息 -->
+            <div v-else-if="hasUserApplied(selectedTask)" class="status-info applied">
+              <i class="icon">⏳</i>
+              <span>已申请，等待发布者确认</span>
+            </div>
+          </div><div class="task-actions" v-else-if="selectedTask.status === 1">
+            <!-- 如果是我发布的任务，只显示完成任务按钮 -->
+            <button v-if="isTaskPublisher(selectedTask)" 
+                    class="action-btn complete" 
+                    @click="completeTask(selectedTask)">
               <i class="icon">✓</i>
               <span>完成任务</span>
             </button>
-            <button class="action-btn terminate" @click="terminateTask(selectedTask)">
+            
+            <!-- 如果是我接取的任务，只显示终止任务按钮 -->
+            <button v-else-if="isTaskExecutor(selectedTask)" 
+                    class="action-btn terminate" 
+                    @click="terminateTask(selectedTask)">
               <i class="icon">✗</i>
               <span>终止任务</span>
             </button>
+            
+            <!-- 如果既不是我发布也不是我接取的，不显示任何按钮 -->
           </div>
           <div class="task-actions" v-else-if="selectedTask.status === 2">
             <div class="status-info terminated">
@@ -135,7 +152,7 @@
         </div>
 
         <!-- 申请者管理（仅任务发布者可见） -->
-        <div class="applicants-section" v-if="selectedTask && selectedTask.uid === currentUserId && selectedTask.status === 0">
+        <!-- <div class="applicants-section" v-if="selectedTask && selectedTask.uid === currentUserId && selectedTask.status === 0">
           <h4>申请者列表</h4>
           <div class="applicants-list" v-if="taskApplicants.length > 0">            <div class="applicant-item" v-for="applicant in taskApplicants" :key="applicant.uid">              <div class="applicant-info">
                 <img :src="getUserAvatar(applicant)" alt="用户头像" class="user-avatar">
@@ -160,7 +177,7 @@
           <div class="no-applicants" v-else>
             <p>暂无申请者</p>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -525,11 +542,12 @@ export default {
     
     closeTaskDetail() {
       this.selectedTask = null;
-    },
-      acceptTask(task) {
+    },    acceptTask(task) {
       const applicationData = {
         message: '我想接取这个任务' // 可以让用户输入申请消息
-      };      tasksApi.applyTask(task.tid, applicationData)
+      };
+
+      tasksApi.applyTask(task.tid, applicationData)
         .then(response => {
           if (response.data && response.data.code === 1) {
             // 申请任务成功，根据后端逻辑，任务状态会变为进行中(1)
@@ -539,6 +557,9 @@ export default {
             // 如果当前选中的任务就是这个任务，也要更新选中任务的状态
             if (this.selectedTask && this.selectedTask.tid === task.tid) {
               this.selectedTask.status = 1;
+              
+              // 重新获取申请者列表，确保按钮显示正确
+              this.fetchTaskApplicants(task.tid);
             }
             
             // 更新任务列表
@@ -833,9 +854,7 @@ export default {
       
       // 返回占位符，等待头像加载完成后会自动更新
       return `https://via.placeholder.com/40?text=U${userObj.uid}`;
-    },
-
-    // 初始化当前用户信息
+    },    // 初始化当前用户信息
     initCurrentUser() {
       // 从 Vuex store 获取用户信息
       if (this.$store.getters.currentUser) {
@@ -855,10 +874,43 @@ export default {
         } else {
           // 如果都没有，使用默认值
           this.currentUserId = 1001;
-        }
-      }
+        }      }
       console.log('初始化当前用户ID:', this.currentUserId);
-    }  },
+    },
+
+    // 判断当前用户是否是任务发布者
+    isTaskPublisher(task) {
+      return task && task.uid === this.currentUserId;
+    },    // 判断当前用户是否是任务接取者
+    isTaskExecutor(task) {
+      if (!task || !this.currentUserId) {
+        return false;
+      }
+      
+      // 方法1: 如果任务有executorId字段（模拟数据）
+      if (task.executorId) {
+        return task.executorId === this.currentUserId;
+      }
+      
+      // 方法2: 通过申请者列表判断（真实API返回的数据）
+      if (this.taskApplicants && this.taskApplicants.length > 0) {
+        return this.taskApplicants.some(applicant => 
+          applicant.uid === this.currentUserId && applicant.status === 1
+        );      }
+      
+      return false;
+    },
+
+    // 判断当前用户是否已经申请过这个任务
+    hasUserApplied(task) {
+      if (!task || !this.currentUserId || !this.taskApplicants) {
+        return false;
+      }
+        return this.taskApplicants.some(applicant => 
+        applicant.uid === this.currentUserId
+      );
+    }
+  },
   
   // 监听器
   watch: {
@@ -1423,6 +1475,12 @@ export default {
   background-color: #e8f5e9;
   color: #2e7d32;
   border: 1px solid #2e7d32;
+}
+
+.status-info.applied {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #f57c00;
 }
 
 /* 备注部分样式 */
