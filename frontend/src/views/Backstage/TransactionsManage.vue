@@ -206,6 +206,7 @@
 import { ElMessage } from 'element-plus';
 import { adminApi } from '@/api';
 import { baseURL } from '@/api/index.js';
+import { backendTags, getTagLabel } from '@/utils/tagsConfig.js';
 
 export default {
   name: "GoodsManagement",
@@ -227,9 +228,8 @@ export default {
         time: Date.now(),
         timeDate: new Date()
       },
-      currentPage: 1,
-      pageSize: 7,
-      tagOptions: [],      // 上传相关配置
+      currentPage: 1,      pageSize: 7,
+      tagOptions: [...backendTags], // 使用 tagsConfig.js 中的标签配置// 上传相关配置
       uploadUrl: `${baseURL}/api/upload`, // 使用baseURL确保路径正确
       uploadHeaders: {
         // 根据需要添加请求头，如token
@@ -266,13 +266,14 @@ export default {
         ]
       }
     };
-  },
-  computed: {
+  },  computed: {
     filteredGoodsData() {
       if (!this.selectedTag) {
         return this.goodsData;
       }
-      return this.goodsData.filter(item => item.tag === this.selectedTag);
+      // 确保使用数字进行比较，解决标签筛选问题
+      const selectedTagNum = Number(this.selectedTag);
+      return this.goodsData.filter(item => Number(item.tag) === selectedTagNum);
     },
     paginatedGoodsData() {
       const start = (this.currentPage - 1) * this.pageSize;
@@ -287,13 +288,14 @@ export default {
       adminApi.getAllProducts()
         .then(response => {
           console.log('获取商品数据成功:', response);
-          if (response.data && response.data.code === 1) {
-            // 处理成功的响应
+          if (response.data && response.data.code === 1) {            // 处理成功的响应
             this.goodsData = response.data.data.map(item => {
               return {
                 ...item,
                 isEditing: false,
-                timeDate: new Date(Number(item.time))
+                timeDate: new Date(Number(item.time)),
+                // 确保tag是数值类型，与tagsConfig.js中的value一致
+                tag: Number(item.tag) || item.tag
               };
             });
           } else {
@@ -318,13 +320,12 @@ export default {
     // 显示添加对话框
     showAddDialog() {
       this.dialogVisible = true;
-      const now = new Date();
-      this.newGoods = {
+      const now = new Date();      this.newGoods = {
         uid: '',
         price: 0,
         name: '',
         image: '',
-        tag: '',
+        tag: 1, // 默认设置为第一个标签
         intro: '',
         quantity: 1,
         sales: 0,
@@ -528,61 +529,18 @@ export default {
       if (this.newGoods.timeDate) {
         this.newGoods.time = this.newGoods.timeDate.getTime();
       }
+    },    // 根据标签获取对应的类型样式
+    getTagType(tag) {
+      // 确保tag是数字
+      const tagNum = Number(tag) || 1;
+      const types = ['success', 'warning', 'info', 'danger', 'primary'];
+      return types[(tagNum - 1) % types.length] || 'success';
+    },// 根据标签值获取标签名称
+    getTagLabel(tagValue) {
+      return getTagLabel(tagValue);
     },
 
-    // 根据标签获取对应的类型样式
-    getTagType(tag) {
-      const types = ['', 'success', 'warning', 'info', 'danger'];
-      return types[tag % types.length] || '';
-    },    // 根据标签值获取标签名称
-    getTagLabel(tagValue) {
-      if (!this.tagOptions || this.tagOptions.length === 0) {
-        return `标签${tagValue}`;
-      }
-      const tag = this.tagOptions.find(t => t && t.value === tagValue);
-      return tag ? tag.label : `标签${tagValue}`;
-    },// 获取标签列表
-    fetchTags() {
-      // 使用adminApi获取商品标签
-      adminApi.getProductTags()
-        .then(response => {
-          console.log('获取商品标签成功:', response);
-          if (response.data && response.data.code === 1) {
-            // 处理成功的响应
-            const tags = response.data.data;
-            // 确保每个标签都有value和label属性
-            this.tagOptions = tags.filter(tag => tag && tag.value !== undefined && tag.label !== undefined);
-          } else {
-            // 处理错误响应
-            console.error('获取商品标签失败:', response.data?.msg || '未知错误');
-            ElMessage.error('获取商品标签失败: ' + (response.data?.msg || '未知错误'));
-            
-            // 使用默认标签数据作为备选方案
-            this.tagOptions = [
-              {value: 1, label: '二手电子'},
-              {value: 2, label: '教材书籍'},
-              {value: 3, label: '生活用品'},
-              {value: 4, label: '服装鞋帽'},
-              {value: 5, label: '文具用品'},
-              {value: 6, label: '代步工具'}
-            ];
-          }
-        })
-        .catch(error => {
-          console.error('获取商品标签接口调用出错:', error);
-          ElMessage.error('获取商品标签失败，请稍后重试');
-          
-          // 使用默认标签数据作为备选方案
-          this.tagOptions = [
-            {value: 1, label: '二手电子'},
-            {value: 2, label: '教材书籍'},
-            {value: 3, label: '生活用品'},
-            {value: 4, label: '服装鞋帽'},
-            {value: 5, label: '文具用品'},
-            {value: 6, label: '代步工具'}
-          ];
-        });
-    },// 图片上传成功处理
+    // 删除获取标签的方法，改为直接使用配置文件// 图片上传成功处理
     handleImageSuccess(response, file, target) {
       // 正常情况下，后端会返回图片URL
       if (response && response.data && response.data.code === 1) {
@@ -628,10 +586,9 @@ export default {
         return false;
       }
       return isJPG && isLt2M;
-    },
-  },
+    },  },
   created() {
-    this.fetchTags();
+    // 不再需要获取标签，直接从配置文件导入
     this.fetchGoods();
   },
 };
