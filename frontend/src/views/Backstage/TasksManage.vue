@@ -153,14 +153,14 @@
 
       <el-table-column label="操作" width="140">
         <template #default="scope">
-          <el-button
+          <!-- <el-button
               type="warning"
               size="small"
               @click="editRow(scope.row)"
               v-if="!scope.row.isEditing"
           >
             编辑
-          </el-button>
+          </el-button> -->
           <el-button
               type="success"
               size="small"

@@ -80,7 +80,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="160">
+      <!-- <el-table-column label="操作" width="160">
         <template #default="scope">
           <el-button
               type="warning"
@@ -106,7 +106,7 @@
             删除
           </el-button>
         </template>
-      </el-table-column>
+      </el-table-column> -->
     </el-table>
 
     <!-- 分页组件 -->

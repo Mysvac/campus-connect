@@ -99,33 +99,24 @@ export default {    // 获取所有任务
         }
         return api.post(`/api/task/accept-applicant/${taskId}/${userId}`);
     },    // 完成任务
-    completeTask: (id, uid = null) => {
+    completeTask: (id, executorUid = null) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟完成任务");
-            console.log("传入的用户UID:", uid);
-            // 如果没有提供uid，从localStorage获取当前用户ID
-            if (!uid) {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                console.log("从localStorage获取的用户信息:", currentUser);
-                uid = currentUser.uid;
-                
-                // 如果还是没有获取到uid，给出警告并使用默认值
-                if (!uid) {
-                    console.warn("警告: 无法获取当前用户ID，使用默认值1001");
-                    uid = 1001;
-                }
-            }
-            
-            console.log("最终使用的用户UID:", uid);
+            console.log("传入的执行者UID:", executorUid);
             
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
+                // 记录任务完成信息
                 task.status = 3; // 已完成
+                if (executorUid) {
+                    task.completedBy = executorUid; // 记录是谁完成的任务
+                    console.log("任务完成者记录为:", executorUid);
+                }
                 return getMockResponse({success: true});
             }
             return getMockResponse({success: false, message: '任务不存在'});
         }
-        return api.post(`/api/task/complete-task/${id}/${uid}`);
+        return api.post(`/api/task/complete-task/${id}/${executorUid}`);
     },terminateTask: (id) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟终止任务");

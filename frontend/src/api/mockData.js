@@ -892,6 +892,57 @@ export const MOCK_DATA = {
       wallet: 0,
       permission: 2,
       registerTime: Date.now() - 86400000 * 100
+    }  ],
+
+  // 评分评论数据（从ratings中的comments扁平化而来）
+  ratingComments: [
+    {
+      cid: 101,
+      sid: 1,
+      uid: 1002,
+      score: 4.0,
+      comment: '同意，作业确实有点多',
+      time: Date.now() - 86400000 * 4
+    },
+    {
+      cid: 201,
+      sid: 4,
+      uid: 1005,
+      score: 4.5,
+      comment: '同意老师很好，但考试确实难',
+      time: Date.now() - 86400000 * 2
+    },
+    {
+      cid: 301,
+      sid: 5,
+      uid: 1003,
+      score: 3.0,
+      comment: '期望能有更多实践机会',
+      time: Date.now() - 86400000 * 6
+    },
+    {
+      cid: 401,
+      sid: 6,
+      uid: 1001,
+      score: 5.0,
+      comment: '课程设计很有实用性',
+      time: Date.now() - 86400000 * 1
+    },
+    {
+      cid: 501,
+      sid: 7,
+      uid: 1004,
+      score: 4.0,
+      comment: '内容充实，但进度有点快',
+      time: Date.now() - 86400000 * 3
+    },
+    {
+      cid: 601,
+      sid: 8,
+      uid: 1002,
+      score: 3.5,
+      comment: '希望有更多的答疑时间',
+      time: Date.now() - 86400000 * 5
     }
   ],
   

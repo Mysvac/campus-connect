@@ -66,11 +66,36 @@
             {{ getStatusText(row.status) }}
           </el-tag>
         </template>
-      </el-table-column>
-
-      <el-table-column label="备注信息" prop="notes" min-width="150">
+      </el-table-column>      <el-table-column label="备注信息" prop="notes" min-width="150">
         <template #default="{ row }">
           <span>{{ row.notes || '无' }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="操作" width="200" align="center">
+        <template #default="{ row }">
+          <div v-if="row.status === 0">
+            <el-button 
+              type="success" 
+              size="small" 
+              @click="updateOrderStatus(row, 2)"
+              :loading="row.updating"
+            >
+              完成订单
+            </el-button>
+            <el-button 
+              type="danger" 
+              size="small" 
+              @click="updateOrderStatus(row, 1)"
+              :loading="row.updating"
+              style="margin-left: 8px;"
+            >
+              取消订单
+            </el-button>
+          </div>
+          <div v-else>
+            <span class="status-text">{{ getStatusText(row.status) }}</span>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -91,7 +116,7 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import goodApi from '@/api/goodApi';
 
 export default {
@@ -157,9 +182,7 @@ export default {
         console.error('获取用户ID失败:', error);
         ElMessage.error('获取用户信息失败，请重新登录');
       }
-    },
-
-    // 获取用户购买订单列表
+    },    // 获取用户购买订单列表
     async fetchOrders() {
       this.isLoading = true;
       try {
@@ -170,7 +193,8 @@ export default {
           this.orderData = response.data.data.map(item => ({
             ...item,
             // 确保必要字段存在
-            notes: item.notes || ''
+            notes: item.notes || '',
+            updating: false  // 初始化按钮加载状态
           }));
           
           ElMessage.success(`成功获取 ${this.orderData.length} 条订单记录`);
@@ -219,9 +243,7 @@ export default {
     // 处理当前页变化
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-
-    // 格式化时间戳
+    },    // 格式化时间戳
     formatTime(timestamp) {
       if (!timestamp) return '未知时间';
       
@@ -233,6 +255,54 @@ export default {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       
       return `${year}-${month}-${day} ${hours}:${minutes}`;
+    },    // 更新订单状态
+    async updateOrderStatus(order, newStatus) {
+      const statusTexts = {
+        0: '进行中',
+        1: '取消',
+        2: '完成'
+      };
+
+      const confirmMessage = newStatus === 1 ? 
+        '确认要取消此订单吗？' : 
+        '确认要完成此订单吗？';
+
+      try {
+        await ElMessageBox.confirm(confirmMessage, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
+
+        // 设置加载状态
+        order.updating = true;
+
+        const updateData = {
+          oid: order.oid,
+          status: newStatus
+        };
+
+        const response = await goodApi.updateOrderStatus(updateData);
+
+        if (response.data && response.data.code === 1) {
+          // 更新本地订单状态
+          order.status = newStatus;
+          ElMessage.success(`订单已${statusTexts[newStatus]}！`);
+          
+          // 重新获取订单列表以确保数据同步
+          await this.fetchOrders();
+        } else {
+          ElMessage.error('操作失败: ' + (response.data?.msg || '未知错误'));
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('更新订单状态失败:', error);
+          ElMessage.error('操作失败，请稍后重试');
+        }
+      } finally {
+        // 清除加载状态
+        order.updating = false;
+      }
     }
   },
   async created() {
@@ -287,6 +357,11 @@ export default {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+.status-text {
+  color: #909399;
+  font-size: 14px;
 }
 
 /* 响应式设计 */

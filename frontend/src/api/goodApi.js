@@ -143,15 +143,14 @@ export default {
             return getMockResponse({success: false});
         }
         return api.delete(`/api/good/delete-goods-by-gid/${id}`);
-    },
-
-    // 获取当前用户购买的商品订单
+    },    // 获取当前用户购买的商品订单
     getUserOrders: () => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的用户购买订单数据");
             // 模拟返回当前用户的购买订单
             const mockOrders = [
                 { 
+                    oid: 10001,
                     gid: 2001, 
                     uid: 101, 
                     number: 1, 
@@ -160,6 +159,7 @@ export default {
                     sum: 2990 
                 },
                 { 
+                    oid: 10002,
                     gid: 2002, 
                     uid: 101, 
                     number: 2, 
@@ -171,5 +171,14 @@ export default {
             return getMockResponse(mockOrders);
         }
         return api.get('/api/good/get-goodsbuy');
+    },
+
+    // 更新订单状态
+    updateOrderStatus: (data) => {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟更新订单状态", data);
+            return getMockResponse({success: true, message: '订单状态更新成功'});
+        }
+        return api.post('/api/good/update-goodsbuy', data);
     }
 };

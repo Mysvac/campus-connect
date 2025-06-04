@@ -576,9 +576,27 @@ export default {
           console.error('申请任务出错:', error);
           alert('网络错误，请稍后再试');
         });
-    },
-      completeTask(task) {
-      tasksApi.completeTask(task.tid, this.currentUserId)        .then(response => {
+    },    completeTask(task) {
+      // 从申请者列表中找到被接受的申请者（status为1的申请者）
+      let executorUid = null;
+      
+      if (this.taskApplicants && this.taskApplicants.length > 0) {
+        const acceptedApplicant = this.taskApplicants.find(applicant => applicant.status === 1);
+        if (acceptedApplicant) {
+          executorUid = acceptedApplicant.uid;
+        }
+      }
+      
+      // 如果没有找到被接受的申请者，给出警告
+      if (!executorUid) {
+        console.warn('警告: 未找到接受任务的申请者，使用任务发布者ID作为备选');
+        executorUid = this.currentUserId;
+      }
+      
+      console.log('完成任务 - 任务ID:', task.tid, '执行者ID:', executorUid);
+      
+      tasksApi.completeTask(task.tid, executorUid)
+        .then(response => {
           if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已完成
             task.status = 3;
