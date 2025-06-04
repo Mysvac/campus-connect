@@ -104,7 +104,7 @@ public class TableManager  implements CommandLineRunner {
                 quantity INT NOT NULL,
                 sales INT,
                 time BIGINT NOT NULL,
-                CONSTRAINT FK_goods_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_goods_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -121,8 +121,8 @@ public class TableManager  implements CommandLineRunner {
                 gid BIGINT NOT NULL,
                 uid BIGINT NOT NULL,
                 CONSTRAINT PK_goods_release PRIMARY KEY (gid, uid),
-                CONSTRAINT FK_goods_release_gid FOREIGN KEY (gid) REFERENCES goods (gid),
-                CONSTRAINT FK_goods_release_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_goods_release_gid FOREIGN KEY (gid) REFERENCES goods (gid) ON DELETE CASCADE,
+                CONSTRAINT FK_goods_release_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -145,8 +145,8 @@ public class TableManager  implements CommandLineRunner {
                 number INT NOT NULL,
                 status INT NOT NULL CHECK( status IN ( 0, 1, 2, 3 ) ),
                 notes CHAR(100),
-                CONSTRAINT FK_goods_buy_gid FOREIGN KEY (gid) REFERENCES goods (gid),
-                CONSTRAINT FK_goods_buy_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_goods_buy_gid FOREIGN KEY (gid) REFERENCES goods (gid) ON DELETE CASCADE,
+                CONSTRAINT FK_goods_buy_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -169,7 +169,7 @@ public class TableManager  implements CommandLineRunner {
                 status INT NOT NULL CHECK( status IN ( 0, 1, 2, 3 ) ),
                 tag CHAR(10) NOT NULL,
                 time BIGINT NOT NULL,
-                CONSTRAINT FK_tasks_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_tasks_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -186,8 +186,8 @@ public class TableManager  implements CommandLineRunner {
                 tid BIGINT NOT NULL,
                 uid BIGINT NOT NULL,
                 CONSTRAINT PK_tasks_release PRIMARY KEY (tid, uid),
-                CONSTRAINT FK_tasks_release_gid FOREIGN KEY (tid) REFERENCES tasks (tid),
-                CONSTRAINT FK_tasks_release_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_tasks_release_gid FOREIGN KEY (tid) REFERENCES tasks (tid) ON DELETE CASCADE,
+                CONSTRAINT FK_tasks_release_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -207,8 +207,8 @@ public class TableManager  implements CommandLineRunner {
                 notes CHAR(100),
                 time BIGINT NOT NULL,
                 CONSTRAINT PK_tasks_handle PRIMARY KEY (tid, uid),
-                CONSTRAINT FK_tasks_handle_gid FOREIGN KEY (tid) REFERENCES tasks (tid),
-                CONSTRAINT FK_tasks_handle_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_tasks_handle_gid FOREIGN KEY (tid) REFERENCES tasks (tid) ON DELETE CASCADE,
+                CONSTRAINT FK_tasks_handle_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -247,8 +247,8 @@ public class TableManager  implements CommandLineRunner {
                 uid BIGINT NOT NULL,
                 time BIGINT NOT NULL,
                 CONSTRAINT PK_scores_release PRIMARY KEY (sid, uid),
-                CONSTRAINT FK_scores_release_gid FOREIGN KEY (sid) REFERENCES scores (sid),
-                CONSTRAINT FK_scores_release_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_scores_release_gid FOREIGN KEY (sid) REFERENCES scores (sid) ON DELETE CASCADE,
+                CONSTRAINT FK_scores_release_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -268,8 +268,8 @@ public class TableManager  implements CommandLineRunner {
                 comment TEXT,
                 time BIGINT NOT NULL,
                 CONSTRAINT PK_scores_comment PRIMARY KEY (sid, uid),
-                CONSTRAINT FK_scores_comment_gid FOREIGN KEY (sid) REFERENCES scores (sid),
-                CONSTRAINT FK_scores_comment_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_scores_comment_gid FOREIGN KEY (sid) REFERENCES scores (sid) ON DELETE CASCADE,
+                CONSTRAINT FK_scores_comment_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -290,7 +290,7 @@ public class TableManager  implements CommandLineRunner {
                 praise INT NOT NULL,
                 tag CHAR(10) NOT NULL,
                 time BIGINT NOT NULL,
-                CONSTRAINT FK_messages_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_messages_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -307,8 +307,8 @@ public class TableManager  implements CommandLineRunner {
                 mid BIGINT NOT NULL,
                 uid BIGINT NOT NULL,
                 CONSTRAINT PK_messages_release PRIMARY KEY (mid, uid),
-                CONSTRAINT FK_messages_release_mid FOREIGN KEY (mid) REFERENCES messages (mid),
-                CONSTRAINT FK_messages_release_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_messages_release_mid FOREIGN KEY (mid) REFERENCES messages (mid) ON DELETE CASCADE,
+                CONSTRAINT FK_messages_release_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
@@ -328,8 +328,8 @@ public class TableManager  implements CommandLineRunner {
                 content TEXT NOT NULL,
                 praise INT NOT NULL,
                 time BIGINT NOT NULL,
-                CONSTRAINT FK_messages_comment_mid FOREIGN KEY (mid) REFERENCES messages (mid),
-                CONSTRAINT FK_messages_comment_uid FOREIGN KEY (uid) REFERENCES users (uid)
+                CONSTRAINT FK_messages_comment_mid FOREIGN KEY (mid) REFERENCES messages (mid) ON DELETE CASCADE,
+                CONSTRAINT FK_messages_comment_uid FOREIGN KEY (uid) REFERENCES users (uid) ON DELETE CASCADE
                 );
                 """;
         jdbcTemplate.execute(createTableSQL);
