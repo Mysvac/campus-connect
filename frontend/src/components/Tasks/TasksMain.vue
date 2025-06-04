@@ -529,13 +529,17 @@ export default {
       acceptTask(task) {
       const applicationData = {
         message: '我想接取这个任务' // 可以让用户输入申请消息
-      };
-
-      tasksApi.applyTask(task.tid, applicationData)
+      };      tasksApi.applyTask(task.tid, applicationData)
         .then(response => {
           if (response.data && response.data.code === 1) {
-            // 申请任务成功，任务状态仍然是待接取状态，等待发布者同意
-            // 不需要修改任务状态，只需要刷新任务列表
+            // 申请任务成功，根据后端逻辑，任务状态会变为进行中(1)
+            // 更新本地任务状态
+            task.status = 1;
+            
+            // 如果当前选中的任务就是这个任务，也要更新选中任务的状态
+            if (this.selectedTask && this.selectedTask.tid === task.tid) {
+              this.selectedTask.status = 1;
+            }
             
             // 更新任务列表
             this.fetchTasks();
@@ -553,11 +557,15 @@ export default {
         });
     },
       completeTask(task) {
-      tasksApi.completeTask(task.tid, this.currentUserId)
-        .then(response => {
+      tasksApi.completeTask(task.tid, this.currentUserId)        .then(response => {
           if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已完成
             task.status = 3;
+            
+            // 如果当前选中的任务就是这个任务，也要更新选中任务的状态
+            if (this.selectedTask && this.selectedTask.tid === task.tid) {
+              this.selectedTask.status = 3;
+            }
             
             // 更新任务列表
             this.fetchTasks();
@@ -574,12 +582,16 @@ export default {
           alert('网络错误，请稍后再试');
         });
     },
-      terminateTask(task) {
-      tasksApi.terminateTask(task.tid)
+      terminateTask(task) {      tasksApi.terminateTask(task.tid)
         .then(response => {
           if (response.data && response.data.code === 1) {
             // 将本地任务状态改为已终止
             task.status = 2;
+
+            // 如果当前选中的任务就是这个任务，也要更新选中任务的状态
+            if (this.selectedTask && this.selectedTask.tid === task.tid) {
+              this.selectedTask.status = 2;
+            }
 
             // 更新任务列表
             this.fetchTasks();
