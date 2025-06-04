@@ -26,7 +26,6 @@ export default {
     }
     return api.delete(`/api/user/delete-user-by-uid/${uid}`);
   },
-
   // 更新用户信息（管理员权限）
   updateUser: (data) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
@@ -45,7 +44,7 @@ export default {
       MOCK_DATA.users[userIndex] = updatedUser;
       return getMockResponse({success: true, data: updatedUser});
     }
-    return api.post('/api/user/admin-update', data);
+    return api.post('/api/user/update', data);
   },
 
   // 创建新用户（管理员权限）

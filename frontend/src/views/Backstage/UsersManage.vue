@@ -34,10 +34,9 @@
             <el-input v-if="row.isEditing" v-model="row.phone" size="small" placeholder="手机号" maxlength="11"></el-input>
             <span v-else>{{ row.phone }}</span>
           </template>
-        </el-table-column>
-        <el-table-column label="密码" prop="password" width="90">
+        </el-table-column>        <el-table-column label="密码" prop="password" width="120">
           <template #default="{ row }">
-            <el-input v-if="row.isEditing" v-model="row.password" size="small" placeholder="密码" show-password></el-input>
+            <el-input v-if="row.isEditing" v-model="row.password" size="small" placeholder="留空不修改" show-password clearable></el-input>
             <span v-else>••••••••</span>
           </template>
         </el-table-column>
@@ -276,10 +275,10 @@ export default {
           if (response.data && response.data.code === 1) {
             // 处理成功的响应，添加isEditing属性
             this.usersData = response.data.data.map(item => {
-              // 对于密码，设置为占位符，避免显示真实密码
+              // 清空密码字段
               return {
                 ...item,
-                password: '••••••••',
+                password: '',
                 isEditing: false
               };
             });
@@ -350,9 +349,7 @@ export default {
           }
         });
       }
-    },
-
-    // 编辑行
+    },    // 编辑行
     editRow(row) {
       this.usersData.forEach(item => {
         if (item.uid !== row.uid) {
@@ -362,14 +359,37 @@ export default {
       row.isEditing = true;
       // 保存原始数据，用于取消编辑时恢复
       row._originalData = JSON.parse(JSON.stringify(row));
-    },    // 保存行
+      // 清空密码字段，让管理员输入新密码
+      row.password = '';
+    },// 保存行
     saveRow(row) {
       this.isLoading = true;
+      
+      // 准备要更新的数据
+      const updateData = {
+        uid: row.uid,
+        phone: row.phone,
+        permission: row.permission,
+        wallet: row.wallet,
+        nickname: row.nickname,
+        gender: row.gender,
+        email: row.email,
+        profile: row.profile,
+        image: row.image
+      };
+      
+      // 只有当密码不为空时才包含密码字段
+      if (row.password && row.password.trim() !== '') {
+        updateData.password = row.password;
+      }
+      
       // 使用adminApi更新用户
-      adminApi.updateUser(row)
+      adminApi.updateUser(updateData)
         .then(response => {
           if (response.data && response.data.code === 1) {
             row.isEditing = false;
+            // 清空密码字段以避免显示
+            row.password = '';
             delete row._originalData; // 删除原始数据
             ElMessage.success('更新用户成功');
           } else {
@@ -393,7 +413,7 @@ export default {
           delete row._originalData;
           this.isLoading = false;
         });
-    },    // 删除行
+    },// 删除行
     deleteRow(row) {
       this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
         confirmButtonText: '确定',
