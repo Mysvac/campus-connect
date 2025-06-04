@@ -1,18 +1,11 @@
 <script>
+import { frontendTags } from '@/utils/tagsConfig.js';
+
 export default {
   name: 'TransactionsLeft',
   data() {
     return {
-      tags: [
-        { id: 1, name: '图书教材', active: false },
-        { id: 2, name: '生活服务', active: false },
-        { id: 3, name: '电子产品', active: false },
-        { id: 4, name: '运动器材', active: false },
-        { id: 5, name: '服装鞋帽', active: false },
-        { id: 6, name: '日用百货', active: false },
-        { id: 7, name: '票券礼品', active: false },
-        { id: 8, name: '其他', active: false }
-      ]
+      tags: [...frontendTags]
     }
   },
   methods: {
