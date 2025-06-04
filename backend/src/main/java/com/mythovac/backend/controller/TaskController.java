@@ -47,6 +47,15 @@ public class TaskController {
         return Result.success(tasksService.getAllTags());
     }
 
+    /**
+     * 获取所有任务处理
+     * @return Result
+     */
+    @GetMapping("/get-all-taskhandle")
+    public Result getAllTaskHandle() {
+        return Result.success(tasksHandleService.getAllTasksHandle());
+    }
+
     /*
       任务Task：
       0.待接取 1.进行中 2.终止 3.完成
@@ -152,7 +161,7 @@ public class TaskController {
     }
 
     /**
-     * 取消自己的单个任务处理
+     * 取消指定的单个任务处理
      * @param tid 任务ID
      * @param session HttpSession
      * @return 用户任务列表
