@@ -143,6 +143,19 @@ public class UserController {
     }
 
     /**
+     * 获取所有用户
+     * @return Result 所有用户列表
+     */
+    @GetMapping("get-all-users")
+    public Result getAllUsers() {
+        var users = userService.getAllUsers();
+        if(!users.isEmpty()) for(User user : users) {
+            user.setPassword("");
+        }
+        return Result.success(users);
+    }
+
+    /**
      * 获取用户名资料
      * @param uid 用户ID
      * @return Result 用户资料
