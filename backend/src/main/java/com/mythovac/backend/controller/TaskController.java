@@ -301,7 +301,7 @@ public class TaskController {
         }
         usr.setWallet(usr.getWallet() - task.getMoney());
         userService.updateUser(usr);
-        task.setStatus(2); // 默认状态为未开始
+        task.setStatus(0); // 默认状态为未开始
         tasksService.insertTask(task);
         return Result.success("添加成功");
     }
