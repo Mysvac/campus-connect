@@ -503,7 +503,7 @@ export default {
       console.log("DEBUG MODE: 返回模拟的所有订单数据");
       return getMockResponse(MOCK_DATA.orders);
     }
-    return api.get('/api/order/get-all-orders');
+    return api.get('/api/good/get-all-goodsbuy');
   },
   
   // 更新订单（管理员权限）
