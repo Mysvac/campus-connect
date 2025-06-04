@@ -86,6 +86,16 @@ public class GoodController {
     }
 
     /**
+     * 获取所有购买记录
+     * @return Result 所有购买记录列表
+     */
+    @GetMapping("/get-all-goodsbuy")
+    public Result getAllGoodsBuy() {
+        List<GoodsBuy> res = goodsBuyService.getAllGoodsBuy();
+        return Result.success(res);
+    }
+
+    /**
      * 获取可能的Tag列表
      * @return Tags列表
      */
