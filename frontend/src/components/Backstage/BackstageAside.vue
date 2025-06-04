@@ -15,14 +15,11 @@
         </template>
         <el-menu-item index="2-1" @click="goToPage('/backstage/transactions')">商品内容</el-menu-item>
         <el-menu-item index="2-2" @click="goToPage('/backstage/transactions-order')">商品订单</el-menu-item>
-      </el-sub-menu>
-
-      <el-sub-menu index="3">
+      </el-sub-menu>      <el-sub-menu index="3">
         <template #title>
           任务管理
         </template>
         <el-menu-item index="3-1" @click="goToPage('/backstage/tasks')">任务内容</el-menu-item>
-        <el-menu-item index="3-2" @click="goToPage('/backstage/tasks-status')">任务状态</el-menu-item>
       </el-sub-menu>
 
       <el-sub-menu index="4">

@@ -13,7 +13,6 @@ import MessageBoardCommentManage from "@/views/Backstage/MessageBoardCommentMana
 import TransactionsManage from "@/views/Backstage/TransactionsManage.vue";
 import TransactionsOrderManage from "@/views/Backstage/TransactionsOrderManage.vue";
 import TasksManage from "@/views/Backstage/TasksManage.vue";
-import TasksStatusManage from "@/views/Backstage/TasksStatusManage.vue";
 import RatingsManage from "@/views/Backstage/RatingsManage.vue";
 import RatingsCommentManage from "@/views/Backstage/RatingsCommentManage.vue";
 import usersManage from "@/views/Backstage/UsersManage.vue";
@@ -89,10 +88,8 @@ const routes = [
     children: [
       {path: "message-board", name: "MessageBoardManage", component: MessageBoardManage },
       {path: "message-board-comment", name: "MessageBoardCommentManage", component: MessageBoardCommentManage },
-      {path: "transactions", name: "TransactionsManage", component: TransactionsManage },
-      {path: "transactions-order", name: "TransactionsOrderManage", component: TransactionsOrderManage },
+      {path: "transactions", name: "TransactionsManage", component: TransactionsManage },      {path: "transactions-order", name: "TransactionsOrderManage", component: TransactionsOrderManage },
       {path: "tasks", name: "TasksManage", component: TasksManage },
-      {path: "tasks-status", name: "TasksStatusManage", component: TasksStatusManage },
       {path: "ratings", name: "RatingsManage", component: RatingsManage },
       {path: "ratings-comment", name: "RatingsCommentManage", component: RatingsCommentManage },
       {path: "users", name: "usersManage", component: usersManage },
