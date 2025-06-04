@@ -53,13 +53,17 @@ export default {    // 获取评分标签
     createRating: (data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新评分");
+            // 获取当前用户ID
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUserId = currentUser.uid || 1001; // 默认使用1001
+            
             const newRating = {
                 rid: MOCK_DATA.ratings.length + 1,
                 sid: MOCK_DATA.ratings.length + 1,
-                uid: 101, // 模拟用户ID
+                uid: currentUserId, // 使用动态用户ID
                 goal: data.goal,
                 tag: data.tag,
-                intro: data.intro,                image: data.image,
+                intro: data.intro,image: data.image,
                 score: data.score,
                 num: 0, // 初始参与人数为0
                 status: 0,
@@ -117,11 +121,15 @@ export default {    // 获取评分标签
     commentRating: (id, data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟评论评分", { id, data });
+            // 获取当前用户ID
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUserId = currentUser.uid || 1001; // 默认使用1001
+            
             const rating = MOCK_DATA.ratings.find(r => r.rid === parseInt(id) || r.sid === parseInt(id));
             if (rating) {
                 const newComment = {
                     cid: Date.now(),
-                    uid: 101, // 模拟用户ID
+                    uid: currentUserId, // 使用动态用户ID
                     sid: rating.sid || rating.rid,
                     content: data.comment || data.content,
                     comment: data.comment || data.content,
@@ -129,8 +137,8 @@ export default {    // 获取评分标签
                     time: data.time || Date.now(),
                     likes: 0,
                     isLiked: false,
-                    userName: '当前用户', // 模拟用户名
-                    userAvatar: 'https://via.placeholder.com/48?text=U101' // 模拟头像
+                    userName: currentUser.name || '当前用户', // 使用真实用户名
+                    userAvatar: currentUser.avatar || `https://via.placeholder.com/48?text=U${currentUserId}` // 使用真实头像
                 };
                 rating.comments.push(newComment);
                 console.log("DEBUG MODE: 评论已添加到模拟数据", newComment);

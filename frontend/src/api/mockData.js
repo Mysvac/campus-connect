@@ -249,12 +249,11 @@ export const MOCK_DATA = {
       ]
     }
   ],
-
   // 商品交易数据
   products: [
     {
       gid: 1,
-      uid: 101,
+      uid: 1001,
       price: 2990, // 单位：分
       name: '二手课本 《数据结构》',
       image: '/api/placeholder/200/200',
@@ -266,7 +265,7 @@ export const MOCK_DATA = {
     },
     {
       gid: 2,
-      uid: 102,
+      uid: 1002,
       price: 14900,
       name: '罗技无线鼠标',
       image: '/api/placeholder/200/200',
@@ -278,7 +277,7 @@ export const MOCK_DATA = {
     },
     {
       gid: 3,
-      uid: 103,
+      uid: 1003,
       price: 3500,
       name: '自习室月卡',
       image: '/api/placeholder/200/200',
@@ -290,7 +289,7 @@ export const MOCK_DATA = {
     },
     {
       gid: 4,
-      uid: 104,
+      uid: 1004,
       price: 5990,
       name: '全新篮球',
       image: '/api/placeholder/200/200',
@@ -302,7 +301,7 @@ export const MOCK_DATA = {
     },
     {
       gid: 5,
-      uid: 101,
+      uid: 1001,
       price: 1990,
       name: '英语四级词汇书',
       image: '/api/placeholder/200/200',
@@ -325,13 +324,12 @@ export const MOCK_DATA = {
     { id: 7, name: '票券礼品' },
     { id: 8, name: '其他' },
   ],
-
   // 评分数据
   ratings: [
     {
       rid: 1,
       sid: 1,
-      uid: 101,
+      uid: 1001,
       targetType: 'course',
       targetId: 'CS101',
       targetName: '计算机导论',
@@ -349,7 +347,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 101,
-          uid: 102,
+          uid: 1002,
           userName: '学生李明',
           userAvatar: 'https://via.placeholder.com/48',
           content: '同意，作业确实有点多',
@@ -364,7 +362,7 @@ export const MOCK_DATA = {
     {
       rid: 2,
       sid: 2,
-      uid: 102,
+      uid: 1002,
       targetType: 'course',
       targetId: 'MATH201',
       targetName: '高等数学',
@@ -384,7 +382,7 @@ export const MOCK_DATA = {
     {
       rid: 3,
       sid: 3,
-      uid: 103,
+      uid: 1003,
       targetType: 'professor',
       targetId: 'P001',
       targetName: '张教授',
@@ -402,7 +400,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 301,
-          uid: 104,
+          uid: 1004,
           userName: '学生王华',
           userAvatar: 'https://via.placeholder.com/48',
           content: '我上过他的课，确实很好',
@@ -417,7 +415,7 @@ export const MOCK_DATA = {
     {
       rid: 4,
       sid: 4,
-      uid: 104,
+      uid: 1004,
       targetType: 'facility',
       targetId: 'F001',
       targetName: '中心图书馆',
@@ -435,7 +433,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 401,
-          uid: 105,
+          uid: 1005,
           userName: '学生赵芳',
           userAvatar: 'https://via.placeholder.com/48',
           content: '周末常常位置不够，建议增加座位',
@@ -447,7 +445,7 @@ export const MOCK_DATA = {
         },
         {
           cid: 402,
-          uid: 106,
+          uid: 1001,
           userName: '学生林杰',
           userAvatar: 'https://via.placeholder.com/48',
           content: '空调温度有点低，记得多穿点',
@@ -462,7 +460,7 @@ export const MOCK_DATA = {
     {
       rid: 5,
       sid: 5,
-      uid: 105,
+      uid: 1005,
       targetType: 'canteen',
       targetId: 'C001',
       targetName: '一号食堂',
@@ -480,7 +478,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 501,
-          uid: 106,
+          uid: 1001,
           userName: '学生陈明',
           userAvatar: 'https://via.placeholder.com/48',
           content: '价格确实实惠，但希望能提高菜品质量',
@@ -495,7 +493,7 @@ export const MOCK_DATA = {
     {
       rid: 6,
       sid: 6,
-      uid: 106,
+      uid: 1001,
       targetType: 'dormitory',
       targetId: 'D001',
       targetName: '1号学生公寓',
@@ -509,11 +507,10 @@ export const MOCK_DATA = {
       num: 87,
       time: Date.now() - 86400000 * 4,
       likes: 22,
-      isLiked: false,
-      comments: [
+      isLiked: false,      comments: [
         {
           cid: 601,
-          uid: 107,
+          uid: 1002,
           userName: '学生周琳',
           userAvatar: 'https://via.placeholder.com/48',
           content: '楼下洗衣房设施挺好用的',
@@ -528,7 +525,7 @@ export const MOCK_DATA = {
     {
       rid: 7,
       sid: 7,
-      uid: 107,
+      uid: 1002,
       targetType: 'gym',
       targetId: 'G001',
       targetName: '校园体育中心',
@@ -546,7 +543,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 701,
-          uid: 108,
+          uid: 1003,
           userName: '学生刘强',
           userAvatar: 'https://via.placeholder.com/48',
           content: '健身房设备很齐全，教练也很专业',
@@ -561,7 +558,7 @@ export const MOCK_DATA = {
     {
       rid: 8,
       sid: 8,
-      uid: 108,
+      uid: 1003,
       targetType: 'service',
       targetId: 'S001',
       targetName: '校园快递服务点',
@@ -579,7 +576,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 801,
-          uid: 109,
+          uid: 1004,
           userName: '学生杨丽',
           userAvatar: 'https://via.placeholder.com/48',
           content: '希望能延长晚上的服务时间',
@@ -594,7 +591,7 @@ export const MOCK_DATA = {
     {
       rid: 9,
       sid: 9,
-      uid: 109,
+      uid: 1004,
       targetType: 'activity',
       targetId: 'A001',
       targetName: '校园文化节',
@@ -612,7 +609,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 901,
-          uid: 110,
+          uid: 1005,
           userName: '学生张明',
           userAvatar: 'https://via.placeholder.com/48',
           content: '今年的文化节比去年更加精彩',
@@ -627,7 +624,7 @@ export const MOCK_DATA = {
     {
       rid: 10,
       sid: 10,
-      uid: 110,
+      uid: 1005,
       targetType: 'club',
       targetId: 'CL001',
       targetName: '摄影协会',
@@ -645,7 +642,7 @@ export const MOCK_DATA = {
       comments: [
         {
           cid: 1001,
-          uid: 111,
+          uid: 1001,
           userName: '学生王丽',
           userAvatar: 'https://via.placeholder.com/48',
           content: '加入社团后学到了很多摄影知识',
@@ -672,10 +669,9 @@ export const MOCK_DATA = {
     { id: 9, name: '社团组织' }
   ],
   // 任务数据
-  tasks: [
-    {
+  tasks: [    {
       tid: 1,
-      uid: 101,
+      uid: 1001,
       name: '快速送文件到教学楼',
       details: '需要有人帮忙把一份重要文件从学生宿舍送到主教学楼，急需！',
       tag: 1, // 快递代取
@@ -703,7 +699,7 @@ export const MOCK_DATA = {
     },
     {
       tid: 2,
-      uid: 102,
+      uid: 1002,
       name: '帮忙带早餐',
       details: '明早8点，请帮忙从2号食堂带一份早餐到4号宿舍楼，报酬从优',
       tag: 2, // 食品代购
@@ -722,10 +718,9 @@ export const MOCK_DATA = {
           message: '我住在4号宿舍楼，很方便！'
         }
       ]
-    },
-    {
+    },    {
       tid: 3,
-      uid: 103,
+      uid: 1003,
       name: '寻找数学笔记',
       details: '上周在图书馆丢失了一本数学笔记，急需找回',
       tag: 3, // 失物招领
@@ -740,7 +735,7 @@ export const MOCK_DATA = {
     },
     {
       tid: 4,
-      uid: 104,
+      uid: 1004,
       name: '求一起约球',
       details: '周五下午3点，找三个人一起在东区篮球场打球',
       tag: 4, // 运动伙伴
@@ -765,10 +760,9 @@ export const MOCK_DATA = {
           message: '我可以参加，球技还可以'
         }
       ]
-    },
-    {
+    },    {
       tid: 5,
-      uid: 105,
+      uid: 1005,
       name: '复印资料代取',
       details: '需要有人帮忙去图书馆复印5份资料，大约50页',
       tag: 5, // 学习互助

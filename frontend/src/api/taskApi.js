@@ -24,9 +24,13 @@ export default {    // 获取所有任务
     createTask: (data) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟创建新任务");
+            // 获取当前用户ID
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUserId = currentUser.uid || 1001; // 默认使用1001
+            
             const newTask = {
                 tid: MOCK_DATA.tasks.length + 1,
-                uid: 101, // 模拟用户ID
+                uid: currentUserId,
                 name: data.name,
                 details: data.details,
                 tag: data.tag,
@@ -41,22 +45,29 @@ export default {    // 获取所有任务
         }
         return api.post('/api/task/add-task', data);
     },    // 申请任务
-    applyTask: (id, data) => {
+    applyTask: (id, data = {}) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟申请任务");
+            // 获取当前用户ID
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUserId = currentUser.uid || 1001; // 默认使用1001
+            
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
                 if (task.status === 0) { // 待接取
                     // 检查用户是否已经申请过
-                    const existingApplication = task.applicants.find(a => a.uid === 101);
+                    const existingApplication = task.applicants.find(a => a.uid === currentUserId);
                     if (existingApplication) {
                         return getMockResponse({success: false, message: '您已经申请过此任务'});
                     }
                     
+                    // 直接将任务状态改为进行中（根据后端逻辑）
+                    task.status = 1;
                     const application = {
-                        uid: 101, // 模拟用户ID
+                        uid: currentUserId, // 使用动态用户ID
+                        tid: parseInt(id),
                         time: Date.now(),
-                        status: 0, // 待同意（等待发布者同意）
+                        status: 1, // 进行中
                         message: data.message || ''
                     };
                     task.applicants.push(application);
@@ -68,7 +79,7 @@ export default {    // 获取所有任务
             return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/apply-task/${id}`, data);
-    },    // 接受申请
+    },// 接受申请
     acceptApplicant: (taskId, userId) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟接受申请");
@@ -87,10 +98,26 @@ export default {    // 获取所有任务
             return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/accept-applicant/${taskId}/${userId}`);
-    },// 完成任务
-    completeTask: (id, uid = 101) => {
+    },    // 完成任务
+    completeTask: (id, uid = null) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟完成任务");
+            console.log("传入的用户UID:", uid);
+            // 如果没有提供uid，从localStorage获取当前用户ID
+            if (!uid) {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                console.log("从localStorage获取的用户信息:", currentUser);
+                uid = currentUser.uid;
+                
+                // 如果还是没有获取到uid，给出警告并使用默认值
+                if (!uid) {
+                    console.warn("警告: 无法获取当前用户ID，使用默认值1001");
+                    uid = 1001;
+                }
+            }
+            
+            console.log("最终使用的用户UID:", uid);
+            
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
             if (task) {
                 task.status = 3; // 已完成
@@ -99,9 +126,7 @@ export default {    // 获取所有任务
             return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/complete-task/${id}/${uid}`);
-    },
-
-    terminateTask: (id) => {
+    },terminateTask: (id) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 模拟终止任务");
             const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(id));
@@ -112,6 +137,24 @@ export default {    // 获取所有任务
             return getMockResponse({success: false, message: '任务不存在'});
         }
         return api.post(`/api/task/terminate-task/${id}`);
+    },
+
+    // 放弃任务（用户放弃已接取的任务）
+    abandonTask: (taskId, userId) => {
+        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
+            console.log("DEBUG MODE: 模拟放弃任务");
+            const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(taskId));
+            if (task) {
+                task.status = 0; // 回到待接取状态
+                // 移除申请记录
+                if (task.applicants) {
+                    task.applicants = task.applicants.filter(a => a.uid !== parseInt(userId));
+                }
+                return getMockResponse({success: true});
+            }
+            return getMockResponse({success: false, message: '任务不存在'});
+        }
+        return api.post(`/api/task/terminate-taskhandle/${taskId}/${userId}`);
     },
 
     // 获取任务标签
@@ -158,20 +201,7 @@ export default {    // 获取所有任务
             return getMockResponse(tasks);
         }
         return api.get(`/api/task/get-applied-tasks/${userId}`);
-    },    // 获取任务申请情况
-    getTasksHandleByTid: (tid) => {
-        if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
-            console.log("DEBUG MODE: 返回模拟的任务申请数据");
-            const task = MOCK_DATA.tasks.find(t => t.tid === parseInt(tid));
-            if (task && task.applicants) {
-                return getMockResponse(task.applicants);
-            }
-            return getMockResponse([]);
-        }
-        return api.get(`/api/task/get-taskshandle-by-tid?tid=${tid}`);
-    },
-
-    // 获取任务申请者列表
+    },    // 获取任务申请者列表（统一方法名）
     getTaskApplicants: (taskId) => {
         if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
             console.log("DEBUG MODE: 返回模拟的任务申请者数据");
@@ -181,7 +211,7 @@ export default {    // 获取所有任务
             }
             return getMockResponse([]);
         }
-        return api.get(`/api/task/get-applicants/${taskId}`);
+        return api.get(`/api/task/get-taskshandle-by-tid/${taskId}`);
     },
 
     // 接受申请者

@@ -330,18 +330,14 @@ export default {  // 用户登录
   // 获取用户名
   getUsername: (uid) => {
     if (DEBUG_MODE && localStorage.getItem('isAuthenticated') !== 'true') {
-      console.log("DEBUG MODE: 获取用户名");
+      console.log("DEBUG MODE: 获取用户名，uid:", uid);
       const user = MOCK_DATA.users.find(u => u.uid === parseInt(uid));
-      if (user) {
+      if (user && user.name) {
+        console.log("找到用户:", user.name);
         return getMockResponse(user.name);
       } else {
-        return Promise.resolve({
-          data: {
-            code: 0,
-            msg: "用户不存在",
-            data: null
-          }
-        });
+        console.log("用户不存在，返回默认用户名");
+        return getMockResponse(`用户${uid}`);
       }
     }
     

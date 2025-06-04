@@ -231,8 +231,8 @@ export default {
 
   data() {
     return {
-      // 模拟当前登录用户ID
-      currentUserId: 1001,
+      // 当前登录用户ID - 将从store或localStorage动态获取
+      currentUserId: null,
       tasks: [],
       isLoading: true,
       error: null,
@@ -313,25 +313,13 @@ export default {
     // 当tasks数据发生变化时，向父组件发送更新事件
     tasks: {
       handler(newVal) {
-        this.$emit('update-tasks', newVal);
+    this.$emit('update-tasks', newVal);
       },
       deep: true
     }
   },
 
-  created() {
-    // 获取任务标签
-    this.fetchTaskTags();
-    
-    // 获取任务列表
-    this.fetchTasks();
-
-    // 如果初始selectedTaskId存在，则自动加载该任务详情
-    if (this.selectedTaskId) {
-      this.fetchTaskDetail(this.selectedTaskId);
-    }
-  },
-  methods: {    // 获取任务标签
+  methods: {// 获取任务标签
     fetchTaskTags() {
       // 即使API请求失败，我们也有预设的标签
       tasksApi.getTaskTags()
@@ -553,7 +541,7 @@ export default {
             this.fetchTasks();
             
             // 通知用户
-            alert('已成功申请任务，等待发布者同意！');
+            alert('已成功申请任务');
           } else {
             console.error('申请任务失败:', response.data.msg);
             alert('申请任务失败: ' + (response.data.msg || '未知错误'));
@@ -828,15 +816,66 @@ export default {
       if (cached) {
         return cached;
       }
-      
-      // 异步获取头像，但不阻塞渲染
+          // 异步获取头像，但不阻塞渲染
       this.fetchUserAvatar(userObj.uid);
       
       // 返回占位符，等待头像加载完成后会自动更新
       return `https://via.placeholder.com/40?text=U${userObj.uid}`;
     },
 
-    // ...existing code...
+    // 初始化当前用户信息
+    initCurrentUser() {
+      // 从 Vuex store 获取用户信息
+      if (this.$store.getters.currentUser) {
+        this.currentUserId = this.$store.getters.currentUser.uid;
+      } else {
+        // 如果 store 中没有，尝试从 localStorage 获取
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            this.currentUserId = userData.uid;
+          } catch (error) {
+            console.error('解析用户数据失败:', error);
+            // 使用默认值作为最后的回退
+            this.currentUserId = 1001;
+          }
+        } else {
+          // 如果都没有，使用默认值
+          this.currentUserId = 1001;
+        }
+      }
+      console.log('初始化当前用户ID:', this.currentUserId);
+    }  },
+  
+  // 监听器
+  watch: {
+    // 监听 Vuex store 中用户信息的变化
+    '$store.getters.currentUser': {
+      handler(newUser) {
+        if (newUser && newUser.uid) {
+          this.currentUserId = newUser.uid;
+          console.log('用户信息更新，新的用户ID:', this.currentUserId);
+        }
+      },
+      immediate: true
+    }
+  },
+    // 生命周期钩子
+  created() {
+    // 初始化当前用户信息
+    this.initCurrentUser();
+    
+    // 获取任务标签
+    this.fetchTaskTags();
+    
+    // 获取任务列表
+    this.fetchTasks();
+
+    // 如果初始selectedTaskId存在，则自动加载该任务详情
+    if (this.selectedTaskId) {
+      this.fetchTaskDetail(this.selectedTaskId);
+    }
   }
 }
 </script>

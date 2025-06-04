@@ -166,7 +166,7 @@ export default {
       }
       return getMockResponse({success: false, message: '任务不存在'});
     }
-    return api.delete(`/api/task/delete-task-by-tid/${tid}`);
+    return api.delete(`/api/task/delete-tasks-by-tid/${tid}`);
   },
 
   // 创建评分（管理员权限）
