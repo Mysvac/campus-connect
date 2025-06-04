@@ -86,6 +86,25 @@ public class GoodController {
     }
 
     /**
+     * 更新购买记录
+     * @param goodsBuy 购买记录
+     * @return
+     */
+    @PostMapping("/update-goodsbuy")
+    public Result updateGoodsBuy(@RequestBody GoodsBuy goodsBuy) {
+        var oldBuy = goodsBuyService.getGoodsBuyById(goodsBuy.getOid());
+        if(goodsBuy.getGid() == null) goodsBuy.setGid(oldBuy.getGid());
+        if(goodsBuy.getUid() == null) goodsBuy.setUid(oldBuy.getUid());
+        if(goodsBuy.getNumber() == null) goodsBuy.setNumber(oldBuy.getNumber());
+        if(goodsBuy.getTime() == null) goodsBuy.setTime(oldBuy.getTime());
+        if(goodsBuy.getStatus() == null) goodsBuy.setStatus(oldBuy.getStatus());
+        if(goodsBuy.getSum() == null) goodsBuy.setSum(oldBuy.getSum());
+
+        goodsBuyService.updateGoodsBuy(goodsBuy);
+        return Result.success("更新购买记录成功");
+    }
+
+    /**
      * 获取所有购买记录
      * @return Result 所有购买记录列表
      */
@@ -145,6 +164,8 @@ public class GoodController {
 
         return Result.success( res );
     }
+
+
 
 
     /**
