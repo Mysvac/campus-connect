@@ -144,9 +144,9 @@ public class TaskController {
         if( task == null ) {
             return Result.error("任务不存在");
         }
-        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
-            return Result.error("权限不足");
-        }
+//        if( !Objects.equals(uid, task.getUid()) && (Integer) session.getAttribute("permission") != 3 ) {
+//            return Result.error("权限不足");
+//        }
 
         task.setStatus(2);
         tasksService.updateTask(task);
